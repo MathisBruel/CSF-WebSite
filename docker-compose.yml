@@ -1,0 +1,76 @@
+services:
+  # ──────────────────────────────
+  # PostgreSQL
+  # ──────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: csf_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: csf_user
+      POSTGRES_PASSWORD: csf_password
+      POSTGRES_DB: csf_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U csf_user -d csf_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # ──────────────────────────────
+  # Next.js application
+  # ──────────────────────────────
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_TINYMCE_API_KEY: "jqucktk668y6nwry9pbxt0g74jxal4iu4c27hf1t94hp5aif"
+        NEXT_PUBLIC_APP_URL: "http://localhost:3000"
+    container_name: csf_app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: "postgresql://csf_user:csf_password@postgres:5432/csf_db"
+      NEXTAUTH_SECRET: "change-me-in-production-use-openssl-rand-base64-32"
+      NEXTAUTH_URL: "http://localhost:3000"
+      UPLOAD_DIR: "/app/public/uploads"
+      NEXT_PUBLIC_UPLOAD_URL: "/uploads"
+      NEXT_PUBLIC_APP_URL: "http://localhost:3000"
+      NEXT_PUBLIC_TINYMCE_API_KEY: "jqucktk668y6nwry9pbxt0g74jxal4iu4c27hf1t94hp5aif"
+    volumes:
+      - uploads_data:/app/public/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ──────────────────────────────
+  # DB migration + seed runner
+  # (runs once then exits)
+  # ──────────────────────────────
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile.migrate
+    container_name: csf_migrate
+    environment:
+      DATABASE_URL: "postgresql://csf_user:csf_password@postgres:5432/csf_db"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+volumes:
+  postgres_data:
+    name: csf_postgres_data
+  uploads_data:
+    name: csf_uploads_data

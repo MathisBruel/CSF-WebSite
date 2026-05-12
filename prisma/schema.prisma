@@ -1,0 +1,282 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ───────────────────────────────────────────────────────────────────
+
+enum Role {
+  ADMIN
+  MEMBRE_ACTIF
+  ADHERENT_CLUB
+}
+
+enum ExhibitionStatus {
+  DRAFT
+  OPEN
+  CLOSED
+  ARCHIVED
+}
+
+enum RegistrationStatus {
+  PENDING
+  VALIDATED
+  REJECTED
+  WAITING_DOCS
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  REFUNDED
+}
+
+enum DocumentType {
+  PEDIGREE
+  ICAD
+  VACCIN
+  OTHER
+}
+
+// ─── User ────────────────────────────────────────────────────────────────────
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  emailVerified DateTime?
+  password      String?
+  name          String
+  firstName     String
+  lastName      String
+  phone         String?
+  address       String?
+  city          String?
+  postalCode    String?
+  country       String   @default("France")
+  role          Role     @default(ADHERENT_CLUB)
+  membershipActive Boolean @default(false)
+  membershipExpiry DateTime?
+  avatarUrl     String?
+  bio           String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  cats          Cat[]
+  registrations Registration[]
+  news          News[]
+  documents     Document[]
+  teamMembers   TeamMember[]
+
+  @@map("users")
+}
+
+// ─── Cat ─────────────────────────────────────────────────────────────────────
+
+model Cat {
+  id            String   @id @default(cuid())
+  name          String
+  breed         String
+  color         String?
+  gender        String
+  birthDate     DateTime
+  icadNumber    String?  @unique
+  pedigreeNumber String?
+  neutered      Boolean  @default(false)
+  photoUrl      String?
+  notes         String?
+  ownerId       String
+  owner         User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  vaccinations  Vaccination[]
+  catDocuments  CatDocument[]
+  registrations Registration[]
+
+  @@map("cats")
+}
+
+model Vaccination {
+  id          String   @id @default(cuid())
+  catId       String
+  cat         Cat      @relation(fields: [catId], references: [id], onDelete: Cascade)
+  vaccineName String
+  date        DateTime
+  expiryDate  DateTime
+  vetName     String?
+  documentUrl String?
+  validated   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  @@map("vaccinations")
+}
+
+model CatDocument {
+  id          String       @id @default(cuid())
+  catId       String
+  cat         Cat          @relation(fields: [catId], references: [id], onDelete: Cascade)
+  type        DocumentType
+  filename    String
+  originalName String
+  mimeType    String
+  size        Int
+  url         String
+  validated   Boolean      @default(false)
+  rejectionReason String?
+  uploadedAt  DateTime     @default(now())
+  validatedAt DateTime?
+
+  @@map("cat_documents")
+}
+
+// ─── Exhibition ───────────────────────────────────────────────────────────────
+
+model Exhibition {
+  id              String           @id @default(cuid())
+  title           String
+  slug            String           @unique
+  description     String?
+  location        String
+  address         String?
+  city            String
+  startDate       DateTime
+  endDate         DateTime
+  registrationDeadline DateTime
+  status          ExhibitionStatus @default(DRAFT)
+  maxRegistrations Int?
+  coverImageUrl   String?
+
+  // Tarifs
+  priceBase       Float
+  priceCage       Float            @default(0)
+  priceDoubleCage Float            @default(0)
+  priceMeal       Float            @default(0)
+
+  // Meta
+  rules           String?
+  notes           String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  registrations   Registration[]
+
+  @@map("exhibitions")
+}
+
+// ─── Registration ─────────────────────────────────────────────────────────────
+
+model Registration {
+  id             String             @id @default(cuid())
+  exhibitionId   String
+  exhibition     Exhibition         @relation(fields: [exhibitionId], references: [id])
+  userId         String
+  user           User               @relation(fields: [userId], references: [id])
+  catId          String
+  cat            Cat                @relation(fields: [catId], references: [id])
+
+  status         RegistrationStatus @default(PENDING)
+  paymentStatus  PaymentStatus      @default(PENDING)
+
+  // Options
+  wantsCage      Boolean            @default(false)
+  wantsDoubleCage Boolean           @default(false)
+  mealsCount     Int                @default(0)
+
+  // Financials
+  totalAmount    Float
+  paidAt         DateTime?
+
+  // Vet validation
+  vetValidated   Boolean            @default(false)
+  vetValidatedAt DateTime?
+  vetNotes       String?
+
+  // Admin
+  adminNotes     String?
+  rejectionReason String?
+  catalogNumber  Int?
+
+  // Convocation
+  convocationUrl String?
+  convocationSentAt DateTime?
+
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  @@unique([exhibitionId, catId])
+  @@map("registrations")
+}
+
+// ─── News ────────────────────────────────────────────────────────────────────
+
+model News {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  excerpt     String?
+  content     String
+  coverImageUrl String?
+  published   Boolean  @default(false)
+  publishedAt DateTime?
+  authorId    String
+  author      User     @relation(fields: [authorId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("news")
+}
+
+// ─── Document (public downloadable docs) ─────────────────────────────────────
+
+model Document {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  filename    String
+  originalName String
+  mimeType    String
+  size        Int
+  url         String
+  category    String   @default("general")
+  public      Boolean  @default(true)
+  uploadedById String
+  uploadedBy  User     @relation(fields: [uploadedById], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("documents")
+}
+
+// ─── Team ─────────────────────────────────────────────────────────────────────
+
+model TeamMember {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  name      String
+  role      String
+  bio       String?
+  photoUrl  String?
+  email     String?
+  order     Int      @default(0)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("team_members")
+}
+
+// ─── SiteConfig ───────────────────────────────────────────────────────────────
+
+model SiteConfig {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  updatedAt DateTime @updatedAt
+
+  @@map("site_config")
+}

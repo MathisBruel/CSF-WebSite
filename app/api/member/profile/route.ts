@@ -1,0 +1,25 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { auth } from '@/lib/auth'
+import { prisma } from '@/lib/prisma'
+
+export async function PUT(req: NextRequest) {
+  const session = await auth()
+  if (!session) return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
+
+  const data = await req.json()
+  const { firstName, lastName, phone, city, postalCode, address } = data
+
+  const user = await prisma.user.update({
+    where: { id: session.user.id },
+    data: {
+      firstName,
+      lastName,
+      name: `${firstName} ${lastName}`,
+      phone,
+      city,
+      postalCode,
+      address,
+    },
+  })
+  return NextResponse.json({ id: user.id })
+}

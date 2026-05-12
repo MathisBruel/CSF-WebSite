@@ -1,0 +1,16 @@
+FROM node:20-alpine
+RUN apk add --no-cache libc6-compat openssl
+WORKDIR /app
+
+# Copy only what's needed for migrations + seed
+COPY package.json package-lock.json* ./
+COPY prisma ./prisma/
+COPY tsconfig.json ./
+
+RUN npm ci --legacy-peer-deps
+
+# Copy seed + lib (needed by seed.ts)
+COPY lib ./lib
+COPY prisma/seed.ts ./prisma/seed.ts
+
+CMD ["sh", "-c", "npx prisma migrate deploy && npx tsx prisma/seed.ts"]

@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir -p \"C:\\\\Users\\\\mathi\\\\Documents\\\\Développement\\\\CSF\\\\WebSite\\\\app\" && mkdir -p \"C:\\\\Users\\\\mathi\\\\Documents\\\\Développement\\\\CSF\\\\WebSite\\\\app\\\\api\\\\auth\\\\[...nextauth]\" && mkdir -p \"C:\\\\Users\\\\mathi\\\\Documents\\\\Développement\\\\CSF\\\\WebSite\\\\app\\\\api\\\\cats\" && mkdir -p \"C:\\\\Users\\\\mathi\\\\Documents\\\\Développement\\\\CSF\\\\WebSite\\\\app\\\\api\\\\exhibitions\" && mkdir -p \"C:\\\\Users\\\\mathi\\\\Documents\\\\Développement\\\\CSF\\\\WebSite\\\\app\\\\api\\\\registrations\" && mkdir -p \"C:\\\\Users\\\\mathi\\\\Documents\\\\Développement\\\\CSF\\\\WebSite\\\\app\\\\api\\\\news\" && mkdir -p \"C:\\\\Users\\\\mathi\\\\Documents\\\\Développement\\\\CSF\\\\WebSite\\\\app\\\\api\\\\upload\" && mkdir -p \"C:\\\\Users\\\\mathi\\\\Documents\\\\Développement\\\\CSF\\\\WebSite\\\\app\\\\api\\\\admin\\\\members\" && mkdir -p \"C:\\\\Users\\\\mathi\\\\Documents\\\\Développement\\\\CSF\\\\WebSite\\\\app\\\\api\\\\admin\\\\exhibitions\" && mkdir -p \"C:\\\\Users\\\\mathi\\\\Documents\\\\Développement\\\\CSF\\\\WebSite\\\\app\\\\api\\\\admin\\\\registrations\" && mkdir -p \"C:\\\\Users\\\\mathi\\\\Documents\\\\Développement\\\\CSF\\\\WebSite\\\\app\\\\api\\\\admin\\\\team\" && mkdir -p \"C:\\\\Users\\\\mathi\\\\Documents\\\\Développement\\\\CSF\\\\WebSite\\\\app\\\\api\\\\admin\\\\documents\" && mkdir -p \"C:\\\\Users\\\\mathi\\\\Documents\\\\Développement\\\\CSF\\\\WebSite\\\\app\\\\api\\\\auth\\\\register\")",
+      "Bash(mkdir -p \"C:\\\\Users\\\\mathi\\\\Documents\\\\Développement\\\\CSF\\\\WebSite\\\\app\\\\\\(public\\)\\\\actualites\\\\[slug]\")",
+      "Bash(mkdir -p \"C:\\\\Users\\\\mathi\\\\Documents\\\\Développement\\\\CSF\\\\WebSite\\\\app\\\\\\(public\\)\\\\expositions\\\\[slug]\")",
+      "Bash(mkdir -p \"C:\\\\Users\\\\mathi\\\\Documents\\\\Développement\\\\CSF\\\\WebSite\\\\app\\\\membre\\\\inscriptions\\\\[expoId]\")",
+      "Bash(mkdir -p \"C:\\\\Users\\\\mathi\\\\Documents\\\\Développement\\\\CSF\\\\WebSite\\\\app\\\\api\\\\cats\\\\[id]\")",
+      "Bash(mkdir -p \"C:\\\\Users\\\\mathi\\\\Documents\\\\Développement\\\\CSF\\\\WebSite\\\\app\\\\api\\\\admin\\\\members\\\\[id]\")",
+      "Bash(mkdir -p \"C:\\\\Users\\\\mathi\\\\Documents\\\\Développement\\\\CSF\\\\WebSite\\\\app\\\\api\\\\admin\\\\exhibitions\\\\[id]\")",
+      "Bash(mkdir -p \"C:\\\\Users\\\\mathi\\\\Documents\\\\Développement\\\\CSF\\\\WebSite\\\\app\\\\api\\\\admin\\\\registrations\\\\[id]\")",
+      "Bash(mkdir -p \"C:\\\\Users\\\\mathi\\\\Documents\\\\Développement\\\\CSF\\\\WebSite\\\\app\\\\api\\\\admin\\\\documents\\\\[id]\")",
+      "Bash(npm install *)",
+      "Bash(Test-Path \"C:\\\\Users\\\\mathi\\\\Documents\\\\Développement\\\\CSF\\\\WebSite\\\\package-lock.json\")",
+      "Bash(docker compose *)",
+      "Bash(npx tsc *)",
+      "Bash(git add *)",
+      "Bash(docker-compose ps *)",
+      "Bash(curl -s http://localhost:3000/admin/contenu)",
+      "mcp__Claude_in_Chrome__tabs_context_mcp",
+      "Bash(docker-compose down *)",
+      "Bash(docker-compose up *)",
+      "mcp__8a408fd6-01fc-47f7-b33b-89e478597817__search_files",
+      "mcp__8a408fd6-01fc-47f7-b33b-89e478597817__list_recent_files"
+    ]
+  }
+}
