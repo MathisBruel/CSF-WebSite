@@ -20,7 +20,7 @@ services:
     container_name: csf_app
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "127.0.0.1:${APP_PORT:-3000}:3000"
     env_file: .env
     volumes:
       - uploads_data:/app/public/uploads
