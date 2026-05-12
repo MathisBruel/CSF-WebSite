@@ -29,7 +29,7 @@ services:
       dockerfile: Dockerfile
       args:
         NEXT_PUBLIC_TINYMCE_API_KEY: "jqucktk668y6nwry9pbxt0g74jxal4iu4c27hf1t94hp5aif"
-        NEXT_PUBLIC_APP_URL: "http://localhost:3000"
+        NEXT_PUBLIC_APP_URL: "https://assocsf.fr"
     container_name: csf_app
     restart: unless-stopped
     ports:

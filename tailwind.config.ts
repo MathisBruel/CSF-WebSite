@@ -10,18 +10,21 @@ const config: Config = {
     extend: {
       colors: {
         csf: {
-          dark:   '#1a3546',
-          darker: '#122534',
-          orange: '#d48342',
-          'orange-dark': '#b8692a',
-          cream:  '#faf9f5',
-          light:  '#ede1cc',
-          muted:  '#8fa3b0',
+          dark:   '#183546',
+          darker: '#0f2433',
+          orange: '#d28342',
+          'orange-dark': '#b86d2a',
+          cream:  '#edebcd',
+          'cream-light': '#f5f4e8',
+          light:  '#edebcd',
+          black:  '#1A1A1A',
+          muted:  '#7a9aab',
         },
       },
       fontFamily: {
-        serif: ['Georgia', 'Cambria', 'serif'],
-        sans:  ['-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
+        display: ['Moontime', 'cursive'],
+        serif:   ['var(--font-lora)', 'Lora', 'Georgia', 'Cambria', 'serif'],
+        sans:    ['var(--font-lato)', 'Lato', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
       },
       backgroundImage: {
         'hero-pattern': "url('/images/hero-bg.jpg')",

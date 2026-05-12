@@ -38,15 +38,15 @@ export default async function HomePage() {
           <div className="max-w-2xl">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-csf-orange/20 text-csf-orange text-sm font-medium mb-6">
               <span className="w-2 h-2 rounded-full bg-csf-orange animate-pulse" />
-              Association féline depuis 2025
+              Association féline depuis 2005
             </div>
             <h1 className="text-5xl sm:text-6xl font-bold font-serif leading-tight mb-6">
               Chats Sans<br />
               <span className="text-csf-orange">Frontières</span>
             </h1>
             <p className="text-xl text-csf-light/80 mb-8 leading-relaxed">
-              Rejoignez notre communauté de passionnés félins. Organisez, participez et brillez
-              lors de nos expositions nationales.
+              Organisation d&apos;expositions félines, promotion de l&apos;élevage éthique
+              et regroupement de passionnés du chat de race et de maison.
             </p>
             <div className="flex flex-wrap gap-4">
               <Link href="/expositions" className="btn-primary">
@@ -65,8 +65,8 @@ export default async function HomePage() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
               {[
-                { value: '30+', label: 'Années d\'expertise' },
-                { value: '10+', label: 'Membres bénévoles' },
+                { value: '20+', label: 'Années d\'existence' },
+                { value: '20+', label: 'Membres bénévoles' },
               ].map((s) => (
                 <div key={s.label}>
                   <p className="text-2xl font-bold text-csf-orange font-serif">{s.value}</p>
@@ -177,8 +177,8 @@ export default async function HomePage() {
         <div className="max-w-4xl mx-auto px-4 text-center text-white">
           <h2 className="text-3xl font-bold font-serif mb-4">Rejoignez Chats Sans Frontières</h2>
           <p className="text-white/80 text-lg mb-8">
-            Adhérez au club pour accéder à l&apos;espace membre, inscrire vos chats aux expositions
-            et bénéficier de tarifs préférentiels.
+            Adhérez à l&apos;association pour accéder à l&apos;espace membre, inscrire vos chats aux expositions
+            et rejoindre notre communauté de passionnés félins.
           </p>
           <div className="flex flex-wrap justify-center gap-4">
             <Link href="/register"

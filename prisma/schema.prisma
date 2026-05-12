@@ -262,6 +262,9 @@ model TeamMember {
   bio       String?
   photoUrl  String?
   email     String?
+  phone     String?
+  instagram String?
+  facebook  String?
   order     Int      @default(0)
   active    Boolean  @default(true)
   createdAt DateTime @default(now())
