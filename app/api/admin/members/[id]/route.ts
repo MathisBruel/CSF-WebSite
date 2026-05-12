@@ -10,7 +10,8 @@ async function requireAdmin() {
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
-  if (!await requireAdmin()) return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
+  const session = await requireAdmin()
+  if (!session) return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
 
   const data = await req.json()
   const updateData: Record<string, unknown> = {}
@@ -21,7 +22,23 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       updateData.membershipExpiry = new Date(new Date().getFullYear(), 11, 31)
     }
   }
-  if (data.role) updateData.role = data.role as Role
+
+  if (data.role) {
+    const validRoles = ['ADMIN', 'MEMBRE_ACTIF', 'ADHERENT_CLUB']
+    if (!validRoles.includes(data.role)) {
+      return NextResponse.json({ error: 'Rôle invalide' }, { status: 400 })
+    }
+
+    // Prevent self-demotion from admin
+    if (session.user.id === params.id && data.role !== 'ADMIN') {
+      return NextResponse.json(
+        { error: 'Vous ne pouvez pas retirer votre propre rôle administrateur' },
+        { status: 400 }
+      )
+    }
+
+    updateData.role = data.role as Role
+  }
 
   const user = await prisma.user.update({ where: { id: params.id }, data: updateData })
   return NextResponse.json({ id: user.id })

@@ -7,7 +7,7 @@ import { v4 as uuid } from 'uuid'
 
 export const dynamic = 'force-dynamic'
 
-const UPLOAD_DIR = 'public/uploads/documents'
+const UPLOAD_DIR = join(process.env.UPLOAD_DIR || join(process.cwd(), 'public/uploads'), 'documents')
 const MAX_SIZE = 50 * 1024 * 1024 // 50MB
 const ALLOWED_TYPES = [
   'application/pdf',
@@ -44,9 +44,9 @@ export async function POST(req: NextRequest) {
 
     const buffer = Buffer.from(await file.arrayBuffer())
     const filename = `${uuid()}-${file.name.replace(/[^a-z0-9.-]/gi, '_').toLowerCase()}`
-    const filepath = join(process.cwd(), UPLOAD_DIR, filename)
+    const filepath = join(UPLOAD_DIR, filename)
 
-    await mkdir(join(process.cwd(), UPLOAD_DIR), { recursive: true })
+    await mkdir(UPLOAD_DIR, { recursive: true })
     await writeFile(filepath, buffer)
 
     const doc = await prisma.document.create({

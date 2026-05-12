@@ -6,7 +6,7 @@ import { v4 as uuid } from 'uuid'
 
 export const dynamic = 'force-dynamic'
 
-const UPLOAD_DIR = 'public/uploads/images'
+const UPLOAD_DIR = process.env.UPLOAD_DIR || join(process.cwd(), 'public/uploads')
 const MAX_SIZE = 10 * 1024 * 1024 // 10MB
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml']
 
@@ -33,18 +33,20 @@ export async function POST(req: NextRequest) {
     }
 
     const buffer = Buffer.from(await file.arrayBuffer())
-    const filename = `${uuid()}-${file.name.replace(/[^a-z0-9.-]/gi, '_').toLowerCase()}`
-    const filepath = join(process.cwd(), UPLOAD_DIR, filename)
+    const ext = file.name.split('.').pop()?.toLowerCase() || 'png'
+    const filename = `${uuid()}.${ext}`
+    const imagesDir = join(UPLOAD_DIR, 'images')
 
-    await mkdir(join(process.cwd(), UPLOAD_DIR), { recursive: true })
-    await writeFile(filepath, buffer)
+    await mkdir(imagesDir, { recursive: true })
+    await writeFile(join(imagesDir, filename), buffer)
 
+    // Return the path served by our catch-all route handler
     return NextResponse.json(
       { location: `/uploads/images/${filename}` },
       { status: 201 }
     )
   } catch (err) {
-    console.error(err)
+    console.error('Upload error:', err)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
 }
