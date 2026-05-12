@@ -99,7 +99,6 @@ export function ExhibitionForm({ expoId, defaultValues }: { expoId?: string; def
                 onChange={field.onChange}
                 placeholder="Description de l&apos;exposition..."
                 height={300}
-                maxWords={2000}
               />
             )}
           />
@@ -171,7 +170,6 @@ export function ExhibitionForm({ expoId, defaultValues }: { expoId?: string; def
               onChange={field.onChange}
               placeholder="Conditions de participation, vaccins obligatoires..."
               height={400}
-              maxWords={3000}
             />
           )}
         />

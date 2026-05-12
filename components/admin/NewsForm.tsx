@@ -98,7 +98,6 @@ export function NewsForm({
                 onChange={field.onChange}
                 placeholder="Contenu de l&apos;actualité..."
                 height={500}
-                maxWords={5000}
               />
             )}
           />
