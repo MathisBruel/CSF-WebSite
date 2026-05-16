@@ -2,6 +2,8 @@ import { auth } from '@/lib/auth'
 import { NewsForm } from '@/components/admin/NewsForm'
 import { redirect } from 'next/navigation'
 
+import { prisma } from '@/lib/prisma'
+
 export const dynamic = 'force-dynamic'
 
 export default async function AdminNewsNew() {
@@ -10,6 +12,11 @@ export default async function AdminNewsNew() {
     redirect('/login')
   }
 
+  const authors = await prisma.user.findMany({
+    select: { id: true, name: true, email: true },
+    orderBy: { name: 'asc' },
+  })
+
   return (
     <div className="space-y-6">
       <div>
@@ -17,7 +24,10 @@ export default async function AdminNewsNew() {
         <p className="text-csf-muted">Ajouter un nouvel article aux actualités</p>
       </div>
 
-      <NewsForm />
+      <NewsForm 
+        authors={authors} 
+        defaultValues={{ authorId: session.user.id }}
+      />
     </div>
   )
 }

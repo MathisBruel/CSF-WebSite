@@ -11,6 +11,7 @@ const newsSchema = z.object({
   excerpt: z.string().optional(),
   content: z.string().min(1),
   published: z.boolean().default(false),
+  authorId: z.string().optional(),
 })
 
 export async function POST(req: NextRequest) {
@@ -21,12 +22,12 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json()
-    const data = newsSchema.parse(body)
+    const { authorId, ...data } = newsSchema.parse(body)
 
     const news = await prisma.news.create({
       data: {
         ...data,
-        authorId: session.user.id,
+        authorId: authorId || session.user.id,
       },
     })
 

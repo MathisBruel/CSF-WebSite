@@ -19,6 +19,11 @@ export default async function AdminNewsEdit({ params }: { params: { id: string }
     notFound()
   }
 
+  const authors = await prisma.user.findMany({
+    select: { id: true, name: true, email: true },
+    orderBy: { name: 'asc' },
+  })
+
   return (
     <div className="space-y-6">
       <div>
@@ -28,11 +33,13 @@ export default async function AdminNewsEdit({ params }: { params: { id: string }
 
       <NewsForm
         newsId={news.id}
+        authors={authors}
         defaultValues={{
           title: news.title,
           excerpt: news.excerpt || '',
           content: news.content,
           published: news.published,
+          authorId: news.authorId,
         }}
       />
     </div>

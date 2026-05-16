@@ -11,6 +11,7 @@ const newsSchema = z.object({
   excerpt: z.string().optional(),
   content: z.string().min(1),
   published: z.boolean(),
+  authorId: z.string().optional(),
 })
 
 export async function PUT(
@@ -24,11 +25,14 @@ export async function PUT(
 
   try {
     const body = await req.json()
-    const data = newsSchema.parse(body)
+    const { authorId, ...parsedData } = newsSchema.parse(body)
 
     const news = await prisma.news.update({
       where: { id: params.id },
-      data,
+      data: {
+        ...parsedData,
+        ...(authorId ? { authorId } : {}),
+      },
     })
 
     return NextResponse.json(news)

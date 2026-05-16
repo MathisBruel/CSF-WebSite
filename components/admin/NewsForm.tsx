@@ -12,14 +12,17 @@ type FormData = {
   content: string
   excerpt: string
   published: boolean
+  authorId?: string
 }
 
 export function NewsForm({
   newsId,
   defaultValues,
+  authors = [],
 }: {
   newsId?: string
   defaultValues?: Partial<FormData>
+  authors?: { id: string; name: string; email: string }[]
 }) {
   const router = useRouter()
   const [error, setError] = useState('')
@@ -77,6 +80,20 @@ export function NewsForm({
           {title && <p className="text-xs text-csf-muted mt-1">Slug: {slugify(title)}</p>}
           {errors.title && <p className="text-red-500 text-xs mt-1">{errors.title.message}</p>}
         </div>
+
+        {authors.length > 0 && (
+          <div>
+            <label className="form-label">Auteur</label>
+            <select {...register('authorId')} className="form-input">
+              {authors.map((author) => (
+                <option key={author.id} value={author.id}>
+                  {author.name} ({author.email})
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
         <div>
           <label className="form-label">Résumé</label>
           <textarea
