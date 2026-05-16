@@ -13,7 +13,16 @@ const registerSchema = z.object({
   postalCode: z.string().optional(),
 })
 
+const REGISTRATION_ENABLED = false
+
 export async function POST(req: NextRequest) {
+  if (!REGISTRATION_ENABLED) {
+    return NextResponse.json(
+      { error: "L'inscription est désactivée pour le moment." },
+      { status: 403 }
+    )
+  }
+
   try {
     const body = await req.json()
     const data = registerSchema.parse(body)

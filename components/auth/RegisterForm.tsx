@@ -24,6 +24,8 @@ const schema = z.object({
 
 type FormData = z.infer<typeof schema>
 
+const REGISTRATION_ENABLED = false
+
 export function RegisterForm() {
   const router = useRouter()
   const [error, setError] = useState('')
@@ -32,6 +34,7 @@ export function RegisterForm() {
   })
 
   const onSubmit = async (data: FormData) => {
+    if (!REGISTRATION_ENABLED) return
     setError('')
     const res = await fetch('/api/auth/register', {
       method: 'POST',
@@ -51,6 +54,26 @@ export function RegisterForm() {
       redirect: false,
     })
     router.push('/membre/dashboard')
+  }
+
+  if (!REGISTRATION_ENABLED) {
+    return (
+      <div className="bg-white rounded-2xl shadow-xl p-8">
+        <h1 className="text-2xl font-bold font-serif text-csf-dark mb-1 text-center">Adhérer au Club</h1>
+        
+        <div className="my-8 p-4 rounded-lg bg-yellow-50 border border-yellow-200 text-yellow-800 text-center">
+          <p className="font-medium">Inscription désactivée car pas encore actif.</p>
+          <p className="text-sm mt-1">L&apos;inscription sera possible dès lors qu&apos;on aura une expo.</p>
+        </div>
+
+        <p className="text-center text-sm text-csf-muted mt-6">
+          Déjà membre ?{' '}
+          <Link href="/login" className="text-csf-orange hover:text-csf-orange-dark font-medium">
+            Se connecter
+          </Link>
+        </p>
+      </div>
+    )
   }
 
   return (
