@@ -43,3 +43,37 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   const user = await prisma.user.update({ where: { id: params.id }, data: updateData })
   return NextResponse.json({ id: user.id })
 }
+
+export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+  const session = await requireAdmin()
+  if (!session) return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
+
+  // Prevent self-deletion
+  if (session.user.id === params.id) {
+    return NextResponse.json(
+      { error: 'Vous ne pouvez pas supprimer votre propre compte' },
+      { status: 400 }
+    )
+  }
+
+  try {
+    // Delete in transaction to handle relations
+    await prisma.$transaction([
+      prisma.registration.deleteMany({ where: { userId: params.id } }),
+      prisma.teamMember.updateMany({ where: { userId: params.id }, data: { userId: null } }),
+      prisma.user.delete({ where: { id: params.id } })
+    ])
+    
+    return NextResponse.json({ success: true })
+  } catch (error: any) {
+    console.error('Delete member error:', error)
+    if (error.code === 'P2003') { // Foreign key constraint failed
+      return NextResponse.json(
+        { error: "Impossible de supprimer ce membre car il possède des données liées (actualités, documents, etc.)" },
+        { status: 400 }
+      )
+    }
+    return NextResponse.json({ error: 'Erreur lors de la suppression' }, { status: 500 })
+  }
+}
+
