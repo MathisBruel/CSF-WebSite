@@ -7,13 +7,15 @@ WORKDIR /app
 # Installe les dépendances nécessaires pour Prisma et PostgreSQL
 RUN apk add --no-cache libc6-compat openssl
 
-# Copie les fichiers de dépendances et installe (couche cachée)
+# Copie les fichiers de dépendances et le schéma Prisma
 COPY package.json package-lock.json* ./
+COPY prisma ./prisma/
+
+# Installe les dépendances (le postinstall "prisma generate" va maintenant fonctionner)
 RUN npm ci --legacy-peer-deps
 
-# Copie explicitement le schéma et les migrations Prisma
-# Cette couche sera invalidée à chaque nouvelle migration
-COPY prisma ./prisma/
+# Copie le reste des fichiers (pas strictement nécessaire pour la migration, mais bonne pratique)
+COPY . .
 
 # La commande par défaut qui sera exécutée
 CMD ["npm", "run", "db:migrate"]
