@@ -5,7 +5,11 @@ import { useRouter } from 'next/navigation'
 import { useForm, Controller } from 'react-hook-form'
 import Link from 'next/link'
 import { slugify } from '@/lib/utils'
-import { TinyMCEEditor } from '@/components/ui/TinyMCEEditor'
+import dynamic from 'next/dynamic'
+
+const TinyMCEEditor = dynamic(() => import('@/components/ui/TinyMCEEditor').then(mod => mod.TinyMCEEditor), {
+  ssr: false,
+})
 
 type FormData = {
   title: string
