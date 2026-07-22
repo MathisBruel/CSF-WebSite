@@ -139,7 +139,7 @@ export function AddCatForm({ catId }: { catId?: string }) {
         </div>
 
         <div>
-          <label className="form-label">Pays d'origine</label>
+          <label className="form-label">Pays d&apos;origine</label>
           <input {...register('countryOfOrigin')} className="form-input" placeholder="France" />
         </div>
 
