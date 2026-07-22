@@ -10,9 +10,17 @@ import Link from 'next/link'
 const schema = z.object({
   name: z.string().min(1, 'Nom requis'),
   breed: z.string().min(1, 'Race requise'),
+  otherBreed: z.string().optional(),
   color: z.string().optional(),
-  gender: z.enum(['Mâle', 'Femelle']),
+  gender: z.enum(['Mâle', 'Femelle', 'Neutre Mâle', 'Neutre Femelle']),
   birthDate: z.string().min(1, 'Date de naissance requise'),
+  eyeColor: z.string().optional(),
+  breeder: z.string().optional(),
+  countryOfOrigin: z.string().optional(),
+  father: z.string().optional(),
+  mother: z.string().optional(),
+  forSale: z.boolean().default(false),
+  loofLitterNumber: z.string().optional(),
   icadNumber: z.string().optional(),
   pedigreeNumber: z.string().optional(),
   neutered: z.boolean().default(false),
@@ -30,17 +38,26 @@ const BREEDS = [
 export function AddCatForm({ catId }: { catId?: string }) {
   const router = useRouter()
   const [error, setError] = useState('')
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormData>({
+  
+  const { register, handleSubmit, watch, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: { gender: 'Mâle', neutered: false },
+    defaultValues: { gender: 'Mâle', neutered: false, forSale: false },
   })
+
+  const currentBreed = watch('breed');
+  const isForSale = watch('forSale');
 
   const onSubmit = async (data: FormData) => {
     setError('')
+    const payload = { ...data };
+    if (payload.breed === 'Autre' && payload.otherBreed) {
+      payload.breed = payload.otherBreed;
+    }
+    
     const res = await fetch(catId ? `/api/cats/${catId}` : '/api/cats', {
       method: catId ? 'PUT' : 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
+      body: JSON.stringify(payload),
     })
     if (!res.ok) {
       const body = await res.json()
@@ -73,9 +90,21 @@ export function AddCatForm({ catId }: { catId?: string }) {
           {errors.breed && <p className="text-red-500 text-xs mt-1">{errors.breed.message}</p>}
         </div>
 
+        {currentBreed === 'Autre' && (
+          <div>
+            <label className="form-label">Précisez la race <span className="text-red-500">*</span></label>
+            <input {...register('otherBreed')} className="form-input" placeholder="Nom de la race" />
+          </div>
+        )}
+
         <div>
           <label className="form-label">Couleur / Robe</label>
           <input {...register('color')} className="form-input" placeholder="Brown tabby" />
+        </div>
+
+        <div>
+          <label className="form-label">Couleur des yeux</label>
+          <input {...register('eyeColor')} className="form-input" placeholder="Vert, Bleu, Or..." />
         </div>
 
         <div>
@@ -83,6 +112,8 @@ export function AddCatForm({ catId }: { catId?: string }) {
           <select {...register('gender')} className="form-select">
             <option value="Mâle">Mâle</option>
             <option value="Femelle">Femelle</option>
+            <option value="Neutre Mâle">Neutre Mâle</option>
+            <option value="Neutre Femelle">Neutre Femelle</option>
           </select>
         </div>
 
@@ -93,12 +124,32 @@ export function AddCatForm({ catId }: { catId?: string }) {
         </div>
 
         <div>
+          <label className="form-label">Nom du père</label>
+          <input {...register('father')} className="form-input" placeholder="Nom complet du père" />
+        </div>
+
+        <div>
+          <label className="form-label">Nom de la mère</label>
+          <input {...register('mother')} className="form-input" placeholder="Nom complet de la mère" />
+        </div>
+
+        <div>
+          <label className="form-label">Éleveur du chat</label>
+          <input {...register('breeder')} className="form-input" placeholder="Nom de l'éleveur" />
+        </div>
+
+        <div>
+          <label className="form-label">Pays d'origine</label>
+          <input {...register('countryOfOrigin')} className="form-input" placeholder="France" />
+        </div>
+
+        <div>
           <label className="form-label">Numéro I-CAD (puce)</label>
           <input {...register('icadNumber')} className="form-input" placeholder="250269811234567" />
         </div>
 
         <div>
-          <label className="form-label">Numéro de pedigree</label>
+          <label className="form-label">Numéro de pedigree (LOOF...)</label>
           <input {...register('pedigreeNumber')} className="form-input" placeholder="LOOF-XXXX-XX-XXXXX" />
         </div>
 
@@ -108,6 +159,20 @@ export function AddCatForm({ catId }: { catId?: string }) {
             <span className="text-sm text-csf-dark">Chat castré / stérilisé</span>
           </label>
         </div>
+
+        <div className="col-span-2">
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input {...register('forSale')} type="checkbox" className="w-4 h-4 rounded text-csf-orange" />
+            <span className="text-sm text-csf-dark">Chat disponible à la vente (éleveurs)</span>
+          </label>
+        </div>
+
+        {isForSale && (
+          <div className="col-span-2">
+            <label className="form-label">Numéro de dossier LOOF de la portée</label>
+            <input {...register('loofLitterNumber')} className="form-input" placeholder="Obligatoire si à vendre" />
+          </div>
+        )}
 
         <div className="col-span-2">
           <label className="form-label">Notes</label>

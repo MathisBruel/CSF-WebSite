@@ -12,7 +12,24 @@ interface WizardState {
   wantsCage: boolean
   wantsDoubleCage: boolean
   mealsCount: number
+  participationDays: string[]
+  traditionalClass: string
+  traditionalClassOther: string
+  isHorsConcours: boolean
+  wantsComplianceExam: boolean
+  specialParticipations: string[]
 }
+
+const TRADITIONAL_CLASSES = [
+  '3/6 Mois', '6/10 Mois',
+  'CAC', 'CACIB', 'CAGCI', 'CACE', 'CAGCE',
+  'CAP', 'CAPIB', 'CAGPI', 'CAPE', 'CAGPE',
+  'Honneur', 'RIA', 'Nouvelle Race / AE', 'Autre'
+]
+
+const SPECIAL_PARTICIPATIONS = [
+  'Lot d\'Elevage', '3 Générations', 'Vétéran'
+]
 
 export function RegistrationWizard({
   exhibition,
@@ -28,6 +45,12 @@ export function RegistrationWizard({
     wantsCage: false,
     wantsDoubleCage: false,
     mealsCount: 0,
+    participationDays: [],
+    traditionalClass: '',
+    traditionalClassOther: '',
+    isHorsConcours: false,
+    wantsComplianceExam: false,
+    specialParticipations: [],
   })
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
@@ -166,7 +189,90 @@ export function RegistrationWizard({
 
         {step === 'options' && (
           <div>
-            <h2 className="font-bold text-csf-dark mb-4">Options et services</h2>
+            <h2 className="font-bold text-csf-dark mb-4">Compétition</h2>
+            <div className="space-y-4 mb-8">
+              <div>
+                <label className="form-label">Jours de participation</label>
+                <div className="flex gap-4">
+                  {['Samedi', 'Dimanche'].map(day => (
+                    <label key={day} className="flex items-center gap-2 cursor-pointer">
+                      <input type="checkbox"
+                        checked={state.participationDays.includes(day)}
+                        onChange={(e) => {
+                          const newDays = e.target.checked
+                            ? [...state.participationDays, day]
+                            : state.participationDays.filter(d => d !== day);
+                          setState({ ...state, participationDays: newDays });
+                        }}
+                        className="text-csf-orange rounded" />
+                      <span>{day}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox"
+                    checked={state.isHorsConcours}
+                    onChange={(e) => setState({ ...state, isHorsConcours: e.target.checked })}
+                    className="text-csf-orange rounded" />
+                  <span className="font-medium">Hors Concours (H.C.)</span>
+                </label>
+              </div>
+
+              {!state.isHorsConcours && (
+                <>
+                  <div>
+                    <label className="form-label">Classe de jugement Traditionnel</label>
+                    <select className="form-select" value={state.traditionalClass}
+                      onChange={(e) => setState({ ...state, traditionalClass: e.target.value })}>
+                      <option value="">Sélectionner une classe</option>
+                      {TRADITIONAL_CLASSES.map(c => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                  </div>
+                  {state.traditionalClass === 'Autre' && (
+                    <div>
+                      <label className="form-label">Précisez la classe</label>
+                      <input type="text" className="form-input" value={state.traditionalClassOther}
+                        onChange={(e) => setState({ ...state, traditionalClassOther: e.target.value })} />
+                    </div>
+                  )}
+                </>
+              )}
+
+              <div>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox"
+                    checked={state.wantsComplianceExam}
+                    onChange={(e) => setState({ ...state, wantsComplianceExam: e.target.checked })}
+                    className="text-csf-orange rounded" />
+                  <span>Examen de conformité</span>
+                </label>
+              </div>
+
+              <div>
+                <label className="form-label">Participations spéciales (Optionnel)</label>
+                <div className="flex flex-col gap-2">
+                  {SPECIAL_PARTICIPATIONS.map(sp => (
+                    <label key={sp} className="flex items-center gap-2 cursor-pointer">
+                      <input type="checkbox"
+                        checked={state.specialParticipations.includes(sp)}
+                        onChange={(e) => {
+                          const newSp = e.target.checked
+                            ? [...state.specialParticipations, sp]
+                            : state.specialParticipations.filter(s => s !== sp);
+                          setState({ ...state, specialParticipations: newSp });
+                        }}
+                        className="text-csf-orange rounded" />
+                      <span>{sp}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <h2 className="font-bold text-csf-dark mb-4">Options logistiques</h2>
             <div className="space-y-4">
               <label className="flex items-center justify-between p-4 border-2 rounded-xl cursor-pointer hover:border-csf-orange/50 transition-colors">
                 <div>

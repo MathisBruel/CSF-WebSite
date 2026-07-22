@@ -62,6 +62,8 @@ model User {
   membershipExpiry DateTime?
   avatarUrl     String?
   bio           String?
+  siret         String?
+  otherClubs    String?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -88,6 +90,13 @@ model Cat {
   neutered      Boolean  @default(false)
   photoUrl      String?
   notes         String?
+  eyeColor        String?
+  breeder         String?
+  father          String?
+  mother          String?
+  countryOfOrigin String?
+  forSale         Boolean  @default(false)
+  loofLitterNumber String?
   ownerId       String
   owner         User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   createdAt     DateTime @default(now())
@@ -185,6 +194,14 @@ model Registration {
   wantsCage      Boolean            @default(false)
   wantsDoubleCage Boolean           @default(false)
   mealsCount     Int                @default(0)
+
+  // Competition
+  participationDays String[]
+  traditionalClass  String?
+  traditionalClassOther String?
+  isHorsConcours    Boolean           @default(false)
+  wantsComplianceExam Boolean         @default(false)
+  specialParticipations String[]
 
   // Financials
   totalAmount    Float

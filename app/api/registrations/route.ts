@@ -12,6 +12,12 @@ const registrationSchema = z.object({
   wantsCage: z.boolean().default(false),
   wantsDoubleCage: z.boolean().default(false),
   mealsCount: z.number().int().min(0).max(4).default(0),
+  participationDays: z.array(z.string()).default([]),
+  traditionalClass: z.string().optional(),
+  traditionalClassOther: z.string().optional(),
+  isHorsConcours: z.boolean().default(false),
+  wantsComplianceExam: z.boolean().default(false),
+  specialParticipations: z.array(z.string()).default([]),
 })
 
 export async function POST(req: NextRequest) {
