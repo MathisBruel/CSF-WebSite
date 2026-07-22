@@ -1,16 +1,18 @@
+# Utilise l'image de base Node.js
 FROM node:20-alpine
-RUN apk add --no-cache libc6-compat openssl
+
+# Crée le répertoire de travail
 WORKDIR /app
 
-# Copy only what's needed for migrations + seed
-COPY package.json package-lock.json* ./
-COPY prisma ./prisma/
-COPY tsconfig.json ./
+# Installe les dépendances nécessaires pour Prisma et PostgreSQL
+RUN apk add --no-cache libc6-compat openssl
 
+# Copie TOUS les fichiers de l'application dans l'image
+# C'est le changement crucial qui garantit que /prisma/migrations est à jour.
+COPY . .
+
+# Installe les dépendances npm
 RUN npm ci --legacy-peer-deps
 
-# Copy seed + lib (needed by seed.ts)
-COPY lib ./lib
-COPY prisma/seed.ts ./prisma/seed.ts
-
-CMD ["sh", "-c", "npx prisma migrate deploy && npx tsx prisma/seed.ts"]
+# La commande par défaut qui sera exécutée (peut être surchargée par docker-compose)
+CMD ["npm", "run", "db:migrate"]
