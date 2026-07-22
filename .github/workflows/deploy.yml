@@ -12,8 +12,8 @@ jobs:
       contents: read
       packages: write
     env:
-      APP_IMAGE: ghcr.io/${{ github.repository_owner }}/csf-web
-      MIGRATE_IMAGE: ghcr.io/${{ github.repository_owner }}/csf-migrate
+      APP_IMAGE: ghcr.io/mathisbruel/csf-web
+      MIGRATE_IMAGE: ghcr.io/mathisbruel/csf-migrate
 
     steps:
       - name: Checkout repository
