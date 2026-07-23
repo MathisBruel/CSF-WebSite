@@ -55,8 +55,8 @@ export function RegisterForm() {
 
   return (
     <div className="bg-white rounded-2xl shadow-xl p-8">
-      <h1 className="text-2xl font-bold font-serif text-csf-dark mb-1 text-center">Adhérer au Club</h1>
-      <p className="text-center text-csf-muted text-sm mb-6">Créez votre compte membre CSF</p>
+      <h1 className="text-2xl font-bold font-serif text-csf-dark mb-1 text-center">Créer un compte</h1>
+      <p className="text-center text-csf-muted text-sm mb-6">Accédez à l&apos;espace membre CSF</p>
 
       {error && (
         <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">{error}</div>
@@ -117,7 +117,7 @@ export function RegisterForm() {
       </form>
 
       <p className="text-center text-sm text-csf-muted mt-6">
-        Déjà membre ?{' '}
+        Déjà un compte ?{' '}
         <Link href="/login" className="text-csf-orange hover:text-csf-orange-dark font-medium">
           Se connecter
         </Link>

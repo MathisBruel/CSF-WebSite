@@ -87,7 +87,7 @@ export function Navbar() {
                 </Link>
                 <Link href="/register"
                   className="px-4 py-2 bg-csf-orange hover:bg-csf-orange-dark text-white text-sm font-semibold rounded-lg transition-colors">
-                  Adhérer
+                  S&apos;inscrire
                 </Link>
               </>
             )}
@@ -141,7 +141,7 @@ export function Navbar() {
                 <Link href="/register"
                   className="block py-2 px-3 bg-csf-orange text-white rounded-lg text-center font-medium"
                   onClick={() => setMenuOpen(false)}>
-                  Adhérer
+                  S&apos;inscrire
                 </Link>
               </>
             )}
