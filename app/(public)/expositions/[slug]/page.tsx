@@ -16,7 +16,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function ExpoDetailPage({ params }: Props) {
   const expo = await prisma.exhibition.findUnique({
     where: { slug: params.slug },
-    include: { _count: { select: { registrations: true } } },
+    include: {
+      _count: { select: { registrations: true } },
+      pricingTiers: { orderBy: { minCats: 'asc' } },
+    },
   })
 
   if (!expo) notFound()
@@ -60,17 +63,37 @@ export default async function ExpoDetailPage({ params }: Props) {
             <h2 className="font-bold text-csf-dark mb-4">Tarifs</h2>
             <table className="w-full text-sm">
               <tbody className="divide-y divide-csf-light">
-                {[
-                  { label: 'Inscription de base (par chat)', price: expo.priceBase },
-                  { label: 'Location cage simple', price: expo.priceCage },
-                  { label: 'Location cage double', price: expo.priceDoubleCage },
-                  { label: 'Repas (par journée)', price: expo.priceMeal },
-                ].map((row) => (
-                  <tr key={row.label}>
-                    <td className="py-2 text-csf-muted">{row.label}</td>
-                    <td className="py-2 text-right font-medium text-csf-dark">{formatPrice(row.price)}</td>
+                {expo.pricingTiers.length > 0 ? (
+                  expo.pricingTiers.map((tier, idx) => {
+                    const isLast = idx === expo.pricingTiers.length - 1
+                    const label = isLast
+                      ? `Inscription — ${tier.minCats}+ chat${tier.minCats > 1 ? 's' : ''}`
+                      : `Inscription — ${tier.minCats} chat${tier.minCats > 1 ? 's' : ''}`
+                    return (
+                      <tr key={tier.id}>
+                        <td className="py-2 text-csf-muted">{label}</td>
+                        <td className="py-2 text-right font-medium text-csf-dark">{formatPrice(tier.pricePerCat)} / chat</td>
+                      </tr>
+                    )
+                  })
+                ) : (
+                  <tr>
+                    <td className="py-2 text-csf-muted">Inscription de base (par chat)</td>
+                    <td className="py-2 text-right font-medium text-csf-dark">{formatPrice(expo.priceBase)}</td>
                   </tr>
-                ))}
+                )}
+                <tr>
+                  <td className="py-2 text-csf-muted">Location cage simple</td>
+                  <td className="py-2 text-right font-medium text-csf-dark">{formatPrice(expo.priceCage)}</td>
+                </tr>
+                <tr>
+                  <td className="py-2 text-csf-muted">Location cage double</td>
+                  <td className="py-2 text-right font-medium text-csf-dark">{formatPrice(expo.priceDoubleCage)}</td>
+                </tr>
+                <tr>
+                  <td className="py-2 text-csf-muted">Repas (par journée)</td>
+                  <td className="py-2 text-right font-medium text-csf-dark">{formatPrice(expo.priceMeal)}</td>
+                </tr>
               </tbody>
             </table>
           </div>

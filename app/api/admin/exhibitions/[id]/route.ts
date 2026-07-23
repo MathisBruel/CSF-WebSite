@@ -25,26 +25,36 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   if (!await requireAdmin()) return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
 
   const data = await req.json()
-  const expo = await prisma.exhibition.update({
-    where: { id: params.id },
-    data: {
-      title: data.title,
-      slug: data.slug,
-      description: data.description,
-      location: data.location,
-      address: data.address,
-      city: data.city,
-      startDate: new Date(data.startDate),
-      endDate: new Date(data.endDate),
-      registrationDeadline: new Date(data.registrationDeadline),
-      priceBase: parseFloat(data.priceBase),
-      priceCage: parseFloat(data.priceCage),
-      priceDoubleCage: parseFloat(data.priceDoubleCage),
-      priceMeal: parseFloat(data.priceMeal),
-      maxRegistrations: data.maxRegistrations || null,
-      rules: data.rules,
-    },
-  })
+  const tiers: { minCats: number; pricePerCat: number }[] = data.pricingTiers ?? []
+
+  const [expo] = await prisma.$transaction([
+    prisma.exhibition.update({
+      where: { id: params.id },
+      data: {
+        title: data.title,
+        slug: data.slug,
+        description: data.description,
+        location: data.location,
+        address: data.address,
+        city: data.city,
+        startDate: new Date(data.startDate),
+        endDate: new Date(data.endDate),
+        registrationDeadline: new Date(data.registrationDeadline),
+        priceBase: parseFloat(data.priceBase),
+        priceCage: parseFloat(data.priceCage),
+        priceDoubleCage: parseFloat(data.priceDoubleCage),
+        priceMeal: parseFloat(data.priceMeal),
+        maxRegistrations: data.maxRegistrations || null,
+        rules: data.rules,
+      },
+    }),
+    prisma.exhibitionPricingTier.deleteMany({ where: { exhibitionId: params.id } }),
+    ...(tiers.length > 0
+      ? [prisma.exhibitionPricingTier.createMany({
+          data: tiers.map(({ minCats, pricePerCat }) => ({ exhibitionId: params.id, minCats, pricePerCat })),
+        })]
+      : []),
+  ])
   return NextResponse.json(expo)
 }
 

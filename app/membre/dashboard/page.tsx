@@ -19,7 +19,7 @@ export default async function MemberDashboard() {
       orderBy: { createdAt: 'desc' },
       include: {
         exhibition: { select: { title: true, startDate: true, city: true } },
-        cat: { select: { name: true } },
+        cats: { include: { cat: { select: { name: true } } } },
       },
     }),
     prisma.exhibition.findMany({
@@ -99,7 +99,7 @@ export default async function MemberDashboard() {
               <div key={reg.id} className="flex items-center justify-between py-2 border-b border-csf-light last:border-0">
                 <div>
                   <p className="font-medium text-sm text-csf-dark">{reg.exhibition.title}</p>
-                  <p className="text-xs text-csf-muted">{reg.cat.name} · {formatDate(reg.exhibition.startDate)}</p>
+                  <p className="text-xs text-csf-muted">{reg.cats.map((rc) => rc.cat.name).join(', ')} · {formatDate(reg.exhibition.startDate)}</p>
                 </div>
                 <span className={`badge ${statusColors[reg.status]}`}>
                   {REGISTRATION_STATUS_LABELS[reg.status]}

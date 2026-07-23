@@ -12,6 +12,8 @@ export async function POST(req: NextRequest) {
 
   try {
     const data = await req.json()
+    const tiers: { minCats: number; pricePerCat: number }[] = data.pricingTiers ?? []
+
     const expo = await prisma.exhibition.create({
       data: {
         title: data.title,
@@ -29,6 +31,9 @@ export async function POST(req: NextRequest) {
         priceMeal: parseFloat(data.priceMeal),
         maxRegistrations: data.maxRegistrations || null,
         rules: data.rules,
+        pricingTiers: tiers.length > 0
+          ? { create: tiers.map(({ minCats, pricePerCat }) => ({ minCats, pricePerCat })) }
+          : undefined,
       },
     })
     return NextResponse.json(expo, { status: 201 })

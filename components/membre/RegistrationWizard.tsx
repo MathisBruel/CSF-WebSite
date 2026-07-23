@@ -1,14 +1,22 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import type { Exhibition, Cat } from '@prisma/client'
+import type { Exhibition, Cat, ExhibitionPricingTier } from '@prisma/client'
 
-type Step = 'cat' | 'options' | 'summary' | 'done'
+function computeBasePrice(
+  catCount: number,
+  tiers: Pick<ExhibitionPricingTier, 'minCats' | 'pricePerCat'>[],
+  fallback: number
+): number {
+  if (tiers.length === 0) return fallback
+  const sorted = [...tiers].sort((a, b) => b.minCats - a.minCats)
+  return sorted.find((t) => catCount >= t.minCats)?.pricePerCat ?? fallback
+}
 
-interface WizardState {
-  catId: string
+type Step = 'cats' | 'options' | 'summary' | 'done'
+
+type CatEntry = {
   wantsCage: boolean
   wantsDoubleCage: boolean
   mealsCount: number
@@ -20,69 +28,112 @@ interface WizardState {
   specialParticipations: string[]
 }
 
+const defaultCatEntry = (): CatEntry => ({
+  wantsCage: false,
+  wantsDoubleCage: false,
+  mealsCount: 0,
+  participationDays: [],
+  traditionalClass: '',
+  traditionalClassOther: '',
+  isHorsConcours: false,
+  wantsComplianceExam: false,
+  specialParticipations: [],
+})
+
 const TRADITIONAL_CLASSES = [
   '3/6 Mois', '6/10 Mois',
   'CAC', 'CACIB', 'CAGCI', 'CACE', 'CAGCE',
   'CAP', 'CAPIB', 'CAGPI', 'CAPE', 'CAGPE',
-  'Honneur', 'RIA', 'Nouvelle Race / AE', 'Autre'
+  'Honneur', 'RIA', 'Nouvelle Race / AE', 'Autre',
 ]
 
-const SPECIAL_PARTICIPATIONS = [
-  'Lot d\'Elevage', '3 Générations', 'Vétéran'
-]
+const SPECIAL_PARTICIPATIONS = ["Lot d'Elevage", '3 Générations', 'Vétéran']
+
+function catAmount(entry: CatEntry, exhibition: Exhibition, basePrice: number): number {
+  return (
+    basePrice +
+    (entry.wantsCage ? exhibition.priceCage : 0) +
+    (entry.wantsDoubleCage ? exhibition.priceDoubleCage : 0) +
+    entry.mealsCount * exhibition.priceMeal
+  )
+}
 
 export function RegistrationWizard({
   exhibition,
   cats,
+  pricingTiers = [],
 }: {
   exhibition: Exhibition
   cats: (Cat & { catDocuments: { type: string; validated: boolean }[] })[]
+  pricingTiers?: Pick<ExhibitionPricingTier, 'minCats' | 'pricePerCat'>[]
 }) {
-  const router = useRouter()
-  const [step, setStep] = useState<Step>('cat')
-  const [state, setState] = useState<WizardState>({
-    catId: '',
-    wantsCage: false,
-    wantsDoubleCage: false,
-    mealsCount: 0,
-    participationDays: [],
-    traditionalClass: '',
-    traditionalClassOther: '',
-    isHorsConcours: false,
-    wantsComplianceExam: false,
-    specialParticipations: [],
-  })
+  const [step, setStep] = useState<Step>('cats')
+  const [selectedCatIds, setSelectedCatIds] = useState<string[]>([])
+  const [catOptions, setCatOptions] = useState<Record<string, CatEntry>>({})
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
 
-  const selectedCat = cats.find((c) => c.id === state.catId)
+  const toggleCat = (catId: string) => {
+    if (selectedCatIds.includes(catId)) {
+      setSelectedCatIds(selectedCatIds.filter((id) => id !== catId))
+    } else {
+      setSelectedCatIds([...selectedCatIds, catId])
+      if (!catOptions[catId]) {
+        setCatOptions((prev) => ({ ...prev, [catId]: defaultCatEntry() }))
+      }
+    }
+  }
 
-  const totalAmount =
-    exhibition.priceBase +
-    (state.wantsCage ? exhibition.priceCage : 0) +
-    (state.wantsDoubleCage ? exhibition.priceDoubleCage : 0) +
-    state.mealsCount * exhibition.priceMeal
+  const updateCatOption = <K extends keyof CatEntry>(catId: string, field: K, value: CatEntry[K]) => {
+    setCatOptions((prev) => ({
+      ...prev,
+      [catId]: { ...prev[catId], [field]: value },
+    }))
+  }
 
-  const steps: Step[] = ['cat', 'options', 'summary']
-  const stepLabels = ['Chat', 'Options', 'Récapitulatif']
-  const currentStepIdx = steps.indexOf(step)
+  const selectedCats = cats.filter((c) => selectedCatIds.includes(c.id))
+  const currentBasePrice = computeBasePrice(selectedCatIds.length, pricingTiers, exhibition.priceBase)
+  const totalAmount = selectedCats.reduce(
+    (sum, cat) => sum + catAmount(catOptions[cat.id] ?? defaultCatEntry(), exhibition, currentBasePrice),
+    0
+  )
+
+  const goToOptions = () => {
+    const newOptions: Record<string, CatEntry> = { ...catOptions }
+    for (const catId of selectedCatIds) {
+      if (!newOptions[catId]) newOptions[catId] = defaultCatEntry()
+    }
+    setCatOptions(newOptions)
+    setStep('options')
+  }
 
   const submit = async () => {
     setSubmitting(true)
     setError('')
+    const payload = {
+      exhibitionId: exhibition.id,
+      cats: selectedCatIds.map((catId) => ({
+        catId,
+        ...(catOptions[catId] ?? defaultCatEntry()),
+      })),
+    }
     const res = await fetch('/api/registrations', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...state, exhibitionId: exhibition.id }),
+      body: JSON.stringify(payload),
     })
     setSubmitting(false)
     if (!res.ok) {
       const body = await res.json()
-      setError(body.error || 'Erreur lors de l\'inscription')
+      setError(body.error || "Erreur lors de l'inscription")
       return
     }
     setStep('done')
   }
+
+  const steps: Step[] = ['cats', 'options', 'summary']
+  const stepLabels = ['Chats', 'Options', 'Récapitulatif']
+  const currentStepIdx = steps.indexOf(step)
 
   if (step === 'done') {
     return (
@@ -105,7 +156,6 @@ export function RegistrationWizard({
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div>
         <Link href={`/expositions/${exhibition.slug}`}
           className="text-sm text-csf-muted hover:text-csf-orange transition-colors">
@@ -135,17 +185,16 @@ export function RegistrationWizard({
         ))}
       </div>
 
-      {/* Step content */}
       <div className="card">
-        {step === 'cat' && (
+        {/* ── Step 1: Select cats ── */}
+        {step === 'cats' && (
           <div>
-            <h2 className="font-bold text-csf-dark mb-4">Sélectionner un chat</h2>
+            <h2 className="font-bold text-csf-dark mb-1">Sélectionner vos chats</h2>
+            <p className="text-sm text-csf-muted mb-4">Vous pouvez inscrire plusieurs chats en une seule inscription.</p>
             {cats.length === 0 ? (
               <div className="text-center py-6">
                 <p className="text-csf-muted mb-3">Vous n&apos;avez pas de chat disponible pour cette exposition.</p>
-                <Link href="/membre/chats/nouveau" className="btn-primary text-sm">
-                  Ajouter un chat
-                </Link>
+                <Link href="/membre/chats/nouveau" className="btn-primary text-sm">Ajouter un chat</Link>
               </div>
             ) : (
               <div className="space-y-3">
@@ -153,207 +202,245 @@ export function RegistrationWizard({
                   const hasAllDocs = ['PEDIGREE', 'ICAD', 'VACCIN'].every(
                     (t) => cat.catDocuments.some((d) => d.type === t)
                   )
+                  const isSelected = selectedCatIds.includes(cat.id)
                   return (
                     <label key={cat.id}
                       className={`flex items-center gap-4 p-4 border-2 rounded-xl cursor-pointer transition-colors ${
-                        state.catId === cat.id
-                          ? 'border-csf-orange bg-orange-50'
-                          : 'border-csf-light hover:border-csf-orange/50'
+                        isSelected ? 'border-csf-orange bg-orange-50' : 'border-csf-light hover:border-csf-orange/50'
                       }`}>
-                      <input type="radio" name="cat" value={cat.id}
-                        checked={state.catId === cat.id}
-                        onChange={() => setState({ ...state, catId: cat.id })}
-                        className="text-csf-orange" />
+                      <input type="checkbox" checked={isSelected} onChange={() => toggleCat(cat.id)}
+                        className="w-5 h-5 text-csf-orange rounded" />
                       <div className="flex-1">
                         <p className="font-medium text-csf-dark">{cat.name}</p>
                         <p className="text-sm text-csf-muted">{cat.breed} · {cat.gender}</p>
                       </div>
-                      {!hasAllDocs && (
-                        <span className="badge badge-yellow text-xs">Docs manquants</span>
-                      )}
+                      {!hasAllDocs && <span className="badge badge-yellow text-xs">Docs manquants</span>}
                     </label>
                   )
                 })}
               </div>
             )}
+            {selectedCatIds.length > 0 && (
+              <p className="text-sm text-csf-muted mt-3">
+                {selectedCatIds.length} chat{selectedCatIds.length > 1 ? 's' : ''} sélectionné{selectedCatIds.length > 1 ? 's' : ''}
+              </p>
+            )}
             <div className="flex justify-end mt-4">
-              <button
-                onClick={() => setStep('options')}
-                disabled={!state.catId}
-                className="btn-primary">
+              <button onClick={goToOptions} disabled={selectedCatIds.length === 0} className="btn-primary">
                 Suivant →
               </button>
             </div>
           </div>
         )}
 
+        {/* ── Step 2: Options per cat ── */}
         {step === 'options' && (
           <div>
-            <h2 className="font-bold text-csf-dark mb-4">Compétition</h2>
-            <div className="space-y-4 mb-8">
-              <div>
-                <label className="form-label">Jours de participation</label>
-                <div className="flex gap-4">
-                  {['Samedi', 'Dimanche'].map(day => (
-                    <label key={day} className="flex items-center gap-2 cursor-pointer">
-                      <input type="checkbox"
-                        checked={state.participationDays.includes(day)}
-                        onChange={(e) => {
-                          const newDays = e.target.checked
-                            ? [...state.participationDays, day]
-                            : state.participationDays.filter(d => d !== day);
-                          setState({ ...state, participationDays: newDays });
-                        }}
-                        className="text-csf-orange rounded" />
-                      <span>{day}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
+            <h2 className="font-bold text-csf-dark mb-4">Options par chat</h2>
+            <div className="space-y-6">
+              {selectedCats.map((cat, idx) => {
+                const opts = catOptions[cat.id] ?? defaultCatEntry()
+                const update = <K extends keyof CatEntry>(field: K, value: CatEntry[K]) =>
+                  updateCatOption(cat.id, field, value)
+                return (
+                  <div key={cat.id} className="border border-csf-light rounded-xl p-4">
+                    <h3 className="font-medium text-csf-dark mb-4 pb-2 border-b border-csf-light">
+                      {idx + 1}. {cat.name}{' '}
+                      <span className="text-sm font-normal text-csf-muted">({cat.breed})</span>
+                    </h3>
 
-              <div>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox"
-                    checked={state.isHorsConcours}
-                    onChange={(e) => setState({ ...state, isHorsConcours: e.target.checked })}
-                    className="text-csf-orange rounded" />
-                  <span className="font-medium">Hors Concours (H.C.)</span>
-                </label>
-              </div>
+                    {/* Competition */}
+                    <div className="space-y-4 mb-6">
+                      <p className="text-xs font-semibold text-csf-muted uppercase tracking-wide">Compétition</p>
 
-              {!state.isHorsConcours && (
-                <>
-                  <div>
-                    <label className="form-label">Classe de jugement Traditionnel</label>
-                    <select className="form-select" value={state.traditionalClass}
-                      onChange={(e) => setState({ ...state, traditionalClass: e.target.value })}>
-                      <option value="">Sélectionner une classe</option>
-                      {TRADITIONAL_CLASSES.map(c => <option key={c} value={c}>{c}</option>)}
-                    </select>
-                  </div>
-                  {state.traditionalClass === 'Autre' && (
-                    <div>
-                      <label className="form-label">Précisez la classe</label>
-                      <input type="text" className="form-input" value={state.traditionalClassOther}
-                        onChange={(e) => setState({ ...state, traditionalClassOther: e.target.value })} />
+                      <div>
+                        <label className="form-label text-sm">Jours de participation</label>
+                        <div className="flex gap-4">
+                          {['Samedi', 'Dimanche'].map((day) => (
+                            <label key={day} className="flex items-center gap-2 cursor-pointer">
+                              <input type="checkbox"
+                                checked={opts.participationDays.includes(day)}
+                                onChange={(e) => {
+                                  const days = e.target.checked
+                                    ? [...opts.participationDays, day]
+                                    : opts.participationDays.filter((d) => d !== day)
+                                  update('participationDays', days)
+                                }}
+                                className="text-csf-orange rounded" />
+                              <span className="text-sm">{day}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" checked={opts.isHorsConcours}
+                          onChange={(e) => update('isHorsConcours', e.target.checked)}
+                          className="text-csf-orange rounded" />
+                        <span className="text-sm font-medium">Hors Concours (H.C.)</span>
+                      </label>
+
+                      {!opts.isHorsConcours && (
+                        <>
+                          <div>
+                            <label className="form-label text-sm">Classe de jugement Traditionnel</label>
+                            <select className="form-select" value={opts.traditionalClass}
+                              onChange={(e) => update('traditionalClass', e.target.value)}>
+                              <option value="">Sélectionner une classe</option>
+                              {TRADITIONAL_CLASSES.map((c) => <option key={c} value={c}>{c}</option>)}
+                            </select>
+                          </div>
+                          {opts.traditionalClass === 'Autre' && (
+                            <div>
+                              <label className="form-label text-sm">Précisez la classe</label>
+                              <input type="text" className="form-input" value={opts.traditionalClassOther}
+                                onChange={(e) => update('traditionalClassOther', e.target.value)} />
+                            </div>
+                          )}
+                        </>
+                      )}
+
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" checked={opts.wantsComplianceExam}
+                          onChange={(e) => update('wantsComplianceExam', e.target.checked)}
+                          className="text-csf-orange rounded" />
+                        <span className="text-sm">Examen de conformité</span>
+                      </label>
+
+                      <div>
+                        <label className="form-label text-sm">Participations spéciales (Optionnel)</label>
+                        <div className="flex flex-col gap-2">
+                          {SPECIAL_PARTICIPATIONS.map((sp) => (
+                            <label key={sp} className="flex items-center gap-2 cursor-pointer">
+                              <input type="checkbox"
+                                checked={opts.specialParticipations.includes(sp)}
+                                onChange={(e) => {
+                                  const newSp = e.target.checked
+                                    ? [...opts.specialParticipations, sp]
+                                    : opts.specialParticipations.filter((s) => s !== sp)
+                                  update('specialParticipations', newSp)
+                                }}
+                                className="text-csf-orange rounded" />
+                              <span className="text-sm">{sp}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
                     </div>
-                  )}
-                </>
-              )}
 
-              <div>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox"
-                    checked={state.wantsComplianceExam}
-                    onChange={(e) => setState({ ...state, wantsComplianceExam: e.target.checked })}
-                    className="text-csf-orange rounded" />
-                  <span>Examen de conformité</span>
-                </label>
-              </div>
+                    {/* Logistics */}
+                    <div className="space-y-3">
+                      <p className="text-xs font-semibold text-csf-muted uppercase tracking-wide">Logistique</p>
 
-              <div>
-                <label className="form-label">Participations spéciales (Optionnel)</label>
-                <div className="flex flex-col gap-2">
-                  {SPECIAL_PARTICIPATIONS.map(sp => (
-                    <label key={sp} className="flex items-center gap-2 cursor-pointer">
-                      <input type="checkbox"
-                        checked={state.specialParticipations.includes(sp)}
-                        onChange={(e) => {
-                          const newSp = e.target.checked
-                            ? [...state.specialParticipations, sp]
-                            : state.specialParticipations.filter(s => s !== sp);
-                          setState({ ...state, specialParticipations: newSp });
-                        }}
-                        className="text-csf-orange rounded" />
-                      <span>{sp}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
+                      <label className="flex items-center justify-between p-3 border-2 rounded-xl cursor-pointer hover:border-csf-orange/50 transition-colors">
+                        <div>
+                          <p className="text-sm font-medium text-csf-dark">Cage simple</p>
+                          <p className="text-xs text-csf-muted">+{exhibition.priceCage.toFixed(2)} €</p>
+                        </div>
+                        <input type="checkbox" checked={opts.wantsCage}
+                          onChange={(e) => {
+                            update('wantsCage', e.target.checked)
+                            if (e.target.checked) update('wantsDoubleCage', false)
+                          }}
+                          className="w-5 h-5 text-csf-orange rounded" />
+                      </label>
+
+                      <label className="flex items-center justify-between p-3 border-2 rounded-xl cursor-pointer hover:border-csf-orange/50 transition-colors">
+                        <div>
+                          <p className="text-sm font-medium text-csf-dark">Cage double</p>
+                          <p className="text-xs text-csf-muted">+{exhibition.priceDoubleCage.toFixed(2)} €</p>
+                        </div>
+                        <input type="checkbox" checked={opts.wantsDoubleCage}
+                          onChange={(e) => {
+                            update('wantsDoubleCage', e.target.checked)
+                            if (e.target.checked) update('wantsCage', false)
+                          }}
+                          className="w-5 h-5 text-csf-orange rounded" />
+                      </label>
+
+                      <div className="flex items-center justify-between p-3 border-2 rounded-xl border-csf-light">
+                        <div>
+                          <p className="text-sm font-medium text-csf-dark">Repas</p>
+                          <p className="text-xs text-csf-muted">{exhibition.priceMeal.toFixed(2)} € / repas</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button type="button"
+                            onClick={() => update('mealsCount', Math.max(0, opts.mealsCount - 1))}
+                            className="w-8 h-8 rounded-full border border-gray-300 text-csf-dark hover:bg-csf-light flex items-center justify-center font-bold">
+                            −
+                          </button>
+                          <span className="w-6 text-center font-medium text-sm">{opts.mealsCount}</span>
+                          <button type="button"
+                            onClick={() => update('mealsCount', Math.min(4, opts.mealsCount + 1))}
+                            className="w-8 h-8 rounded-full border border-gray-300 text-csf-dark hover:bg-csf-light flex items-center justify-center font-bold">
+                            +
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
             </div>
-
-            <h2 className="font-bold text-csf-dark mb-4">Options logistiques</h2>
-            <div className="space-y-4">
-              <label className="flex items-center justify-between p-4 border-2 rounded-xl cursor-pointer hover:border-csf-orange/50 transition-colors">
-                <div>
-                  <p className="font-medium text-csf-dark">Location d&apos;une cage simple</p>
-                  <p className="text-sm text-csf-muted">+{exhibition.priceCage.toFixed(2)} €</p>
-                </div>
-                <input type="checkbox" checked={state.wantsCage}
-                  onChange={(e) => setState({ ...state, wantsCage: e.target.checked, wantsDoubleCage: false })}
-                  className="w-5 h-5 text-csf-orange rounded" />
-              </label>
-
-              <label className="flex items-center justify-between p-4 border-2 rounded-xl cursor-pointer hover:border-csf-orange/50 transition-colors">
-                <div>
-                  <p className="font-medium text-csf-dark">Location d&apos;une cage double</p>
-                  <p className="text-sm text-csf-muted">+{exhibition.priceDoubleCage.toFixed(2)} €</p>
-                </div>
-                <input type="checkbox" checked={state.wantsDoubleCage}
-                  onChange={(e) => setState({ ...state, wantsDoubleCage: e.target.checked, wantsCage: false })}
-                  className="w-5 h-5 text-csf-orange rounded" />
-              </label>
-
-              <div className="flex items-center justify-between p-4 border-2 rounded-xl border-csf-light">
-                <div>
-                  <p className="font-medium text-csf-dark">Repas (journée)</p>
-                  <p className="text-sm text-csf-muted">{exhibition.priceMeal.toFixed(2)} € / repas</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button type="button"
-                    onClick={() => setState({ ...state, mealsCount: Math.max(0, state.mealsCount - 1) })}
-                    className="w-8 h-8 rounded-full border border-gray-300 text-csf-dark hover:bg-csf-light flex items-center justify-center font-bold">
-                    −
-                  </button>
-                  <span className="w-6 text-center font-medium">{state.mealsCount}</span>
-                  <button type="button"
-                    onClick={() => setState({ ...state, mealsCount: Math.min(4, state.mealsCount + 1) })}
-                    className="w-8 h-8 rounded-full border border-gray-300 text-csf-dark hover:bg-csf-light flex items-center justify-center font-bold">
-                    +
-                  </button>
-                </div>
-              </div>
-            </div>
-
             <div className="flex justify-between mt-6">
-              <button onClick={() => setStep('cat')} className="btn-secondary">← Retour</button>
+              <button onClick={() => setStep('cats')} className="btn-secondary">← Retour</button>
               <button onClick={() => setStep('summary')} className="btn-primary">Suivant →</button>
             </div>
           </div>
         )}
 
+        {/* ── Step 3: Summary ── */}
         {step === 'summary' && (
           <div>
             <h2 className="font-bold text-csf-dark mb-4">Récapitulatif</h2>
-            <div className="space-y-3 text-sm">
+            <div className="space-y-4 text-sm">
               <div className="flex justify-between py-2 border-b border-csf-light">
                 <span className="text-csf-muted">Exposition</span>
                 <span className="font-medium text-csf-dark text-right max-w-48">{exhibition.title}</span>
               </div>
-              <div className="flex justify-between py-2 border-b border-csf-light">
-                <span className="text-csf-muted">Chat</span>
-                <span className="font-medium text-csf-dark">{selectedCat?.name}</span>
-              </div>
-              <div className="flex justify-between py-2 border-b border-csf-light">
-                <span className="text-csf-muted">Inscription de base</span>
-                <span>{exhibition.priceBase.toFixed(2)} €</span>
-              </div>
-              {state.wantsCage && (
-                <div className="flex justify-between py-2 border-b border-csf-light">
-                  <span className="text-csf-muted">Cage simple</span>
-                  <span>+{exhibition.priceCage.toFixed(2)} €</span>
-                </div>
-              )}
-              {state.wantsDoubleCage && (
-                <div className="flex justify-between py-2 border-b border-csf-light">
-                  <span className="text-csf-muted">Cage double</span>
-                  <span>+{exhibition.priceDoubleCage.toFixed(2)} €</span>
-                </div>
-              )}
-              {state.mealsCount > 0 && (
-                <div className="flex justify-between py-2 border-b border-csf-light">
-                  <span className="text-csf-muted">{state.mealsCount} repas</span>
-                  <span>+{(state.mealsCount * exhibition.priceMeal).toFixed(2)} €</span>
+
+              {selectedCats.map((cat) => {
+                const opts = catOptions[cat.id] ?? defaultCatEntry()
+                const amount = catAmount(opts, exhibition, currentBasePrice)
+                return (
+                  <div key={cat.id} className="border border-csf-light rounded-xl p-3">
+                    <p className="font-medium text-csf-dark mb-2">{cat.name}</p>
+                    <div className="space-y-1 text-xs">
+                      <div className="flex justify-between text-csf-muted">
+                        <span>Inscription de base</span>
+                        <span>{exhibition.priceBase.toFixed(2)} €</span>
+                      </div>
+                      {opts.wantsCage && (
+                        <div className="flex justify-between text-csf-muted">
+                          <span>Cage simple</span>
+                          <span>+{exhibition.priceCage.toFixed(2)} €</span>
+                        </div>
+                      )}
+                      {opts.wantsDoubleCage && (
+                        <div className="flex justify-between text-csf-muted">
+                          <span>Cage double</span>
+                          <span>+{exhibition.priceDoubleCage.toFixed(2)} €</span>
+                        </div>
+                      )}
+                      {opts.mealsCount > 0 && (
+                        <div className="flex justify-between text-csf-muted">
+                          <span>{opts.mealsCount} repas</span>
+                          <span>+{(opts.mealsCount * exhibition.priceMeal).toFixed(2)} €</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between font-medium text-csf-dark pt-1 border-t border-csf-light">
+                        <span>Sous-total</span>
+                        <span>{amount.toFixed(2)} €</span>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+
+              {pricingTiers.length > 0 && (
+                <div className="flex justify-between py-1 text-xs text-csf-muted">
+                  <span>Tarif appliqué</span>
+                  <span>{currentBasePrice.toFixed(2)} € / chat ({selectedCatIds.length} chat{selectedCatIds.length > 1 ? 's' : ''})</span>
                 </div>
               )}
               <div className="flex justify-between py-3 font-bold text-csf-dark text-lg">
@@ -373,7 +460,7 @@ export function RegistrationWizard({
             <div className="flex justify-between mt-6">
               <button onClick={() => setStep('options')} className="btn-secondary">← Retour</button>
               <button onClick={submit} disabled={submitting} className="btn-primary">
-                {submitting ? 'Envoi...' : 'Confirmer l\'inscription'}
+                {submitting ? 'Envoi...' : "Confirmer l'inscription"}
               </button>
             </div>
           </div>

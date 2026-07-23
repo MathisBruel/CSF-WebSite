@@ -7,11 +7,10 @@ export const dynamic = 'force-dynamic'
 export default async function AdminExpoEdit({ params }: { params: { id: string } }) {
   const exhibition = await prisma.exhibition.findUnique({
     where: { id: params.id },
+    include: { pricingTiers: { orderBy: { minCats: 'asc' } } },
   })
 
-  if (!exhibition) {
-    notFound()
-  }
+  if (!exhibition) notFound()
 
   return (
     <div className="space-y-6">
@@ -38,6 +37,7 @@ export default async function AdminExpoEdit({ params }: { params: { id: string }
           maxRegistrations: exhibition.maxRegistrations || undefined,
           rules: exhibition.rules || '',
         }}
+        defaultPricingTiers={exhibition.pricingTiers.map(({ minCats, pricePerCat }) => ({ minCats, pricePerCat }))}
       />
     </div>
   )

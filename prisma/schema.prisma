@@ -104,7 +104,7 @@ model Cat {
 
   vaccinations  Vaccination[]
   catDocuments  CatDocument[]
-  registrations Registration[]
+  registrations RegistrationCat[]
 
   @@map("cats")
 }
@@ -172,8 +172,20 @@ model Exhibition {
   updatedAt       DateTime         @updatedAt
 
   registrations   Registration[]
+  pricingTiers    ExhibitionPricingTier[]
 
   @@map("exhibitions")
+}
+
+model ExhibitionPricingTier {
+  id           String     @id @default(cuid())
+  exhibitionId String
+  exhibition   Exhibition @relation(fields: [exhibitionId], references: [id], onDelete: Cascade)
+  minCats      Int
+  pricePerCat  Float
+
+  @@unique([exhibitionId, minCats])
+  @@map("exhibition_pricing_tiers")
 }
 
 // ─── Registration ─────────────────────────────────────────────────────────────
@@ -184,48 +196,53 @@ model Registration {
   exhibition     Exhibition         @relation(fields: [exhibitionId], references: [id])
   userId         String
   user           User               @relation(fields: [userId], references: [id])
-  catId          String
-  cat            Cat                @relation(fields: [catId], references: [id])
 
   status         RegistrationStatus @default(PENDING)
   paymentStatus  PaymentStatus      @default(PENDING)
-
-  // Options
-  wantsCage      Boolean            @default(false)
-  wantsDoubleCage Boolean           @default(false)
-  mealsCount     Int                @default(0)
-
-  // Competition
-  participationDays String[]
-  traditionalClass  String?
-  traditionalClassOther String?
-  isHorsConcours    Boolean           @default(false)
-  wantsComplianceExam Boolean         @default(false)
-  specialParticipations String[]
-
-  // Financials
   totalAmount    Float
   paidAt         DateTime?
 
-  // Vet validation
-  vetValidated   Boolean            @default(false)
-  vetValidatedAt DateTime?
-  vetNotes       String?
-
-  // Admin
   adminNotes     String?
   rejectionReason String?
-  catalogNumber  Int?
-
-  // Convocation
   convocationUrl String?
   convocationSentAt DateTime?
+
+  cats           RegistrationCat[]
 
   createdAt      DateTime           @default(now())
   updatedAt      DateTime           @updatedAt
 
-  @@unique([exhibitionId, catId])
+  @@unique([exhibitionId, userId])
   @@map("registrations")
+}
+
+model RegistrationCat {
+  id               String       @id @default(cuid())
+  registrationId   String
+  registration     Registration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+  catId            String
+  cat              Cat          @relation(fields: [catId], references: [id])
+
+  participationDays    String[]
+  traditionalClass     String?
+  traditionalClassOther String?
+  isHorsConcours       Boolean  @default(false)
+  wantsComplianceExam  Boolean  @default(false)
+  specialParticipations String[]
+
+  wantsCage        Boolean  @default(false)
+  wantsDoubleCage  Boolean  @default(false)
+  mealsCount       Int      @default(0)
+
+  amount           Float
+
+  catalogNumber    Int?
+  vetValidated     Boolean  @default(false)
+  vetValidatedAt   DateTime?
+  vetNotes         String?
+
+  @@unique([registrationId, catId])
+  @@map("registration_cats")
 }
 
 // ─── News ────────────────────────────────────────────────────────────────────

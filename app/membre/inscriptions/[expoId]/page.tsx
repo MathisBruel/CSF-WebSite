@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { notFound, redirect } from 'next/navigation'
 import { ExhibitionStatus } from '@prisma/client'
 import { RegistrationWizard } from '@/components/membre/RegistrationWizard'
+import Link from 'next/link'
 
 type Props = { params: { expoId: string } }
 
@@ -11,7 +12,10 @@ export default async function InscriptionPage({ params }: Props) {
   if (!session) redirect('/login')
 
   const [expo, cats] = await Promise.all([
-    prisma.exhibition.findUnique({ where: { id: params.expoId } }),
+    prisma.exhibition.findUnique({
+      where: { id: params.expoId },
+      include: { pricingTiers: { orderBy: { minCats: 'asc' } } },
+    }),
     prisma.cat.findMany({
       where: { ownerId: session.user.id },
       include: { catDocuments: true },
@@ -20,20 +24,31 @@ export default async function InscriptionPage({ params }: Props) {
 
   if (!expo || expo.status !== ExhibitionStatus.OPEN) notFound()
 
-  // Check already registered cats for this expo
-  const existingRegs = await prisma.registration.findMany({
-    where: { exhibitionId: params.expoId, userId: session.user.id },
-    select: { catId: true },
+  const existingReg = await prisma.registration.findUnique({
+    where: { exhibitionId_userId: { exhibitionId: params.expoId, userId: session.user.id } },
+    select: { cats: { select: { catId: true } } },
   })
-  const registeredCatIds = existingRegs.map((r) => r.catId)
 
+  const registeredCatIds = existingReg?.cats.map((rc) => rc.catId) ?? []
   const availableCats = cats.filter((c) => !registeredCatIds.includes(c.id))
+
+  if (availableCats.length === 0 && registeredCatIds.length > 0) {
+    return (
+      <div className="max-w-2xl">
+        <div className="card text-center py-10">
+          <p className="text-csf-dark font-medium mb-2">Tous vos chats sont déjà inscrits à cette exposition.</p>
+          <Link href="/membre/inscriptions" className="btn-primary">Voir mes inscriptions</Link>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="max-w-2xl">
       <RegistrationWizard
         exhibition={JSON.parse(JSON.stringify(expo))}
         cats={JSON.parse(JSON.stringify(availableCats))}
+        pricingTiers={expo.pricingTiers.map(({ minCats, pricePerCat }) => ({ minCats, pricePerCat }))}
       />
     </div>
   )

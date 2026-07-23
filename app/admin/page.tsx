@@ -28,8 +28,8 @@ export default async function AdminDashboard() {
     orderBy: { createdAt: 'desc' },
     include: {
       user: { select: { name: true } },
-      cat: { select: { name: true } },
       exhibition: { select: { title: true } },
+      cats: { include: { cat: { select: { name: true } } } },
     },
   })
 
@@ -106,7 +106,7 @@ export default async function AdminDashboard() {
             <div key={reg.id} className="flex items-center justify-between px-5 py-3">
               <div>
                 <p className="text-sm font-medium text-csf-dark">
-                  {reg.user.name} — {reg.cat.name}
+                  {reg.user.name} — {reg.cats.map((rc) => rc.cat.name).join(', ')}
                 </p>
                 <p className="text-xs text-csf-muted">{reg.exhibition.title}</p>
               </div>

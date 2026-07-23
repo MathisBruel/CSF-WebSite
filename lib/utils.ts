@@ -63,6 +63,16 @@ export const PAYMENT_STATUS_LABELS: Record<string, string> = {
   REFUNDED: 'Remboursé',
 }
 
+export function computeBasePrice(
+  catCount: number,
+  tiers: { minCats: number; pricePerCat: number }[],
+  fallback: number
+): number {
+  if (tiers.length === 0) return fallback
+  const sorted = [...tiers].sort((a, b) => b.minCats - a.minCats)
+  return sorted.find((t) => catCount >= t.minCats)?.pricePerCat ?? fallback
+}
+
 export const DOCUMENT_TYPE_LABELS: Record<string, string> = {
   PEDIGREE: 'Pedigree',
   ICAD: 'Carte I-CAD',

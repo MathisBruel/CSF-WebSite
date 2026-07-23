@@ -14,7 +14,9 @@ export default async function MesInscriptions() {
     orderBy: { createdAt: 'desc' },
     include: {
       exhibition: { select: { title: true, startDate: true, endDate: true, city: true, slug: true } },
-      cat: { select: { name: true, breed: true } },
+      cats: {
+        include: { cat: { select: { name: true, breed: true } } },
+      },
     },
   })
 
@@ -49,7 +51,7 @@ export default async function MesInscriptions() {
         <div className="space-y-4">
           {registrations.map((reg) => (
             <div key={reg.id} className="card">
-              <div className="flex items-start justify-between gap-4">
+              <div className="flex items-start justify-between gap-4 mb-3">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 flex-wrap mb-1">
                     <span className={`badge ${statusColors[reg.status]}`}>
@@ -63,28 +65,42 @@ export default async function MesInscriptions() {
                   <p className="text-sm text-csf-muted">
                     {formatDate(reg.exhibition.startDate)} · {reg.exhibition.city}
                   </p>
-                  <p className="text-sm text-csf-muted mt-1">
-                    Chat : <span className="font-medium text-csf-dark">{reg.cat.name}</span> ({reg.cat.breed})
-                  </p>
                 </div>
                 <div className="text-right flex-shrink-0">
                   <p className="font-bold text-csf-dark">{formatPrice(reg.totalAmount)}</p>
-                  <div className="flex items-center gap-2 mt-1 text-xs text-csf-muted">
-                    {reg.wantsCage && <span>Cage</span>}
-                    {reg.wantsDoubleCage && <span>Cage double</span>}
-                    {reg.mealsCount > 0 && <span>{reg.mealsCount} repas</span>}
-                  </div>
                   {reg.convocationUrl && (
                     <a href={reg.convocationUrl} download
                       className="mt-2 inline-flex items-center gap-1 text-xs text-csf-orange hover:text-csf-orange-dark">
                       <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                          d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                       </svg>
                       Convocation
                     </a>
                   )}
                 </div>
               </div>
+
+              {/* Cats list */}
+              <div className="space-y-2 border-t border-csf-light pt-3">
+                {reg.cats.map((rc) => (
+                  <div key={rc.id} className="flex items-center justify-between text-sm">
+                    <div className="flex items-center gap-3">
+                      <span className="font-medium text-csf-dark">{rc.cat.name}</span>
+                      <span className="text-csf-muted">{rc.cat.breed}</span>
+                      <div className="flex gap-2 text-xs text-csf-muted">
+                        {rc.wantsCage && <span>Cage</span>}
+                        {rc.wantsDoubleCage && <span>Cage double</span>}
+                        {rc.mealsCount > 0 && <span>{rc.mealsCount} repas</span>}
+                        {rc.catalogNumber && <span className="text-csf-dark font-medium">#{rc.catalogNumber}</span>}
+                        {rc.vetValidated && <span className="text-green-600">Vét. ✓</span>}
+                      </div>
+                    </div>
+                    <span className="text-csf-muted">{formatPrice(rc.amount)}</span>
+                  </div>
+                ))}
+              </div>
+
               {reg.adminNotes && (
                 <div className="mt-3 p-3 bg-blue-50 rounded-lg text-sm text-blue-700">
                   Note : {reg.adminNotes}
