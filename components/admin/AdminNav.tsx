@@ -14,6 +14,7 @@ const navItems = [
   { href: '/admin/documents', label: 'Documents' },
   { href: '/admin/newsletter', label: 'Newsletter' },
   { href: '/admin/configuration', label: 'Configuration' },
+  { href: '/admin/tarifs', label: 'Tarifs' },
 ]
 
 export function AdminNav({ pendingMembershipRequests = 0 }: { pendingMembershipRequests?: number }) {

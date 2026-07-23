@@ -64,6 +64,10 @@ model User {
   avatarUrl     String?
   bio           String?
   siret         String?
+  affixe        String?
+  breedingName  String?
+  website       String?
+  gpsCoordinates String?
   otherClubs    String?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -365,4 +369,18 @@ model SiteConfig {
   updatedAt DateTime @updatedAt
 
   @@map("site_config")
+}
+
+// ─── Pricing ──────────────────────────────────────────────────────────────────
+
+model Pricing {
+  id                  String   @id @default(cuid())
+  registrationOneDay  Int
+  registrationWeekend Int
+  extraCageOneDay     Int
+  extraCageWeekend    Int
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@map("pricing")
 }
