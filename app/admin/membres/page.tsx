@@ -4,6 +4,7 @@ import Link from 'next/link'
 export const dynamic = 'force-dynamic'
 import { formatDate, ROLE_LABELS } from '@/lib/utils'
 import { MemberActions } from '@/components/admin/MemberActions'
+import { MembershipRequestActions } from '@/components/admin/MembershipRequestActions'
 
 export default async function AdminMembres({
   searchParams,
@@ -19,11 +20,18 @@ export default async function AdminMembres({
     ]
   }
 
-  const members = await prisma.user.findMany({
-    where,
-    orderBy: { createdAt: 'desc' },
-    include: { _count: { select: { cats: true, registrations: true } } },
-  })
+  const [members, pendingRequests] = await Promise.all([
+    prisma.user.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      include: { _count: { select: { cats: true, registrations: true } } },
+    }),
+    prisma.membershipRequest.findMany({
+      where: { status: 'PENDING' },
+      orderBy: { requestedAt: 'asc' },
+      include: { user: { select: { id: true, name: true, email: true, createdAt: true } } },
+    }),
+  ])
 
   return (
     <div className="space-y-6">
@@ -33,6 +41,32 @@ export default async function AdminMembres({
           <p className="text-csf-muted">{members.length} résultat{members.length !== 1 ? 's' : ''}</p>
         </div>
       </div>
+
+      {/* Pending membership requests */}
+      {pendingRequests.length > 0 && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl overflow-hidden">
+          <div className="px-5 py-3 border-b border-amber-200 flex items-center gap-2">
+            <span className="inline-flex items-center justify-center w-5 h-5 bg-amber-500 text-white text-xs font-bold rounded-full">
+              {pendingRequests.length}
+            </span>
+            <h2 className="font-semibold text-amber-900">Demandes d&apos;adhésion en attente</h2>
+          </div>
+          <div className="divide-y divide-amber-100">
+            {pendingRequests.map((req) => (
+              <div key={req.id} className="px-5 py-3 flex items-center justify-between gap-4">
+                <div>
+                  <p className="font-medium text-csf-dark text-sm">{req.user.name}</p>
+                  <p className="text-xs text-csf-muted">{req.user.email} · Demande le {formatDate(req.requestedAt)}</p>
+                  {req.message && (
+                    <p className="text-xs text-gray-600 mt-1 italic">&ldquo;{req.message}&rdquo;</p>
+                  )}
+                </div>
+                <MembershipRequestActions requestId={req.id} />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Filters */}
       <div className="bg-white rounded-xl border border-gray-200 p-4 flex flex-wrap gap-3">

@@ -13,10 +13,11 @@ type ProfileData = {
   address: string
 }
 
-export function ProfilForm({ user }: { user: ProfileData & { email: string } }) {
+export function ProfilForm({ user }: { user: ProfileData & { email: string; newsletterSubscribed?: boolean } }) {
   const router = useRouter()
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState('')
+  const [newsletter, setNewsletter] = useState(user.newsletterSubscribed ?? true)
   const { register, handleSubmit, formState: { isSubmitting } } = useForm<ProfileData>({
     defaultValues: {
       firstName: user.firstName || '',
@@ -34,7 +35,7 @@ export function ProfilForm({ user }: { user: ProfileData & { email: string } }) 
     const res = await fetch('/api/member/profile', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
+      body: JSON.stringify({ ...data, newsletterSubscribed: newsletter }),
     })
     if (!res.ok) {
       setError('Erreur lors de la sauvegarde')
@@ -92,6 +93,19 @@ export function ProfilForm({ user }: { user: ProfileData & { email: string } }) 
           <label className="form-label">Ville</label>
           <input {...register('city')} className="form-input" />
         </div>
+      </div>
+
+      <div className="flex items-center gap-3 py-2">
+        <input
+          type="checkbox"
+          id="newsletter"
+          checked={newsletter}
+          onChange={(e) => setNewsletter(e.target.checked)}
+          className="w-4 h-4 accent-csf-orange"
+        />
+        <label htmlFor="newsletter" className="text-sm text-csf-dark cursor-pointer">
+          Recevoir la newsletter du club (actualités, expositions)
+        </label>
       </div>
 
       <button type="submit" disabled={isSubmitting} className="btn-primary w-full">

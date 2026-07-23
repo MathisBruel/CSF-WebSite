@@ -5,13 +5,14 @@ export const dynamic = 'force-dynamic'
 import Link from 'next/link'
 import { formatDate, formatPrice, REGISTRATION_STATUS_LABELS } from '@/lib/utils'
 import { ExhibitionStatus } from '@prisma/client'
+import { MembershipRequestButton } from '@/components/membre/MembershipRequestButton'
 
 export default async function MemberDashboard() {
   const session = await auth()
   if (!session) return null
   const userId = session.user.id
 
-  const [cats, registrations, openExpos] = await Promise.all([
+  const [cats, registrations, openExpos, membershipRequest, paymentConfig] = await Promise.all([
     prisma.cat.count({ where: { ownerId: userId } }),
     prisma.registration.findMany({
       where: { userId },
@@ -27,13 +28,104 @@ export default async function MemberDashboard() {
       take: 3,
       orderBy: { startDate: 'asc' },
     }),
+    prisma.membershipRequest.findFirst({
+      where: { userId },
+      orderBy: { requestedAt: 'desc' },
+    }),
+    prisma.siteConfig.findMany({
+      where: {
+        key: {
+          in: ['membership_price', 'membership_rib_iban', 'membership_rib_bic', 'membership_rib_holder', 'membership_paypal_link'],
+        },
+      },
+    }),
   ])
+
+  const cfg = Object.fromEntries(paymentConfig.map((r) => [r.key, r.value]))
 
   const statusColors: Record<string, string> = {
     PENDING: 'badge-yellow',
     VALIDATED: 'badge-green',
     REJECTED: 'badge-red',
     WAITING_DOCS: 'badge-blue',
+  }
+
+  // Membership banner logic
+  const renderMembershipBanner = () => {
+    if (session.user.membershipActive) return null
+
+    if (!membershipRequest || membershipRequest.status === 'REJECTED') {
+      return (
+        <div className="bg-orange-50 border border-orange-200 rounded-xl p-4 flex items-start gap-3">
+          <svg className="w-5 h-5 text-orange-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+          <div className="flex-1">
+            {membershipRequest?.status === 'REJECTED' ? (
+              <>
+                <p className="font-medium text-orange-800">Demande d&apos;adhésion refusée</p>
+                {membershipRequest.rejectionReason && (
+                  <p className="text-sm text-orange-700 mt-1">Motif : {membershipRequest.rejectionReason}</p>
+                )}
+                <p className="text-sm text-orange-700 mt-1">Vous pouvez soumettre une nouvelle demande.</p>
+              </>
+            ) : (
+              <>
+                <p className="font-medium text-orange-800">Vous n&apos;êtes pas encore adhérent</p>
+                <p className="text-sm text-orange-700">Demandez votre adhésion pour accéder à toutes les fonctionnalités du club.</p>
+              </>
+            )}
+            <div className="mt-3">
+              <MembershipRequestButton />
+            </div>
+          </div>
+        </div>
+      )
+    }
+
+    if (membershipRequest.status === 'PENDING') {
+      return (
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-start gap-3">
+          <svg className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <div>
+            <p className="font-medium text-blue-800">Demande d&apos;adhésion en cours</p>
+            <p className="text-sm text-blue-700">Soumise le {formatDate(membershipRequest.requestedAt)}. Le bureau examinera votre demande prochainement.</p>
+          </div>
+        </div>
+      )
+    }
+
+    if (membershipRequest.status === 'APPROVED') {
+      return (
+        <div className="bg-green-50 border border-green-200 rounded-xl p-4">
+          <p className="font-medium text-green-800 mb-2">Adhésion approuvée — en attente de paiement</p>
+          <p className="text-sm text-green-700 mb-3">
+            Veuillez régler {cfg['membership_price'] ? `${cfg['membership_price']} €` : 'le montant indiqué'} pour finaliser votre adhésion.
+          </p>
+          {cfg['membership_rib_iban'] && (
+            <div className="bg-white border border-green-200 rounded-lg p-3 text-sm space-y-1 mb-3">
+              <p><strong>Virement bancaire :</strong></p>
+              <p className="font-mono">IBAN : {cfg['membership_rib_iban']}</p>
+              {cfg['membership_rib_bic'] && <p className="font-mono">BIC : {cfg['membership_rib_bic']}</p>}
+              {cfg['membership_rib_holder'] && <p className="font-mono">Titulaire : {cfg['membership_rib_holder']}</p>}
+            </div>
+          )}
+          {cfg['membership_paypal_link'] && (
+            <a
+              href={cfg['membership_paypal_link']}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block btn-primary text-sm">
+              Payer via PayPal
+            </a>
+          )}
+        </div>
+      )
+    }
+
+    return null
   }
 
   return (
@@ -46,18 +138,7 @@ export default async function MemberDashboard() {
         <p className="text-csf-muted mt-1">Bienvenue dans votre espace membre</p>
       </div>
 
-      {/* Membership alert */}
-      {!session.user.membershipActive && (
-        <div className="bg-orange-50 border border-orange-200 rounded-xl p-4 flex items-start gap-3">
-          <svg className="w-5 h-5 text-orange-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-          </svg>
-          <div>
-            <p className="font-medium text-orange-800">Adhésion en attente de validation</p>
-            <p className="text-sm text-orange-700">Votre adhésion est en cours de validation par le bureau. Vous recevrez une confirmation par email.</p>
-          </div>
-        </div>
-      )}
+      {renderMembershipBanner()}
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { sendRegistrationValidatedEmail, sendRegistrationRejectedEmail } from '@/lib/email'
 import type { RegistrationStatus, PaymentStatus } from '@prisma/client'
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
@@ -24,6 +25,28 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     updateData.convocationSentAt = new Date()
   }
 
-  const reg = await prisma.registration.update({ where: { id: params.id }, data: updateData })
+  const reg = await prisma.registration.update({
+    where: { id: params.id },
+    data: updateData,
+    include: {
+      user: { select: { name: true, email: true } },
+      exhibition: { select: { title: true, startDate: true, city: true } },
+    },
+  })
+
+  // Send email notifications on status change
+  if (data.status === 'VALIDATED') {
+    sendRegistrationValidatedEmail(
+      { name: reg.user.name, email: reg.user.email },
+      { title: reg.exhibition.title, startDate: reg.exhibition.startDate, city: reg.exhibition.city }
+    ).catch(console.error)
+  } else if (data.status === 'REJECTED' && data.rejectionReason) {
+    sendRegistrationRejectedEmail(
+      { name: reg.user.name, email: reg.user.email },
+      { title: reg.exhibition.title },
+      data.rejectionReason
+    ).catch(console.error)
+  }
+
   return NextResponse.json(reg)
 }

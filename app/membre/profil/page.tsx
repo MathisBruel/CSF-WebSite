@@ -15,6 +15,7 @@ export default async function ProfilPage() {
       id: true, firstName: true, lastName: true, email: true,
       phone: true, city: true, postalCode: true, address: true,
       role: true, membershipActive: true, membershipExpiry: true,
+      newsletterSubscribed: true,
       createdAt: true,
     },
   })

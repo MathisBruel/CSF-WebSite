@@ -1,0 +1,243 @@
+import nodemailer from 'nodemailer'
+import { prisma } from './prisma'
+
+function getTransporter() {
+  if (!process.env.SMTP_HOST || !process.env.SMTP_USER) return null
+  return nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
+    port: parseInt(process.env.SMTP_PORT || '587'),
+    secure: process.env.SMTP_PORT === '465',
+    auth: {
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS,
+    },
+  })
+}
+
+const CONTACT = 'contact@assocsf.fr'
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+const APP_NAME = 'Chats Sans Frontières'
+
+function from() {
+  return `${APP_NAME} <${process.env.SMTP_FROM || 'no-reply@assocsf.fr'}>`
+}
+
+function baseTemplate(title: string, body: string): string {
+  return `<!DOCTYPE html>
+<html lang="fr">
+<head><meta charset="utf-8"><title>${title}</title></head>
+<body style="margin:0;padding:0;background:#f4f4f5;font-family:Arial,Helvetica,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f5;padding:30px 0;">
+  <tr><td align="center">
+    <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;background:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+      <tr>
+        <td style="background:#C44B0C;padding:22px 32px;">
+          <span style="color:#ffffff;font-size:18px;font-weight:bold;letter-spacing:0.5px;">${APP_NAME}</span>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding:32px;color:#1a1a1a;font-size:15px;line-height:1.65;">
+          ${body}
+        </td>
+      </tr>
+      <tr>
+        <td style="background:#f8f8f8;padding:18px 32px;border-top:1px solid #e8e8e8;font-size:13px;color:#888888;">
+          <p style="margin:0 0 4px;">Pour nous contacter : <a href="mailto:${CONTACT}" style="color:#C44B0C;text-decoration:none;">${CONTACT}</a></p>
+          <p style="margin:0;">${APP_NAME} &mdash; <a href="${APP_URL}" style="color:#C44B0C;text-decoration:none;">${APP_URL}</a></p>
+        </td>
+      </tr>
+    </table>
+  </td></tr>
+</table>
+</body>
+</html>`
+}
+
+function btn(href: string, label: string) {
+  return `<a href="${href}" style="display:inline-block;background:#C44B0C;color:#ffffff;padding:12px 28px;border-radius:6px;text-decoration:none;font-weight:bold;font-size:14px;margin-top:20px;">${label}</a>`
+}
+
+async function send(to: string | string[], subject: string, html: string) {
+  const transporter = getTransporter()
+  if (!transporter) {
+    console.warn('[email] SMTP non configuré — email ignoré vers', to)
+    return
+  }
+  try {
+    await transporter.sendMail({ from: from(), to, subject, html })
+  } catch (err) {
+    console.error('[email] Échec envoi:', err)
+  }
+}
+
+// ── Compte ──────────────────────────────────────────────────────────────────
+
+export async function sendWelcomeEmail(user: { name: string; email: string }) {
+  const html = baseTemplate('Bienvenue', `
+    <h2 style="color:#C44B0C;margin-top:0;">Bienvenue, ${user.name}&nbsp;!</h2>
+    <p>Votre compte sur le site de <strong>${APP_NAME}</strong> a bien été créé.</p>
+    <p>Vous pouvez désormais :</p>
+    <ul style="padding-left:20px;line-height:2;">
+      <li>Gérer vos chats et leurs documents</li>
+      <li>Consulter les expositions à venir</li>
+      <li>Demander votre adhésion au club depuis votre tableau de bord</li>
+    </ul>
+    ${btn(`${APP_URL}/membre/dashboard`, 'Accéder à mon espace')}
+  `)
+  await send(user.email, `Bienvenue chez ${APP_NAME} !`, html)
+}
+
+// ── Adhésion ─────────────────────────────────────────────────────────────────
+
+export async function sendMembershipRequestReceivedEmail(user: { name: string; email: string }) {
+  const html = baseTemplate("Demande d'adhésion reçue", `
+    <h2 style="color:#C44B0C;margin-top:0;">Demande reçue</h2>
+    <p>Bonjour ${user.name},</p>
+    <p>Nous avons bien reçu votre demande d'adhésion à <strong>${APP_NAME}</strong>.</p>
+    <p>Le bureau va l'examiner et vous répondra prochainement par email.</p>
+    <p style="margin-top:24px;font-size:13px;color:#666;">Pour toute question : <a href="mailto:${CONTACT}" style="color:#C44B0C;">${CONTACT}</a></p>
+  `)
+  await send(user.email, "Demande d'adhésion reçue — " + APP_NAME, html)
+}
+
+export async function notifyAdminMembershipRequest(user: { name: string; email: string }) {
+  const adminEmail = process.env.ADMIN_EMAIL || CONTACT
+  const html = baseTemplate("Nouvelle demande d'adhésion", `
+    <h2 style="color:#C44B0C;margin-top:0;">Nouvelle demande d'adhésion</h2>
+    <p><strong>${user.name}</strong> (${user.email}) vient de soumettre une demande d'adhésion.</p>
+    ${btn(`${APP_URL}/admin/membres`, 'Gérer les demandes')}
+  `)
+  await send(adminEmail, `Nouvelle demande d'adhésion — ${user.name}`, html)
+}
+
+export async function sendMembershipApprovedEmail(
+  user: { name: string; email: string },
+  payment: { price: string; iban: string; bic: string; holder: string; paypalLink: string }
+) {
+  const paypalRow = payment.paypalLink
+    ? `<p style="margin-top:20px;"><strong>Via PayPal :</strong><br>
+       <a href="${payment.paypalLink}" style="color:#C44B0C;">${payment.paypalLink}</a></p>`
+    : ''
+
+  const html = baseTemplate('Adhésion approuvée', `
+    <h2 style="color:#C44B0C;margin-top:0;">Votre adhésion est approuvée !</h2>
+    <p>Bonjour ${user.name},</p>
+    <p>Le bureau a validé votre demande d'adhésion à <strong>${APP_NAME}</strong>. Félicitations !</p>
+    <p>Pour finaliser votre adhésion, veuillez régler le montant de <strong>${payment.price}&nbsp;€</strong> selon l'une des modalités ci-dessous :</p>
+    <div style="background:#fdf6f2;border-left:4px solid #C44B0C;padding:16px 20px;margin:20px 0;border-radius:0 6px 6px 0;">
+      <p style="margin:0 0 6px;font-weight:bold;">Virement bancaire :</p>
+      <p style="margin:0;font-family:monospace;font-size:14px;">IBAN : ${payment.iban}</p>
+      <p style="margin:4px 0 0;font-family:monospace;font-size:14px;">BIC&nbsp;&nbsp;: ${payment.bic}</p>
+      <p style="margin:4px 0 0;font-family:monospace;font-size:14px;">Titulaire : ${payment.holder}</p>
+      <p style="margin:10px 0 0;font-size:13px;color:#888;">Référence à indiquer : Adhésion ${user.name}</p>
+    </div>
+    ${paypalRow}
+    <p style="margin-top:24px;font-size:13px;color:#666;">Pour toute question : <a href="mailto:${CONTACT}" style="color:#C44B0C;">${CONTACT}</a></p>
+  `)
+  await send(user.email, `Adhésion approuvée — ${APP_NAME}`, html)
+}
+
+export async function sendMembershipRejectedEmail(user: { name: string; email: string }, reason: string) {
+  const html = baseTemplate("Demande d'adhésion", `
+    <h2 style="color:#C44B0C;margin-top:0;">Demande d'adhésion</h2>
+    <p>Bonjour ${user.name},</p>
+    <p>Après examen, le bureau n'a pas pu valider votre demande d'adhésion pour la raison suivante :</p>
+    <div style="background:#fff5f5;border-left:4px solid #e53e3e;padding:16px 20px;margin:20px 0;border-radius:0 6px 6px 0;color:#c53030;">
+      <p style="margin:0;">${reason}</p>
+    </div>
+    <p>Si vous souhaitez nous contacter ou soumettre une nouvelle demande :</p>
+    <p><a href="mailto:${CONTACT}" style="color:#C44B0C;">${CONTACT}</a></p>
+  `)
+  await send(user.email, `Demande d'adhésion — ${APP_NAME}`, html)
+}
+
+// ── Inscriptions expo ────────────────────────────────────────────────────────
+
+export async function sendRegistrationValidatedEmail(
+  user: { name: string; email: string },
+  exhibition: { title: string; startDate: Date; city: string }
+) {
+  const date = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }).format(exhibition.startDate)
+  const html = baseTemplate('Inscription validée', `
+    <h2 style="color:#C44B0C;margin-top:0;">Inscription validée !</h2>
+    <p>Bonjour ${user.name},</p>
+    <p>Votre inscription à l'exposition <strong>${exhibition.title}</strong> (${exhibition.city}, ${date}) a été <strong style="color:#16a34a;">validée</strong>.</p>
+    ${btn(`${APP_URL}/membre/inscriptions`, 'Voir mes inscriptions')}
+  `)
+  await send(user.email, `Inscription validée — ${exhibition.title}`, html)
+}
+
+export async function sendRegistrationRejectedEmail(
+  user: { name: string; email: string },
+  exhibition: { title: string },
+  reason: string
+) {
+  const html = baseTemplate('Inscription refusée', `
+    <h2 style="color:#C44B0C;margin-top:0;">Inscription à ${exhibition.title}</h2>
+    <p>Bonjour ${user.name},</p>
+    <p>Votre inscription à l'exposition <strong>${exhibition.title}</strong> n'a pas pu être acceptée :</p>
+    <div style="background:#fff5f5;border-left:4px solid #e53e3e;padding:16px 20px;margin:20px 0;border-radius:0 6px 6px 0;color:#c53030;">
+      <p style="margin:0;">${reason}</p>
+    </div>
+    <p>Pour toute question : <a href="mailto:${CONTACT}" style="color:#C44B0C;">${CONTACT}</a></p>
+  `)
+  await send(user.email, `Inscription refusée — ${exhibition.title}`, html)
+}
+
+// ── Newsletter ───────────────────────────────────────────────────────────────
+
+const unsubFooter = `
+  <hr style="border:none;border-top:1px solid #e8e8e8;margin:32px 0 20px;">
+  <p style="font-size:12px;color:#aaa;margin:0;">
+    Vous recevez cet email car vous êtes abonné à la newsletter de ${APP_NAME}.<br>
+    Pour vous désabonner : <a href="${APP_URL}/membre/profil" style="color:#C44B0C;">gérer mes préférences</a>.
+  </p>`
+
+export async function sendNewsletterToSubscribers(
+  subject: string,
+  content: string,
+  options?: { testEmail?: string }
+) {
+  if (options?.testEmail) {
+    const html = baseTemplate(subject, content + `
+      <div style="margin-top:24px;padding:12px 16px;background:#fffbeb;border:1px solid #fbbf24;border-radius:6px;font-size:13px;color:#92400e;">
+        <strong>Email de test</strong> — cet email n'a été envoyé qu'à vous, pas aux abonnés.
+      </div>`)
+    await send(options.testEmail, `[TEST] ${subject}`, html)
+    return
+  }
+
+  const subscribers = await prisma.user.findMany({
+    where: { newsletterSubscribed: true },
+    select: { email: true },
+  })
+
+  if (subscribers.length === 0) return
+
+  const html = baseTemplate(subject, content + unsubFooter)
+  await Promise.allSettled(subscribers.map((s) => send(s.email, subject, html)))
+}
+
+export async function sendExhibitionOpenNewsletter(exhibition: {
+  id: string
+  title: string
+  city: string
+  startDate: Date
+}) {
+  const date = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }).format(exhibition.startDate)
+  const content = `
+    <h2 style="color:#C44B0C;margin-top:0;">Inscriptions ouvertes !</h2>
+    <p>Les inscriptions pour l'exposition <strong>${exhibition.title}</strong> sont maintenant ouvertes.</p>
+    <p><strong>Date :</strong> ${date}<br><strong>Lieu :</strong> ${exhibition.city}</p>
+    ${btn(`${APP_URL}/membre/inscriptions/${exhibition.id}`, "S'inscrire maintenant")}`
+  await sendNewsletterToSubscribers(`Inscriptions ouvertes — ${exhibition.title}`, content)
+}
+
+export async function sendNewsPublishedNewsletter(news: { title: string; excerpt: string | null; slug: string }) {
+  const content = `
+    <h2 style="color:#C44B0C;margin-top:0;">Nouvelle actualité</h2>
+    <h3 style="margin:0 0 12px;">${news.title}</h3>
+    ${news.excerpt ? `<p style="color:#555;">${news.excerpt}</p>` : ''}
+    ${btn(`${APP_URL}/actualites/${news.slug}`, "Lire l'article")}`
+  await sendNewsletterToSubscribers(news.title, content)
+}

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { sendNewsPublishedNewsletter } from '@/lib/email'
 import { z } from 'zod'
 
 export const dynamic = 'force-dynamic'
@@ -27,13 +28,29 @@ export async function PUT(
     const body = await req.json()
     const { authorId, ...parsedData } = newsSchema.parse(body)
 
+    // Check previous state to detect publish event
+    const previous = await prisma.news.findUnique({
+      where: { id: params.id },
+      select: { published: true },
+    })
+
     const news = await prisma.news.update({
       where: { id: params.id },
       data: {
         ...parsedData,
         ...(authorId ? { authorId } : {}),
+        ...(parsedData.published && !previous?.published ? { publishedAt: new Date() } : {}),
       },
     })
+
+    // Send newsletter only when transitioning to published
+    if (parsedData.published && !previous?.published) {
+      sendNewsPublishedNewsletter({
+        title: news.title,
+        excerpt: news.excerpt ?? null,
+        slug: news.slug,
+      }).catch(console.error)
+    }
 
     return NextResponse.json(news)
   } catch (err) {
@@ -55,10 +72,7 @@ export async function DELETE(
   }
 
   try {
-    await prisma.news.delete({
-      where: { id: params.id },
-    })
-
+    await prisma.news.delete({ where: { id: params.id } })
     return NextResponse.json({ ok: true })
   } catch (err) {
     console.error(err)

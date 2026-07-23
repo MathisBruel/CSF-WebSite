@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { sendExhibitionOpenNewsletter } from '@/lib/email'
 import type { ExhibitionStatus } from '@prisma/client'
 
 export const dynamic = 'force-dynamic'
@@ -14,10 +15,27 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   if (!await requireAdmin()) return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
 
   const data = await req.json()
+
+  const previous = await prisma.exhibition.findUnique({
+    where: { id: params.id },
+    select: { status: true },
+  })
+
   const expo = await prisma.exhibition.update({
     where: { id: params.id },
     data: { status: data.status as ExhibitionStatus },
   })
+
+  // Newsletter when opening registrations
+  if (data.status === 'OPEN' && previous?.status !== 'OPEN') {
+    sendExhibitionOpenNewsletter({
+      id: expo.id,
+      title: expo.title,
+      city: expo.city,
+      startDate: expo.startDate,
+    }).catch(console.error)
+  }
+
   return NextResponse.json(expo)
 }
 
@@ -69,7 +87,6 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
   if (!await requireAdmin()) return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
 
   try {
-    // Check if there are any registrations
     const registrationCount = await prisma.registration.count({
       where: { exhibitionId: params.id },
     })
@@ -81,11 +98,7 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
       )
     }
 
-    // Delete the exhibition
-    await prisma.exhibition.delete({
-      where: { id: params.id },
-    })
-
+    await prisma.exhibition.delete({ where: { id: params.id } })
     return NextResponse.json({ ok: true })
   } catch (err) {
     console.error(err)
