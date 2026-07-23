@@ -26,6 +26,7 @@ export default async function AdminInscriptions({
     include: {
       user: { select: { name: true, email: true, city: true } },
       exhibition: { select: { title: true, startDate: true } },
+      cageOption: { select: { name: true } },
       cats: {
         include: {
           cat: { include: { catDocuments: true } },
@@ -85,6 +86,13 @@ export default async function AdminInscriptions({
                 <p className="text-sm font-medium text-csf-dark mt-1">
                   {reg.cats.length} chat{reg.cats.length !== 1 ? 's' : ''} · {formatPrice(reg.totalAmount)}
                 </p>
+                {(reg.cageOption || reg.mealsCount > 0) && (
+                  <p className="text-xs text-csf-muted mt-0.5">
+                    {reg.cageOption && `Cage : ${reg.cageOption.name}`}
+                    {reg.cageOption && reg.mealsCount > 0 && ' · '}
+                    {reg.mealsCount > 0 && `${reg.mealsCount} repas`}
+                  </p>
+                )}
               </div>
               <RegistrationActions
                 registrationId={reg.id}
@@ -108,9 +116,6 @@ export default async function AdminInscriptions({
                       </div>
                       <p className="text-sm text-csf-muted">{rc.cat.breed}</p>
                       <div className="flex flex-wrap gap-3 text-xs text-csf-muted mt-1">
-                        {rc.wantsCage && <span>Cage</span>}
-                        {rc.wantsDoubleCage && <span>Cage double</span>}
-                        {rc.mealsCount > 0 && <span>{rc.mealsCount} repas</span>}
                         {rc.participationDays.length > 0 && <span>{rc.participationDays.join(', ')}</span>}
                         {rc.traditionalClass && <span>Classe: {rc.traditionalClass}</span>}
                         {rc.isHorsConcours && <span>H.C.</span>}

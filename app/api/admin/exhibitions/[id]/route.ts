@@ -26,6 +26,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 
   const data = await req.json()
   const tiers: { minCats: number; pricePerCat: number }[] = data.pricingTiers ?? []
+  const cageOptions: { name: string; price: number; order: number }[] = data.cageOptions ?? []
 
   const [expo] = await prisma.$transaction([
     prisma.exhibition.update({
@@ -41,17 +42,23 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
         endDate: new Date(data.endDate),
         registrationDeadline: new Date(data.registrationDeadline),
         priceBase: parseFloat(data.priceBase),
-        priceCage: parseFloat(data.priceCage),
-        priceDoubleCage: parseFloat(data.priceDoubleCage),
-        priceMeal: parseFloat(data.priceMeal),
+        priceMeal: parseFloat(data.priceMeal ?? 0),
+        mealsEnabled: Boolean(data.mealsEnabled),
+        mealsRequired: Boolean(data.mealsRequired),
         maxRegistrations: data.maxRegistrations || null,
         rules: data.rules,
       },
     }),
     prisma.exhibitionPricingTier.deleteMany({ where: { exhibitionId: params.id } }),
+    prisma.exhibitionCageOption.deleteMany({ where: { exhibitionId: params.id } }),
     ...(tiers.length > 0
       ? [prisma.exhibitionPricingTier.createMany({
           data: tiers.map(({ minCats, pricePerCat }) => ({ exhibitionId: params.id, minCats, pricePerCat })),
+        })]
+      : []),
+    ...(cageOptions.length > 0
+      ? [prisma.exhibitionCageOption.createMany({
+          data: cageOptions.map(({ name, price, order }) => ({ exhibitionId: params.id, name, price, order })),
         })]
       : []),
   ])

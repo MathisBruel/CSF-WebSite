@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import type { Exhibition, Cat, ExhibitionPricingTier } from '@prisma/client'
+import type { Exhibition, Cat, ExhibitionPricingTier, ExhibitionCageOption } from '@prisma/client'
 
 function computeBasePrice(
   catCount: number,
@@ -14,12 +14,9 @@ function computeBasePrice(
   return sorted.find((t) => catCount >= t.minCats)?.pricePerCat ?? fallback
 }
 
-type Step = 'cats' | 'options' | 'summary' | 'done'
+type Step = 'cats' | 'options' | 'logistics' | 'summary' | 'done'
 
 type CatEntry = {
-  wantsCage: boolean
-  wantsDoubleCage: boolean
-  mealsCount: number
   participationDays: string[]
   traditionalClass: string
   traditionalClassOther: string
@@ -29,9 +26,6 @@ type CatEntry = {
 }
 
 const defaultCatEntry = (): CatEntry => ({
-  wantsCage: false,
-  wantsDoubleCage: false,
-  mealsCount: 0,
   participationDays: [],
   traditionalClass: '',
   traditionalClassOther: '',
@@ -49,29 +43,28 @@ const TRADITIONAL_CLASSES = [
 
 const SPECIAL_PARTICIPATIONS = ["Lot d'Elevage", '3 Générations', 'Vétéran']
 
-function catAmount(entry: CatEntry, exhibition: Exhibition, basePrice: number): number {
-  return (
-    basePrice +
-    (entry.wantsCage ? exhibition.priceCage : 0) +
-    (entry.wantsDoubleCage ? exhibition.priceDoubleCage : 0) +
-    entry.mealsCount * exhibition.priceMeal
-  )
-}
-
 export function RegistrationWizard({
   exhibition,
   cats,
   pricingTiers = [],
+  cageOptions = [],
 }: {
   exhibition: Exhibition
   cats: (Cat & { catDocuments: { type: string; validated: boolean }[] })[]
   pricingTiers?: Pick<ExhibitionPricingTier, 'minCats' | 'pricePerCat'>[]
+  cageOptions?: Pick<ExhibitionCageOption, 'id' | 'name' | 'price' | 'order'>[]
 }) {
   const [step, setStep] = useState<Step>('cats')
   const [selectedCatIds, setSelectedCatIds] = useState<string[]>([])
   const [catOptions, setCatOptions] = useState<Record<string, CatEntry>>({})
+  const [selectedCageOptionId, setSelectedCageOptionId] = useState<string | null>(null)
+  const [mealsCount, setMealsCount] = useState(0)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
+
+  const sortedCageOptions = [...cageOptions].sort((a, b) => a.order - b.order)
+  const lastTierIdx = pricingTiers.length - 1
+  const sortedTiers = [...pricingTiers].sort((a, b) => a.minCats - b.minCats)
 
   const toggleCat = (catId: string) => {
     if (selectedCatIds.includes(catId)) {
@@ -93,10 +86,11 @@ export function RegistrationWizard({
 
   const selectedCats = cats.filter((c) => selectedCatIds.includes(c.id))
   const currentBasePrice = computeBasePrice(selectedCatIds.length, pricingTiers, exhibition.priceBase)
-  const totalAmount = selectedCats.reduce(
-    (sum, cat) => sum + catAmount(catOptions[cat.id] ?? defaultCatEntry(), exhibition, currentBasePrice),
-    0
-  )
+  const selectedCageOption = sortedCageOptions.find((o) => o.id === selectedCageOptionId)
+  const cagePrice = selectedCageOption?.price ?? 0
+  const mealsPrice = mealsCount * exhibition.priceMeal
+  const catsTotal = selectedCatIds.length * currentBasePrice
+  const totalAmount = catsTotal + cagePrice + mealsPrice
 
   const goToOptions = () => {
     const newOptions: Record<string, CatEntry> = { ...catOptions }
@@ -107,6 +101,10 @@ export function RegistrationWizard({
     setStep('options')
   }
 
+  const hasLogisticsStep = sortedCageOptions.length > 0 || exhibition.mealsEnabled
+
+  const goToLogisticsOrSummary = () => setStep(hasLogisticsStep ? 'logistics' : 'summary')
+
   const submit = async () => {
     setSubmitting(true)
     setError('')
@@ -116,6 +114,8 @@ export function RegistrationWizard({
         catId,
         ...(catOptions[catId] ?? defaultCatEntry()),
       })),
+      cageOptionId: selectedCageOptionId,
+      mealsCount,
     }
     const res = await fetch('/api/registrations', {
       method: 'POST',
@@ -131,8 +131,12 @@ export function RegistrationWizard({
     setStep('done')
   }
 
-  const steps: Step[] = ['cats', 'options', 'summary']
-  const stepLabels = ['Chats', 'Options', 'Récapitulatif']
+  const steps: Step[] = hasLogisticsStep
+    ? ['cats', 'options', 'logistics', 'summary']
+    : ['cats', 'options', 'summary']
+  const stepLabels = hasLogisticsStep
+    ? ['Chats', 'Options', 'Logistique', 'Récapitulatif']
+    : ['Chats', 'Options', 'Récapitulatif']
   const currentStepIdx = steps.indexOf(step)
 
   if (step === 'done') {
@@ -191,6 +195,25 @@ export function RegistrationWizard({
           <div>
             <h2 className="font-bold text-csf-dark mb-1">Sélectionner vos chats</h2>
             <p className="text-sm text-csf-muted mb-4">Vous pouvez inscrire plusieurs chats en une seule inscription.</p>
+
+            {/* Pricing tiers table */}
+            {sortedTiers.length > 0 && (
+              <div className="mb-4 p-3 bg-orange-50 border border-orange-100 rounded-xl text-xs">
+                <p className="font-medium text-csf-dark mb-2">Tarification dégressive :</p>
+                <div className="space-y-1">
+                  {sortedTiers.map((tier, i) => {
+                    const isLast = i === sortedTiers.length - 1
+                    return (
+                      <div key={i} className="flex justify-between text-csf-muted">
+                        <span>{isLast ? `${tier.minCats}+ chats` : `${tier.minCats} chat${tier.minCats > 1 ? 's' : ''}`}</span>
+                        <span className="font-medium text-csf-dark">{tier.pricePerCat.toFixed(2)} € / chat</span>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+
             {cats.length === 0 ? (
               <div className="text-center py-6">
                 <p className="text-csf-muted mb-3">Vous n&apos;avez pas de chat disponible pour cette exposition.</p>
@@ -220,9 +243,11 @@ export function RegistrationWizard({
                 })}
               </div>
             )}
+
             {selectedCatIds.length > 0 && (
               <p className="text-sm text-csf-muted mt-3">
                 {selectedCatIds.length} chat{selectedCatIds.length > 1 ? 's' : ''} sélectionné{selectedCatIds.length > 1 ? 's' : ''}
+                {' · '}<span className="font-medium text-csf-dark">{currentBasePrice.toFixed(2)} € / chat</span>
               </p>
             )}
             <div className="flex justify-end mt-4">
@@ -249,8 +274,7 @@ export function RegistrationWizard({
                       <span className="text-sm font-normal text-csf-muted">({cat.breed})</span>
                     </h3>
 
-                    {/* Competition */}
-                    <div className="space-y-4 mb-6">
+                    <div className="space-y-4">
                       <p className="text-xs font-semibold text-csf-muted uppercase tracking-wide">Compétition</p>
 
                       <div>
@@ -327,69 +351,105 @@ export function RegistrationWizard({
                         </div>
                       </div>
                     </div>
-
-                    {/* Logistics */}
-                    <div className="space-y-3">
-                      <p className="text-xs font-semibold text-csf-muted uppercase tracking-wide">Logistique</p>
-
-                      <label className="flex items-center justify-between p-3 border-2 rounded-xl cursor-pointer hover:border-csf-orange/50 transition-colors">
-                        <div>
-                          <p className="text-sm font-medium text-csf-dark">Cage simple</p>
-                          <p className="text-xs text-csf-muted">+{exhibition.priceCage.toFixed(2)} €</p>
-                        </div>
-                        <input type="checkbox" checked={opts.wantsCage}
-                          onChange={(e) => {
-                            update('wantsCage', e.target.checked)
-                            if (e.target.checked) update('wantsDoubleCage', false)
-                          }}
-                          className="w-5 h-5 text-csf-orange rounded" />
-                      </label>
-
-                      <label className="flex items-center justify-between p-3 border-2 rounded-xl cursor-pointer hover:border-csf-orange/50 transition-colors">
-                        <div>
-                          <p className="text-sm font-medium text-csf-dark">Cage double</p>
-                          <p className="text-xs text-csf-muted">+{exhibition.priceDoubleCage.toFixed(2)} €</p>
-                        </div>
-                        <input type="checkbox" checked={opts.wantsDoubleCage}
-                          onChange={(e) => {
-                            update('wantsDoubleCage', e.target.checked)
-                            if (e.target.checked) update('wantsCage', false)
-                          }}
-                          className="w-5 h-5 text-csf-orange rounded" />
-                      </label>
-
-                      <div className="flex items-center justify-between p-3 border-2 rounded-xl border-csf-light">
-                        <div>
-                          <p className="text-sm font-medium text-csf-dark">Repas</p>
-                          <p className="text-xs text-csf-muted">{exhibition.priceMeal.toFixed(2)} € / repas</p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <button type="button"
-                            onClick={() => update('mealsCount', Math.max(0, opts.mealsCount - 1))}
-                            className="w-8 h-8 rounded-full border border-gray-300 text-csf-dark hover:bg-csf-light flex items-center justify-center font-bold">
-                            −
-                          </button>
-                          <span className="w-6 text-center font-medium text-sm">{opts.mealsCount}</span>
-                          <button type="button"
-                            onClick={() => update('mealsCount', Math.min(4, opts.mealsCount + 1))}
-                            className="w-8 h-8 rounded-full border border-gray-300 text-csf-dark hover:bg-csf-light flex items-center justify-center font-bold">
-                            +
-                          </button>
-                        </div>
-                      </div>
-                    </div>
                   </div>
                 )
               })}
             </div>
             <div className="flex justify-between mt-6">
               <button onClick={() => setStep('cats')} className="btn-secondary">← Retour</button>
-              <button onClick={() => setStep('summary')} className="btn-primary">Suivant →</button>
+              <button onClick={goToLogisticsOrSummary} className="btn-primary">Suivant →</button>
             </div>
           </div>
         )}
 
-        {/* ── Step 3: Summary ── */}
+        {/* ── Step 3: Global logistics ── */}
+        {step === 'logistics' && (
+          <div>
+            <h2 className="font-bold text-csf-dark mb-1">Logistique</h2>
+            <p className="text-sm text-csf-muted mb-5">Ces options s&apos;appliquent à toute l&apos;inscription.</p>
+
+            <div className="space-y-6">
+              {/* Cage options */}
+              {sortedCageOptions.length > 0 && (
+                <div>
+                  <p className="text-xs font-semibold text-csf-muted uppercase tracking-wide mb-3">Cage</p>
+                  <div className="space-y-2">
+                    <label className={`flex items-center justify-between p-3 border-2 rounded-xl cursor-pointer transition-colors ${
+                      selectedCageOptionId === null ? 'border-csf-orange bg-orange-50' : 'border-csf-light hover:border-csf-orange/50'
+                    }`}>
+                      <div>
+                        <p className="text-sm font-medium text-csf-dark">Aucune cage</p>
+                        <p className="text-xs text-csf-muted">Je gère mes propres cages</p>
+                      </div>
+                      <input type="radio" name="cage" checked={selectedCageOptionId === null}
+                        onChange={() => setSelectedCageOptionId(null)}
+                        className="w-5 h-5 text-csf-orange" />
+                    </label>
+                    {sortedCageOptions.map((opt) => (
+                      <label key={opt.id} className={`flex items-center justify-between p-3 border-2 rounded-xl cursor-pointer transition-colors ${
+                        selectedCageOptionId === opt.id ? 'border-csf-orange bg-orange-50' : 'border-csf-light hover:border-csf-orange/50'
+                      }`}>
+                        <div>
+                          <p className="text-sm font-medium text-csf-dark">{opt.name}</p>
+                          {opt.price > 0 && (
+                            <p className="text-xs text-csf-muted">+{opt.price.toFixed(2)} €</p>
+                          )}
+                          {opt.price === 0 && (
+                            <p className="text-xs text-csf-muted">Inclus</p>
+                          )}
+                        </div>
+                        <input type="radio" name="cage" checked={selectedCageOptionId === opt.id}
+                          onChange={() => setSelectedCageOptionId(opt.id)}
+                          className="w-5 h-5 text-csf-orange" />
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Meals */}
+              {exhibition.mealsEnabled && (
+                <div>
+                  <p className="text-xs font-semibold text-csf-muted uppercase tracking-wide mb-3">Repas</p>
+                  <div className="flex items-center justify-between p-3 border-2 rounded-xl border-csf-light">
+                    <div>
+                      <p className="text-sm font-medium text-csf-dark">Nombre de repas</p>
+                      <p className="text-xs text-csf-muted">{exhibition.priceMeal.toFixed(2)} € / repas</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <button type="button"
+                        onClick={() => setMealsCount((c) => Math.max(0, c - 1))}
+                        className="w-8 h-8 rounded-full border border-gray-300 text-csf-dark hover:bg-csf-light flex items-center justify-center font-bold">
+                        −
+                      </button>
+                      <span className="w-6 text-center font-medium text-sm">{mealsCount}</span>
+                      <button type="button"
+                        onClick={() => setMealsCount((c) => c + 1)}
+                        className="w-8 h-8 rounded-full border border-gray-300 text-csf-dark hover:bg-csf-light flex items-center justify-center font-bold">
+                        +
+                      </button>
+                    </div>
+                  </div>
+                  {exhibition.mealsRequired && mealsCount === 0 && (
+                    <p className="text-xs text-amber-600 mt-1">Ce champ est obligatoire pour cette exposition.</p>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-between mt-6">
+              <button onClick={() => setStep('options')} className="btn-secondary">← Retour</button>
+              <button
+                onClick={() => setStep('summary')}
+                disabled={exhibition.mealsEnabled && exhibition.mealsRequired && mealsCount === 0}
+                className="btn-primary">
+                Suivant →
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ── Step 4: Summary ── */}
         {step === 'summary' && (
           <div>
             <h2 className="font-bold text-csf-dark mb-4">Récapitulatif</h2>
@@ -399,51 +459,67 @@ export function RegistrationWizard({
                 <span className="font-medium text-csf-dark text-right max-w-48">{exhibition.title}</span>
               </div>
 
+              {/* Per-cat lines */}
               {selectedCats.map((cat) => {
                 const opts = catOptions[cat.id] ?? defaultCatEntry()
-                const amount = catAmount(opts, exhibition, currentBasePrice)
                 return (
                   <div key={cat.id} className="border border-csf-light rounded-xl p-3">
-                    <p className="font-medium text-csf-dark mb-2">{cat.name}</p>
-                    <div className="space-y-1 text-xs">
-                      <div className="flex justify-between text-csf-muted">
-                        <span>Inscription de base</span>
-                        <span>{exhibition.priceBase.toFixed(2)} €</span>
-                      </div>
-                      {opts.wantsCage && (
-                        <div className="flex justify-between text-csf-muted">
-                          <span>Cage simple</span>
-                          <span>+{exhibition.priceCage.toFixed(2)} €</span>
-                        </div>
+                    <div className="flex justify-between">
+                      <p className="font-medium text-csf-dark">{cat.name}</p>
+                      <span className="text-csf-muted text-xs">{currentBasePrice.toFixed(2)} €</span>
+                    </div>
+                    <div className="space-y-0.5 mt-1 text-xs text-csf-muted">
+                      {opts.participationDays.length > 0 && (
+                        <p>{opts.participationDays.join(' + ')}</p>
                       )}
-                      {opts.wantsDoubleCage && (
-                        <div className="flex justify-between text-csf-muted">
-                          <span>Cage double</span>
-                          <span>+{exhibition.priceDoubleCage.toFixed(2)} €</span>
-                        </div>
+                      {opts.traditionalClass && <p>Classe : {opts.traditionalClass}</p>}
+                      {opts.isHorsConcours && <p>Hors Concours</p>}
+                      {opts.specialParticipations.length > 0 && (
+                        <p>{opts.specialParticipations.join(', ')}</p>
                       )}
-                      {opts.mealsCount > 0 && (
-                        <div className="flex justify-between text-csf-muted">
-                          <span>{opts.mealsCount} repas</span>
-                          <span>+{(opts.mealsCount * exhibition.priceMeal).toFixed(2)} €</span>
-                        </div>
-                      )}
-                      <div className="flex justify-between font-medium text-csf-dark pt-1 border-t border-csf-light">
-                        <span>Sous-total</span>
-                        <span>{amount.toFixed(2)} €</span>
-                      </div>
                     </div>
                   </div>
                 )
               })}
 
+              {/* Applied pricing tier info */}
               {pricingTiers.length > 0 && (
                 <div className="flex justify-between py-1 text-xs text-csf-muted">
                   <span>Tarif appliqué</span>
-                  <span>{currentBasePrice.toFixed(2)} € / chat ({selectedCatIds.length} chat{selectedCatIds.length > 1 ? 's' : ''})</span>
+                  <span>
+                    {currentBasePrice.toFixed(2)} € / chat
+                    {lastTierIdx >= 0 && selectedCatIds.length >= sortedTiers[lastTierIdx]?.minCats
+                      ? ` (${sortedTiers[lastTierIdx].minCats}+ chats)`
+                      : ` (${selectedCatIds.length} chat${selectedCatIds.length > 1 ? 's' : ''})`}
+                  </span>
                 </div>
               )}
-              <div className="flex justify-between py-3 font-bold text-csf-dark text-lg">
+
+              {/* Cats subtotal */}
+              <div className="flex justify-between text-sm py-1 border-t border-csf-light">
+                <span className="text-csf-muted">
+                  {selectedCatIds.length} chat{selectedCatIds.length > 1 ? 's' : ''} × {currentBasePrice.toFixed(2)} €
+                </span>
+                <span>{catsTotal.toFixed(2)} €</span>
+              </div>
+
+              {/* Cage option line */}
+              {selectedCageOption && (
+                <div className="flex justify-between text-sm text-csf-muted">
+                  <span>Cage ({selectedCageOption.name})</span>
+                  <span>+{cagePrice.toFixed(2)} €</span>
+                </div>
+              )}
+
+              {/* Meals line */}
+              {mealsCount > 0 && (
+                <div className="flex justify-between text-sm text-csf-muted">
+                  <span>{mealsCount} repas × {exhibition.priceMeal.toFixed(2)} €</span>
+                  <span>+{mealsPrice.toFixed(2)} €</span>
+                </div>
+              )}
+
+              <div className="flex justify-between py-3 font-bold text-csf-dark text-lg border-t border-csf-light">
                 <span>Total</span>
                 <span className="text-csf-orange">{totalAmount.toFixed(2)} €</span>
               </div>
@@ -458,7 +534,9 @@ export function RegistrationWizard({
             </p>
 
             <div className="flex justify-between mt-6">
-              <button onClick={() => setStep('options')} className="btn-secondary">← Retour</button>
+              <button onClick={() => setStep(hasLogisticsStep ? 'logistics' : 'options')} className="btn-secondary">
+                ← Retour
+              </button>
               <button onClick={submit} disabled={submitting} className="btn-primary">
                 {submitting ? 'Envoi...' : "Confirmer l'inscription"}
               </button>

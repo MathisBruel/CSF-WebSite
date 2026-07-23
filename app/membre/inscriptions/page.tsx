@@ -14,6 +14,7 @@ export default async function MesInscriptions() {
     orderBy: { createdAt: 'desc' },
     include: {
       exhibition: { select: { title: true, startDate: true, endDate: true, city: true, slug: true } },
+      cageOption: { select: { name: true } },
       cats: {
         include: { cat: { select: { name: true, breed: true } } },
       },
@@ -81,6 +82,14 @@ export default async function MesInscriptions() {
                 </div>
               </div>
 
+              {/* Logistics summary */}
+              {(reg.cageOption || reg.mealsCount > 0) && (
+                <div className="flex gap-4 mb-2 text-xs text-csf-muted">
+                  {reg.cageOption && <span>Cage : {reg.cageOption.name}</span>}
+                  {reg.mealsCount > 0 && <span>{reg.mealsCount} repas</span>}
+                </div>
+              )}
+
               {/* Cats list */}
               <div className="space-y-2 border-t border-csf-light pt-3">
                 {reg.cats.map((rc) => (
@@ -89,9 +98,6 @@ export default async function MesInscriptions() {
                       <span className="font-medium text-csf-dark">{rc.cat.name}</span>
                       <span className="text-csf-muted">{rc.cat.breed}</span>
                       <div className="flex gap-2 text-xs text-csf-muted">
-                        {rc.wantsCage && <span>Cage</span>}
-                        {rc.wantsDoubleCage && <span>Cage double</span>}
-                        {rc.mealsCount > 0 && <span>{rc.mealsCount} repas</span>}
                         {rc.catalogNumber && <span className="text-csf-dark font-medium">#{rc.catalogNumber}</span>}
                         {rc.vetValidated && <span className="text-green-600">Vét. ✓</span>}
                       </div>

@@ -15,6 +15,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
     where: { exhibitionId: params.id },
     include: {
       user: { select: { name: true, email: true, phone: true, city: true } },
+      cageOption: { select: { name: true, price: true } },
       cats: {
         orderBy: { catalogNumber: 'asc' },
         include: {
@@ -31,7 +32,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
     'N° Catalogue', 'Nom chat', 'Race', 'Sexe', 'Naissance', 'I-CAD', 'Pedigree',
     'Propriétaire', 'Email', 'Téléphone', 'Ville',
     'Statut inscription', 'Paiement',
-    'Cage', 'Cage double', 'Repas', 'Montant chat',
+    'Cage', 'Prix cage', 'Repas', 'Montant chat',
     'Jours', 'Classe', 'H.C.', 'Total inscription',
   ]
 
@@ -52,9 +53,9 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
         reg.user.city ?? '',
         reg.status,
         reg.paymentStatus,
-        rc.wantsCage ? 'Oui' : 'Non',
-        rc.wantsDoubleCage ? 'Oui' : 'Non',
-        rc.mealsCount,
+        reg.cageOption?.name ?? '',
+        reg.cageOption?.price.toFixed(2) ?? '',
+        reg.mealsCount,
         rc.amount.toFixed(2),
         rc.participationDays.join('+'),
         rc.traditionalClass ?? '',

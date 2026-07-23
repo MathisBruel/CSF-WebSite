@@ -9,9 +9,6 @@ export const dynamic = 'force-dynamic'
 
 const catEntrySchema = z.object({
   catId: z.string(),
-  wantsCage: z.boolean().default(false),
-  wantsDoubleCage: z.boolean().default(false),
-  mealsCount: z.number().int().min(0).max(4).default(0),
   participationDays: z.array(z.string()).default([]),
   traditionalClass: z.string().optional(),
   traditionalClassOther: z.string().optional(),
@@ -23,22 +20,9 @@ const catEntrySchema = z.object({
 const registrationSchema = z.object({
   exhibitionId: z.string(),
   cats: z.array(catEntrySchema).min(1, 'Au moins un chat requis'),
+  cageOptionId: z.string().nullable().optional(),
+  mealsCount: z.number().int().min(0).default(0),
 })
-
-function catBaseAmount(
-  entry: { wantsCage: boolean; wantsDoubleCage: boolean; mealsCount: number },
-  basePrice: number,
-  priceCage: number,
-  priceDoubleCage: number,
-  priceMeal: number
-): number {
-  return (
-    basePrice +
-    (entry.wantsCage ? priceCage : 0) +
-    (entry.wantsDoubleCage ? priceDoubleCage : 0) +
-    entry.mealsCount * priceMeal
-  )
-}
 
 export async function POST(req: NextRequest) {
   const session = await auth()
@@ -50,13 +34,22 @@ export async function POST(req: NextRequest) {
 
     const exhibition = await prisma.exhibition.findUnique({
       where: { id: data.exhibitionId },
-      include: { pricingTiers: true },
+      include: { pricingTiers: true, cageOptions: true },
     })
     if (!exhibition || exhibition.status !== ExhibitionStatus.OPEN) {
       return NextResponse.json({ error: 'Exposition non disponible' }, { status: 400 })
     }
     if (new Date() > exhibition.registrationDeadline) {
       return NextResponse.json({ error: "La date limite d'inscription est dépassée" }, { status: 400 })
+    }
+
+    // Validate cage option belongs to this exhibition
+    let cageOption = null
+    if (data.cageOptionId) {
+      cageOption = exhibition.cageOptions.find((c) => c.id === data.cageOptionId)
+      if (!cageOption) {
+        return NextResponse.json({ error: 'Option de cage invalide' }, { status: 400 })
+      }
     }
 
     const catIds = data.cats.map((c) => c.catId)
@@ -82,30 +75,30 @@ export async function POST(req: NextRequest) {
     const totalCatsAfter = alreadyRegisteredCatIds.length + catIds.length
     const basePrice = computeBasePrice(totalCatsAfter, exhibition.pricingTiers, exhibition.priceBase)
 
-    const { priceCage, priceDoubleCage, priceMeal } = exhibition
+    const cagePrice = cageOption?.price ?? 0
+    const mealsPrice = data.mealsCount * exhibition.priceMeal
+
+    const newCatData = data.cats.map((entry) => ({
+      catId: entry.catId,
+      participationDays: entry.participationDays,
+      traditionalClass: entry.traditionalClass,
+      traditionalClassOther: entry.traditionalClassOther,
+      isHorsConcours: entry.isHorsConcours,
+      wantsComplianceExam: entry.wantsComplianceExam,
+      specialParticipations: entry.specialParticipations,
+      amount: basePrice,
+    }))
 
     if (existingReg) {
       // Recalculate existing cat amounts with new base price
       const existingAmounts = existingReg.cats.map((rc) => ({
         id: rc.id,
-        amount: catBaseAmount(rc, basePrice, priceCage, priceDoubleCage, priceMeal),
+        amount: basePrice,
       }))
-      const newCatData = data.cats.map((entry) => ({
-        catId: entry.catId,
-        participationDays: entry.participationDays,
-        traditionalClass: entry.traditionalClass,
-        traditionalClassOther: entry.traditionalClassOther,
-        isHorsConcours: entry.isHorsConcours,
-        wantsComplianceExam: entry.wantsComplianceExam,
-        specialParticipations: entry.specialParticipations,
-        wantsCage: entry.wantsCage,
-        wantsDoubleCage: entry.wantsDoubleCage,
-        mealsCount: entry.mealsCount,
-        amount: catBaseAmount(entry, basePrice, priceCage, priceDoubleCage, priceMeal),
-      }))
-      const newTotalAmount =
+      const catsTotal =
         existingAmounts.reduce((s, c) => s + c.amount, 0) +
         newCatData.reduce((s, c) => s + c.amount, 0)
+      const newTotalAmount = catsTotal + cagePrice + mealsPrice
 
       await prisma.$transaction([
         ...existingAmounts.map(({ id, amount }) =>
@@ -116,7 +109,11 @@ export async function POST(req: NextRequest) {
         }),
         prisma.registration.update({
           where: { id: existingReg.id },
-          data: { totalAmount: newTotalAmount },
+          data: {
+            totalAmount: newTotalAmount,
+            cageOptionId: data.cageOptionId ?? existingReg.cageOptionId,
+            mealsCount: data.mealsCount,
+          },
         }),
       ])
       return NextResponse.json({ id: existingReg.id }, { status: 200 })
@@ -132,26 +129,16 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const newCatData = data.cats.map((entry) => ({
-      catId: entry.catId,
-      participationDays: entry.participationDays,
-      traditionalClass: entry.traditionalClass,
-      traditionalClassOther: entry.traditionalClassOther,
-      isHorsConcours: entry.isHorsConcours,
-      wantsComplianceExam: entry.wantsComplianceExam,
-      specialParticipations: entry.specialParticipations,
-      wantsCage: entry.wantsCage,
-      wantsDoubleCage: entry.wantsDoubleCage,
-      mealsCount: entry.mealsCount,
-      amount: catBaseAmount(entry, basePrice, priceCage, priceDoubleCage, priceMeal),
-    }))
-    const totalAmount = newCatData.reduce((s, c) => s + c.amount, 0)
+    const catsTotal = newCatData.reduce((s, c) => s + c.amount, 0)
+    const totalAmount = catsTotal + cagePrice + mealsPrice
 
     const registration = await prisma.registration.create({
       data: {
         exhibitionId: data.exhibitionId,
         userId: session.user.id,
         totalAmount,
+        cageOptionId: data.cageOptionId ?? null,
+        mealsCount: data.mealsCount,
         cats: { create: newCatData },
       },
     })

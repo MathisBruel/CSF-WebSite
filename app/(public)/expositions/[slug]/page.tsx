@@ -19,6 +19,7 @@ export default async function ExpoDetailPage({ params }: Props) {
     include: {
       _count: { select: { registrations: true } },
       pricingTiers: { orderBy: { minCats: 'asc' } },
+      cageOptions: { orderBy: { order: 'asc' } },
     },
   })
 
@@ -82,18 +83,20 @@ export default async function ExpoDetailPage({ params }: Props) {
                     <td className="py-2 text-right font-medium text-csf-dark">{formatPrice(expo.priceBase)}</td>
                   </tr>
                 )}
-                <tr>
-                  <td className="py-2 text-csf-muted">Location cage simple</td>
-                  <td className="py-2 text-right font-medium text-csf-dark">{formatPrice(expo.priceCage)}</td>
-                </tr>
-                <tr>
-                  <td className="py-2 text-csf-muted">Location cage double</td>
-                  <td className="py-2 text-right font-medium text-csf-dark">{formatPrice(expo.priceDoubleCage)}</td>
-                </tr>
-                <tr>
-                  <td className="py-2 text-csf-muted">Repas (par journée)</td>
-                  <td className="py-2 text-right font-medium text-csf-dark">{formatPrice(expo.priceMeal)}</td>
-                </tr>
+                {expo.cageOptions.map((opt) => (
+                  <tr key={opt.id}>
+                    <td className="py-2 text-csf-muted">{opt.name}</td>
+                    <td className="py-2 text-right font-medium text-csf-dark">
+                      {opt.price > 0 ? formatPrice(opt.price) : 'Inclus'}
+                    </td>
+                  </tr>
+                ))}
+                {expo.mealsEnabled && (
+                  <tr>
+                    <td className="py-2 text-csf-muted">Repas (pré-commande)</td>
+                    <td className="py-2 text-right font-medium text-csf-dark">{formatPrice(expo.priceMeal)}</td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>

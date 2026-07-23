@@ -7,7 +7,10 @@ export const dynamic = 'force-dynamic'
 export default async function AdminExpoEdit({ params }: { params: { id: string } }) {
   const exhibition = await prisma.exhibition.findUnique({
     where: { id: params.id },
-    include: { pricingTiers: { orderBy: { minCats: 'asc' } } },
+    include: {
+      pricingTiers: { orderBy: { minCats: 'asc' } },
+      cageOptions: { orderBy: { order: 'asc' } },
+    },
   })
 
   if (!exhibition) notFound()
@@ -31,13 +34,14 @@ export default async function AdminExpoEdit({ params }: { params: { id: string }
           endDate: exhibition.endDate.toISOString().slice(0, 16),
           registrationDeadline: exhibition.registrationDeadline.toISOString().slice(0, 16),
           priceBase: exhibition.priceBase,
-          priceCage: exhibition.priceCage,
-          priceDoubleCage: exhibition.priceDoubleCage,
           priceMeal: exhibition.priceMeal,
+          mealsEnabled: exhibition.mealsEnabled,
+          mealsRequired: exhibition.mealsRequired,
           maxRegistrations: exhibition.maxRegistrations || undefined,
           rules: exhibition.rules || '',
         }}
         defaultPricingTiers={exhibition.pricingTiers.map(({ minCats, pricePerCat }) => ({ minCats, pricePerCat }))}
+        defaultCageOptions={exhibition.cageOptions.map(({ name, price, order }) => ({ name, price, order }))}
       />
     </div>
   )

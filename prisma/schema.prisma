@@ -159,13 +159,11 @@ model Exhibition {
   maxRegistrations Int?
   coverImageUrl   String?
 
-  // Tarifs
   priceBase       Float
-  priceCage       Float            @default(0)
-  priceDoubleCage Float            @default(0)
   priceMeal       Float            @default(0)
+  mealsEnabled    Boolean          @default(false)
+  mealsRequired   Boolean          @default(false)
 
-  // Meta
   rules           String?
   notes           String?
   createdAt       DateTime         @default(now())
@@ -173,6 +171,7 @@ model Exhibition {
 
   registrations   Registration[]
   pricingTiers    ExhibitionPricingTier[]
+  cageOptions     ExhibitionCageOption[]
 
   @@map("exhibitions")
 }
@@ -188,6 +187,19 @@ model ExhibitionPricingTier {
   @@map("exhibition_pricing_tiers")
 }
 
+model ExhibitionCageOption {
+  id           String     @id @default(cuid())
+  exhibitionId String
+  exhibition   Exhibition @relation(fields: [exhibitionId], references: [id], onDelete: Cascade)
+  name         String
+  price        Float
+  order        Int        @default(0)
+
+  registrations Registration[]
+
+  @@map("exhibition_cage_options")
+}
+
 // ─── Registration ─────────────────────────────────────────────────────────────
 
 model Registration {
@@ -201,6 +213,10 @@ model Registration {
   paymentStatus  PaymentStatus      @default(PENDING)
   totalAmount    Float
   paidAt         DateTime?
+
+  cageOptionId   String?
+  cageOption     ExhibitionCageOption? @relation(fields: [cageOptionId], references: [id])
+  mealsCount     Int                @default(0)
 
   adminNotes     String?
   rejectionReason String?
@@ -229,10 +245,6 @@ model RegistrationCat {
   isHorsConcours       Boolean  @default(false)
   wantsComplianceExam  Boolean  @default(false)
   specialParticipations String[]
-
-  wantsCage        Boolean  @default(false)
-  wantsDoubleCage  Boolean  @default(false)
-  mealsCount       Int      @default(0)
 
   amount           Float
 

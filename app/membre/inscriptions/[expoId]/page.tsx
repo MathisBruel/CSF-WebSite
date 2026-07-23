@@ -14,7 +14,10 @@ export default async function InscriptionPage({ params }: Props) {
   const [expo, cats] = await Promise.all([
     prisma.exhibition.findUnique({
       where: { id: params.expoId },
-      include: { pricingTiers: { orderBy: { minCats: 'asc' } } },
+      include: {
+        pricingTiers: { orderBy: { minCats: 'asc' } },
+        cageOptions: { orderBy: { order: 'asc' } },
+      },
     }),
     prisma.cat.findMany({
       where: { ownerId: session.user.id },
@@ -49,6 +52,7 @@ export default async function InscriptionPage({ params }: Props) {
         exhibition={JSON.parse(JSON.stringify(expo))}
         cats={JSON.parse(JSON.stringify(availableCats))}
         pricingTiers={expo.pricingTiers.map(({ minCats, pricePerCat }) => ({ minCats, pricePerCat }))}
+        cageOptions={expo.cageOptions.map(({ id, name, price, order }) => ({ id, name, price, order }))}
       />
     </div>
   )
