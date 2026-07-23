@@ -1,10 +1,8 @@
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { notFound } from 'next/navigation'
-import { formatDate, DOCUMENT_TYPE_LABELS } from '@/lib/utils'
-import { DocumentUpload } from '@/components/membre/DocumentUpload'
+import { formatDate } from '@/lib/utils'
 import Link from 'next/link'
-import { DocumentType } from '@prisma/client'
 
 type Props = { params: { id: string } }
 
@@ -50,38 +48,6 @@ export default async function CatDetailPage({ params }: Props) {
             </div>
           ))}
         </dl>
-      </div>
-
-      {/* Documents */}
-      <div className="card">
-        <h2 className="font-bold text-csf-dark mb-4">Documents justificatifs</h2>
-        <div className="space-y-4">
-          {([DocumentType.PEDIGREE, DocumentType.ICAD, DocumentType.VACCIN] as const).map((type) => {
-            const doc = cat.catDocuments.find((d) => d.type === type)
-            return (
-              <div key={type} className="border border-csf-light rounded-lg p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="font-medium text-csf-dark">{DOCUMENT_TYPE_LABELS[type]}</h3>
-                  {doc && (
-                    <span className={`badge ${doc.validated ? 'badge-green' : 'badge-yellow'}`}>
-                      {doc.validated ? 'Validé' : 'En attente de validation'}
-                    </span>
-                  )}
-                </div>
-                {doc ? (
-                  <div className="text-sm text-csf-muted">
-                    <p>Fichier : {doc.originalName}</p>
-                    {doc.rejectionReason && (
-                      <p className="text-red-600 mt-1">Refusé : {doc.rejectionReason}</p>
-                    )}
-                  </div>
-                ) : (
-                  <DocumentUpload catId={cat.id} documentType={type} />
-                )}
-              </div>
-            )
-          })}
-        </div>
       </div>
     </div>
   )

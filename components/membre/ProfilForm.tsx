@@ -5,12 +5,18 @@ import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 
 type ProfileData = {
+  name: string
   firstName: string
   lastName: string
   phone: string
   city: string
   postalCode: string
   address: string
+  country: string
+  affixe: string
+  breedingName: string
+  website: string
+  gpsCoordinates: string
 }
 
 export function ProfilForm({ user }: { user: ProfileData & { email: string; newsletterSubscribed?: boolean } }) {
@@ -20,12 +26,18 @@ export function ProfilForm({ user }: { user: ProfileData & { email: string; news
   const [newsletter, setNewsletter] = useState(user.newsletterSubscribed ?? true)
   const { register, handleSubmit, formState: { isSubmitting } } = useForm<ProfileData>({
     defaultValues: {
+      name: user.name || '',
       firstName: user.firstName || '',
       lastName: user.lastName || '',
       phone: user.phone || '',
       city: user.city || '',
       postalCode: user.postalCode || '',
       address: user.address || '',
+      country: user.country || '',
+      affixe: user.affixe || '',
+      breedingName: user.breedingName || '',
+      website: user.website || '',
+      gpsCoordinates: user.gpsCoordinates || '',
     },
   })
 
@@ -58,10 +70,17 @@ export function ProfilForm({ user }: { user: ProfileData & { email: string; news
         <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">{error}</div>
       )}
 
-      <div>
-        <label className="form-label">Email</label>
-        <input value={user.email} disabled className="form-input opacity-60 cursor-not-allowed" />
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+            <label className="form-label">Email</label>
+            <input value={user.email} disabled className="form-input opacity-60 cursor-not-allowed" />
+        </div>
+        <div>
+            <label className="form-label">Nom d&apos;utilisateur</label>
+            <input value={user.name} disabled className="form-input opacity-60 cursor-not-allowed" />
+        </div>
       </div>
+
 
       <div className="grid grid-cols-2 gap-4">
         <div>
@@ -73,6 +92,32 @@ export function ProfilForm({ user }: { user: ProfileData & { email: string; news
           <input {...register('lastName')} className="form-input" />
         </div>
       </div>
+      
+      <hr />
+
+      <div className="grid grid-cols-2 gap-4">
+          <div>
+              <label className="form-label">Affixe</label>
+              <input {...register('affixe')} className="form-input" />
+          </div>
+          <div>
+              <label className="form-label">Nom d&apos;élevage</label>
+              <input {...register('breedingName')} className="form-input" />
+          </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+          <div>
+              <label className="form-label">Site internet</label>
+              <input {...register('website')} className="form-input" />
+          </div>
+          <div>
+              <label className="form-label">Coordonnées GPS</label>
+              <input {...register('gpsCoordinates')} className="form-input" />
+          </div>
+      </div>
+
+      <hr />
 
       <div>
         <label className="form-label">Téléphone</label>
@@ -93,6 +138,11 @@ export function ProfilForm({ user }: { user: ProfileData & { email: string; news
           <label className="form-label">Ville</label>
           <input {...register('city')} className="form-input" />
         </div>
+      </div>
+        
+      <div>
+        <label className="form-label">Pays</label>
+        <input {...register('country')} className="form-input" />
       </div>
 
       <div className="flex items-center gap-3 py-2">

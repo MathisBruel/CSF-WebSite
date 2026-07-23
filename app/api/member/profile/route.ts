@@ -7,18 +7,35 @@ export async function PUT(req: NextRequest) {
   if (!session) return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
 
   const data = await req.json()
-  const { firstName, lastName, phone, city, postalCode, address, newsletterSubscribed } = data
+  const { 
+    firstName, 
+    lastName, 
+    phone, 
+    city, 
+    postalCode, 
+    address, 
+    country,
+    affixe,
+    breedingName,
+    website,
+    gpsCoordinates,
+    newsletterSubscribed 
+  } = data
 
   const user = await prisma.user.update({
     where: { id: session.user.id },
     data: {
       firstName,
       lastName,
-      name: `${firstName} ${lastName}`,
       phone,
       city,
       postalCode,
       address,
+      country,
+      affixe,
+      breedingName,
+      website,
+      gpsCoordinates,
       ...(typeof newsletterSubscribed === 'boolean' ? { newsletterSubscribed } : {}),
     },
   })

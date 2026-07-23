@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 export const dynamic = 'force-dynamic'
 import Link from 'next/link'
 import { formatDate, formatPrice, REGISTRATION_STATUS_LABELS, PAYMENT_STATUS_LABELS } from '@/lib/utils'
+import { RegistrationActions } from '@/components/membre/RegistrationActions'
 
 export default async function MesInscriptions() {
   const session = await auth()
@@ -117,6 +118,8 @@ export default async function MesInscriptions() {
                   Motif de refus : {reg.rejectionReason}
                 </div>
               )}
+
+              <RegistrationActions registration={reg} exhibitionSlug={reg.exhibition.slug} />
             </div>
           ))}
         </div>
