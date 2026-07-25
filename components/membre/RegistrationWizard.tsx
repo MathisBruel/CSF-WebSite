@@ -34,14 +34,15 @@ export function RegistrationWizard({
   isMember,
 }: {
   exhibition: Exhibition & { specials: ExhibitionSpecial[] }
-  cats: (Cat & { catDocuments: { type: string; validated: boolean }[]; isHouseCat: boolean })[]
+  cats: (Cat & { isHouseCat: boolean })[]
   pricing: GlobalPricing
   isMember: boolean
 }) {
   const [step, setStep] = useState<Step>('cats')
   const [selectedCatIds, setSelectedCatIds] = useState<string[]>([])
   const [catOptions, setCatOptions] = useState<Record<string, CatEntry>>({})
-  const [needsCage, setNeedsCage] = useState(false)
+  const [personalCages, setPersonalCages] = useState(0)
+  const [borrowedCages, setBorrowedCages] = useState(0)
   const [cageSpecialRequest, setCageSpecialRequest] = useState('')
   const [wantsSpecialCage, setWantsSpecialCage] = useState(false)
   const [nextTo, setNextTo] = useState('')
@@ -105,8 +106,9 @@ export function RegistrationWizard({
         catId,
         ...(catOptions[catId] ?? defaultCatEntry()),
       })),
-      needsCage,
-      cageSpecialLengthRequest: needsCage && wantsSpecialCage ? cageSpecialRequest : undefined,
+      personalCages,
+      borrowedCages,
+      cageSpecialLengthRequest: wantsSpecialCage ? cageSpecialRequest : undefined,
       nextTo: nextTo || undefined,
       comment: comment || undefined,
     }
@@ -198,9 +200,6 @@ export function RegistrationWizard({
             ) : (
               <div className="space-y-3">
                 {cats.map((cat) => {
-                  const hasAllDocs = ['PEDIGREE', 'ICAD', 'VACCIN'].every(
-                    (t) => cat.catDocuments.some((d) => d.type === t)
-                  )
                   const isSelected = selectedCatIds.includes(cat.id)
                   return (
                     <label key={cat.id}
@@ -213,7 +212,6 @@ export function RegistrationWizard({
                         <p className="font-medium text-csf-dark">{cat.name}</p>
                         <p className="text-sm text-csf-muted">{cat.breed} · {cat.gender}</p>
                       </div>
-                      {!hasAllDocs && <span className="badge badge-yellow text-xs">Docs manquants</span>}
                     </label>
                   )
                 })}
@@ -350,77 +348,75 @@ export function RegistrationWizard({
         {/* ── Step 3: Cage ── */}
         {step === 'cage' && (
           <div className="space-y-5">
-            <div>
-              <h2 className="font-bold text-csf-dark mb-1">Cage</h2>
-              <p className="text-sm text-csf-muted">Les cages sont fournies gratuitement par le club.</p>
-            </div>
+            <h2 className="font-bold text-csf-dark">Cage</h2>
 
-            <div className="p-4 bg-orange-50 border border-orange-100 rounded-xl">
-              <p className="text-sm font-medium text-csf-dark mb-1">Caution cage</p>
-              <p className="text-sm text-csf-muted">
-                Une caution de <strong className="text-csf-dark">{formatPrice(pricing.cageDeposit)}</strong> par chèque
-                vous sera demandée sur place lors du retrait de votre cage. Elle vous sera restituée en fin d&apos;exposition.
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <label className={`flex items-center justify-between p-4 border-2 rounded-xl cursor-pointer transition-colors ${
-                !needsCage ? 'border-csf-orange bg-orange-50' : 'border-csf-light hover:border-csf-orange/50'
-              }`}>
-                <div>
-                  <p className="text-sm font-medium text-csf-dark">Je n&apos;ai pas besoin d&apos;une cage</p>
-                  <p className="text-xs text-csf-muted">J&apos;apporte ma propre cage</p>
-                </div>
-                <input type="radio" name="cage" checked={!needsCage}
-                  onChange={() => setNeedsCage(false)}
-                  className="w-5 h-5 text-csf-orange" />
-              </label>
-              <label className={`flex items-center justify-between p-4 border-2 rounded-xl cursor-pointer transition-colors ${
-                needsCage ? 'border-csf-orange bg-orange-50' : 'border-csf-light hover:border-csf-orange/50'
-              }`}>
-                <div>
-                  <p className="text-sm font-medium text-csf-dark">Je souhaite une cage du club</p>
-                  <p className="text-xs text-csf-muted">Gratuit · caution {formatPrice(pricing.cageDeposit)} par chèque sur place</p>
-                </div>
-                <input type="radio" name="cage" checked={needsCage}
-                  onChange={() => setNeedsCage(true)}
-                  className="w-5 h-5 text-csf-orange" />
-              </label>
-            </div>
-
-            {needsCage && (
-              <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl space-y-3">
-                <div className="flex items-center justify-between">
-                  <p className="text-sm font-medium text-csf-dark">
-                    Longueur standard pour {selectedCatIds.length} chat{selectedCatIds.length > 1 ? 's' : ''}
-                  </p>
-                  <span className="text-sm font-bold text-csf-orange">{standardCageLength} cm</span>
-                </div>
-                <p className="text-xs text-csf-muted">
-                  1 chat = 80 cm · chaque chat supplémentaire = +60 cm
+            {/* Cage length info — always shown */}
+            <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl">
+              <div className="flex items-center justify-between mb-1">
+                <p className="text-sm font-medium text-csf-dark">
+                  Longueur standard pour {selectedCatIds.length} chat{selectedCatIds.length > 1 ? 's' : ''}
                 </p>
-
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" checked={wantsSpecialCage}
-                    onChange={(e) => { setWantsSpecialCage(e.target.checked); if (!e.target.checked) setCageSpecialRequest('') }}
-                    className="text-csf-orange rounded" />
-                  <span className="text-sm">Demander une longueur différente</span>
-                </label>
-
-                {wantsSpecialCage && (
-                  <div>
-                    <label className="form-label text-sm">Raison de la demande spéciale</label>
-                    <textarea
-                      value={cageSpecialRequest}
-                      onChange={(e) => setCageSpecialRequest(e.target.value)}
-                      className="form-textarea"
-                      rows={2}
-                      placeholder="Ex : cage décorée 120cm, cage double pour deux chatons..."
-                    />
-                  </div>
-                )}
+                <span className="text-sm font-bold text-csf-orange">{standardCageLength} cm</span>
               </div>
-            )}
+              <p className="text-xs text-csf-muted">1 chat = 80 cm · chaque chat supplémentaire = +60 cm</p>
+            </div>
+
+            {/* Personal cages */}
+            <div className="p-4 border border-csf-light rounded-xl space-y-1">
+              <p className="text-sm font-medium text-csf-dark">Cages personnelles</p>
+              <p className="text-xs text-csf-muted mb-3">Nombre de cages que vous apportez vous-même</p>
+              <div className="flex items-center gap-3">
+                <button type="button"
+                  onClick={() => setPersonalCages(Math.max(0, personalCages - 1))}
+                  className="w-8 h-8 rounded-full border border-csf-light flex items-center justify-center text-csf-dark hover:bg-csf-light transition-colors font-bold">−</button>
+                <span className="w-8 text-center font-bold text-csf-dark">{personalCages}</span>
+                <button type="button"
+                  onClick={() => setPersonalCages(personalCages + 1)}
+                  className="w-8 h-8 rounded-full border border-csf-light flex items-center justify-center text-csf-dark hover:bg-csf-light transition-colors font-bold">+</button>
+              </div>
+            </div>
+
+            {/* Borrowed cages */}
+            <div className="p-4 border border-csf-light rounded-xl space-y-1">
+              <p className="text-sm font-medium text-csf-dark">Cages empruntées au club</p>
+              <p className="text-xs text-csf-muted mb-3">Nombre de cages à emprunter — gratuit, caution {formatPrice(pricing.cageDeposit)} par cage par chèque sur place</p>
+              <div className="flex items-center gap-3">
+                <button type="button"
+                  onClick={() => setBorrowedCages(Math.max(0, borrowedCages - 1))}
+                  className="w-8 h-8 rounded-full border border-csf-light flex items-center justify-center text-csf-dark hover:bg-csf-light transition-colors font-bold">−</button>
+                <span className="w-8 text-center font-bold text-csf-dark">{borrowedCages}</span>
+                <button type="button"
+                  onClick={() => setBorrowedCages(borrowedCages + 1)}
+                  className="w-8 h-8 rounded-full border border-csf-light flex items-center justify-center text-csf-dark hover:bg-csf-light transition-colors font-bold">+</button>
+              </div>
+              {borrowedCages > 0 && (
+                <p className="text-xs text-orange-600 mt-2 font-medium">
+                  Caution : {formatPrice(pricing.cageDeposit * borrowedCages)} ({borrowedCages} × {formatPrice(pricing.cageDeposit)}) — chèque remis sur place, restitué en fin d&apos;expo
+                </p>
+              )}
+            </div>
+
+            {/* Special length request — always available */}
+            <div className="space-y-2">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={wantsSpecialCage}
+                  onChange={(e) => { setWantsSpecialCage(e.target.checked); if (!e.target.checked) setCageSpecialRequest('') }}
+                  className="text-csf-orange rounded" />
+                <span className="text-sm">Demander une longueur différente</span>
+              </label>
+              {wantsSpecialCage && (
+                <div>
+                  <label className="form-label text-sm">Raison de la demande spéciale</label>
+                  <textarea
+                    value={cageSpecialRequest}
+                    onChange={(e) => setCageSpecialRequest(e.target.value)}
+                    className="form-textarea"
+                    rows={2}
+                    placeholder="Ex : cage décorée 120 cm, cage double pour deux chatons..."
+                  />
+                </div>
+              )}
+            </div>
 
             {/* À côté de + commentaire */}
             <div className="space-y-4 pt-2 border-t border-csf-light">
@@ -488,17 +484,27 @@ export function RegistrationWizard({
                 )
               })}
 
-              {needsCage && (
-                <div className="text-csf-muted space-y-0.5">
-                  <div className="flex justify-between">
-                    <span>Cage club ({standardCageLength} cm)</span>
-                    <span>Gratuit (caution {formatPrice(pricing.cageDeposit)} sur place)</span>
-                  </div>
-                  {wantsSpecialCage && cageSpecialRequest && (
-                    <p className="text-xs italic">Demande spéciale : {cageSpecialRequest}</p>
-                  )}
+              <div className="text-csf-muted space-y-0.5">
+                <div className="flex justify-between">
+                  <span>Longueur cage standard</span>
+                  <span className="font-medium text-csf-dark">{standardCageLength} cm</span>
                 </div>
-              )}
+                {personalCages > 0 && (
+                  <div className="flex justify-between">
+                    <span>Cage{personalCages > 1 ? 's' : ''} personnelle{personalCages > 1 ? 's' : ''}</span>
+                    <span>{personalCages}</span>
+                  </div>
+                )}
+                {borrowedCages > 0 && (
+                  <div className="flex justify-between">
+                    <span>Cage{borrowedCages > 1 ? 's' : ''} empruntée{borrowedCages > 1 ? 's' : ''} au club</span>
+                    <span>{borrowedCages} — caution {formatPrice(pricing.cageDeposit * borrowedCages)} sur place</span>
+                  </div>
+                )}
+                {wantsSpecialCage && cageSpecialRequest && (
+                  <p className="text-xs italic">Longueur spéciale : {cageSpecialRequest}</p>
+                )}
+              </div>
 
               {nextTo && (
                 <div className="flex justify-between text-csf-muted">

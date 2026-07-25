@@ -82,9 +82,10 @@ export default async function MesInscriptions() {
                 </div>
               </div>
 
-              {reg.needsCage && (
-                <div className="mb-2 text-xs text-csf-muted">
-                  <span>Cage club demandée</span>
+              {(reg.personalCages > 0 || reg.borrowedCages > 0) && (
+                <div className="mb-2 text-xs text-csf-muted flex gap-3">
+                  {reg.personalCages > 0 && <span>{reg.personalCages} cage{reg.personalCages > 1 ? 's' : ''} perso</span>}
+                  {reg.borrowedCages > 0 && <span>{reg.borrowedCages} cage{reg.borrowedCages > 1 ? 's' : ''} club</span>}
                 </div>
               )}
 

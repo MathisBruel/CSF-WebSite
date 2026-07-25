@@ -85,8 +85,10 @@ export default async function AdminInscriptions({
                 <p className="text-sm font-medium text-csf-dark mt-1">
                   {reg.cats.length} chat{reg.cats.length !== 1 ? 's' : ''} · {formatPrice(reg.totalAmount)}
                 </p>
-                {reg.needsCage && (
-                  <p className="text-xs text-csf-muted mt-0.5">Cage club demandée</p>
+                {(reg.personalCages > 0 || reg.borrowedCages > 0) && (
+                  <p className="text-xs text-csf-muted mt-0.5">
+                    {[reg.personalCages > 0 && `${reg.personalCages} cage${reg.personalCages > 1 ? 's' : ''} perso`, reg.borrowedCages > 0 && `${reg.borrowedCages} cage${reg.borrowedCages > 1 ? 's' : ''} club`].filter(Boolean).join(' · ')}
+                  </p>
                 )}
               </div>
               <RegistrationActions

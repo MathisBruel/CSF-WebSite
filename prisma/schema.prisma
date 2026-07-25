@@ -212,7 +212,8 @@ model Registration {
   totalAmount    Float
   paidAt         DateTime?
 
-  needsCage                Boolean  @default(false)
+  personalCages            Int      @default(0)
+  borrowedCages            Int      @default(0)
   cageSpecialLengthRequest String?
 
   nextTo         String?
