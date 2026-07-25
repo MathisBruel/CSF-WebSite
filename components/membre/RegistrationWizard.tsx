@@ -54,6 +54,7 @@ export function RegistrationWizard({
   const [error, setError] = useState('')
   const [hasReadRules, setHasReadRules] = useState(false)
   const [triedOptionsNext, setTriedOptionsNext] = useState(false)
+  const [triedCageNext, setTriedCageNext] = useState(false)
 
   const toggleCat = (catId: string) => {
     if (selectedCatIds.includes(catId)) {
@@ -493,9 +494,18 @@ export function RegistrationWizard({
               </div>
             </div>
 
+            {triedCageNext && personalCages === 0 && !wantsBorrowedCages && (
+              <p className="text-red-500 text-sm">Indiquez au moins une cage personnelle ou empruntez une cage au club.</p>
+            )}
+
             <div className="flex justify-between">
               <button onClick={() => setStep('options')} className="btn-secondary">← Retour</button>
-              <button onClick={() => setStep('summary')} className="btn-primary">
+              <button
+                onClick={() => {
+                  setTriedCageNext(true)
+                  if (personalCages > 0 || wantsBorrowedCages) setStep('summary')
+                }}
+                className="btn-primary">
                 Suivant →
               </button>
             </div>

@@ -225,13 +225,38 @@ export async function sendRegistrationRejectedEmail(
 
 export async function notifyAdminNewRegistration(params: {
   registrationId: string
-  user: { name: string; email: string; city?: string | null; membershipActive: boolean }
+  user: {
+    name: string
+    email: string
+    membershipActive: boolean
+    membershipExpiry?: Date | null
+    role?: string | null
+    firstName?: string | null
+    lastName?: string | null
+    civilite?: string | null
+    phone?: string | null
+    phoneFixed?: string | null
+    address?: string | null
+    address2?: string | null
+    city?: string | null
+    postalCode?: string | null
+    country?: string | null
+    exposantType?: string | null
+    certificatCapacite?: string | null
+    affixe?: string | null
+    breedingName?: string | null
+    siret?: string | null
+    website?: string | null
+    otherClubs?: string | null
+  }
   exhibition: { title: string; startDate: Date; city: string }
   cats: {
     name: string
     breed: string
     participationDays: string[]
     traditionalClass?: string | null
+    traditionalClassOther?: string | null
+    isHouseCat?: boolean
     wantsComplianceExam: boolean
     specialParticipations: string[]
     amount: number
@@ -314,22 +339,47 @@ export async function notifyAdminNewRegistration(params: {
     id: registrationId,
     createdAt: new Date().toISOString(),
     exhibition: { title: exhibition.title, startDate: exhibition.startDate, city: exhibition.city },
-    user: { name: user.name, email: user.email, city: user.city, membershipActive: user.membershipActive },
-    cats: cats.map((cat, idx) => ({
+    exposant: {
+      nom: user.name,
+      prenom: user.firstName || null,
+      nom_de_famille: user.lastName || null,
+      civilite: user.civilite || null,
+      email: user.email,
+      telephone_mobile: user.phone || null,
+      telephone_fixe: user.phoneFixed || null,
+      adresse: user.address || null,
+      adresse2: user.address2 || null,
+      ville: user.city || null,
+      code_postal: user.postalCode || null,
+      pays: user.country || 'France',
+      type_exposant: user.exposantType || null,
+      certificat_capacite: user.certificatCapacite || null,
+      affixe: user.affixe || null,
+      nom_elevage: user.breedingName || null,
+      siret: user.siret || null,
+      site_web: user.website || null,
+      autres_clubs: user.otherClubs || null,
+      adherent_actif: user.membershipActive,
+      expiration_adhesion: user.membershipExpiry || null,
+      role: user.role || null,
+    },
+    chats: cats.map((cat, idx) => ({
       position: idx + 1,
-      name: cat.name,
-      breed: cat.breed,
-      participationDays: cat.participationDays,
-      traditionalClass: cat.traditionalClass,
-      wantsComplianceExam: cat.wantsComplianceExam,
-      specialParticipations: cat.specialParticipations,
-      amount: cat.amount,
+      nom: cat.name,
+      race: cat.breed,
+      chat_de_maison: cat.isHouseCat ?? false,
+      jours_participation: cat.participationDays,
+      classe: cat.traditionalClass || null,
+      classe_autre: cat.traditionalClassOther || null,
+      examen_conformite: cat.wantsComplianceExam,
+      participations_speciales: cat.specialParticipations,
+      montant: cat.amount,
     })),
-    registrationFee,
-    totalAmount,
-    cages: { personal: personalCages, borrowed: borrowedCages, specialRequest: cageSpecialLengthRequest },
-    nextTo,
-    comment,
+    frais_inscription: registrationFee,
+    total: totalAmount,
+    cages: { personnelles: personalCages, empruntees: borrowedCages, demande_speciale: cageSpecialLengthRequest || null },
+    a_cote_de: nextTo || null,
+    commentaire: comment || null,
   }, null, 2)
 
   const safeTitle = exhibition.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()
