@@ -43,7 +43,7 @@ export function RegistrationWizard({
   const [step, setStep] = useState<Step>('cats')
   const [selectedCatIds, setSelectedCatIds] = useState<string[]>([])
   const [catOptions, setCatOptions] = useState<Record<string, CatEntry>>({})
-  const [personalCages, setPersonalCages] = useState(0)
+  const [canBringOwnCage, setCanBringOwnCage] = useState<boolean | null>(null)
   const [borrowedCages, setBorrowedCages] = useState(0)
   const [cageSpecialRequest, setCageSpecialRequest] = useState('')
   const [wantsSpecialCage, setWantsSpecialCage] = useState(false)
@@ -52,6 +52,7 @@ export function RegistrationWizard({
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [hasReadRules, setHasReadRules] = useState(false)
+  const [triedOptionsNext, setTriedOptionsNext] = useState(false)
 
   const toggleCat = (catId: string) => {
     if (selectedCatIds.includes(catId)) {
@@ -91,6 +92,12 @@ export function RegistrationWizard({
 
   const standardCageLength = computeCageLength(selectedCatIds.length)
 
+  const isCatOptionsValid = (catId: string) => {
+    const opts = catOptions[catId] ?? defaultCatEntry()
+    return opts.participationDays.length > 0 && opts.traditionalClass !== ''
+  }
+  const allCatsOptionsValid = selectedCatIds.every(isCatOptionsValid)
+
   const goToOptions = () => {
     const newOptions: Record<string, CatEntry> = { ...catOptions }
     for (const catId of selectedCatIds) {
@@ -109,8 +116,8 @@ export function RegistrationWizard({
         catId,
         ...(catOptions[catId] ?? defaultCatEntry()),
       })),
-      personalCages,
-      borrowedCages,
+      personalCages: 0,
+      borrowedCages: canBringOwnCage ? 0 : borrowedCages,
       cageSpecialLengthRequest: wantsSpecialCage ? cageSpecialRequest : undefined,
       nextTo: nextTo || undefined,
       comment: comment || undefined,
@@ -270,7 +277,9 @@ export function RegistrationWizard({
 
                     <div className="space-y-4">
                       <div>
-                        <label className="form-label text-sm">Jours de participation</label>
+                        <label className="form-label text-sm">
+                          Jours de participation <span className="text-red-500">*</span>
+                        </label>
                         <div className="flex gap-4">
                           {['Samedi', 'Dimanche'].map((day) => (
                             <label key={day} className="flex items-center gap-2 cursor-pointer">
@@ -287,20 +296,32 @@ export function RegistrationWizard({
                             </label>
                           ))}
                         </div>
+                        {triedOptionsNext && opts.participationDays.length === 0 && (
+                          <p className="text-red-500 text-xs mt-1">Sélectionner au moins un jour</p>
+                        )}
                       </div>
 
                       <div>
-                        <label className="form-label text-sm">Classe de jugement</label>
+                        <label className="form-label text-sm">
+                          Classe de jugement <span className="text-red-500">*</span>
+                        </label>
                         {availableClasses.length === 0 ? (
                           <p className="text-sm text-red-500">Chat trop jeune pour cette exposition.</p>
                         ) : (
-                          <select className="form-select" value={opts.traditionalClass}
-                            onChange={(e) => update('traditionalClass', e.target.value)}>
-                            <option value="">Sélectionner une classe</option>
-                            {availableClasses.map((c) => (
-                              <option key={c.idClasses} value={c.nom}>{c.nom}</option>
-                            ))}
-                          </select>
+                          <>
+                            <select
+                              className={`form-select ${triedOptionsNext && opts.traditionalClass === '' ? 'border-red-400' : ''}`}
+                              value={opts.traditionalClass}
+                              onChange={(e) => update('traditionalClass', e.target.value)}>
+                              <option value="">Sélectionner une classe</option>
+                              {availableClasses.map((c) => (
+                                <option key={c.idClasses} value={c.nom}>{c.nom}</option>
+                              ))}
+                            </select>
+                            {triedOptionsNext && opts.traditionalClass === '' && (
+                              <p className="text-red-500 text-xs mt-1">Classe obligatoire</p>
+                            )}
+                          </>
                         )}
                       </div>
 
@@ -342,9 +363,21 @@ export function RegistrationWizard({
                 )
               })}
             </div>
-            <div className="flex justify-between mt-6">
+            {triedOptionsNext && !allCatsOptionsValid && (
+              <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+                Chaque chat doit avoir au moins un jour de participation et une classe de jugement.
+              </div>
+            )}
+            <div className="flex justify-between mt-4">
               <button onClick={() => setStep('cats')} className="btn-secondary">← Retour</button>
-              <button onClick={() => setStep('cage')} className="btn-primary">Suivant →</button>
+              <button
+                onClick={() => {
+                  setTriedOptionsNext(true)
+                  if (allCatsOptionsValid) setStep('cage')
+                }}
+                className="btn-primary">
+                Suivant →
+              </button>
             </div>
           </div>
         )}
@@ -354,7 +387,7 @@ export function RegistrationWizard({
           <div className="space-y-5">
             <h2 className="font-bold text-csf-dark">Cage</h2>
 
-            {/* Cage length info — always shown */}
+            {/* Cage length info */}
             <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl">
               <div className="flex items-center justify-between mb-1">
                 <p className="text-sm font-medium text-csf-dark">
@@ -365,40 +398,53 @@ export function RegistrationWizard({
               <p className="text-xs text-csf-muted">1 chat = 80 cm · chaque chat supplémentaire = +60 cm</p>
             </div>
 
-            {/* Personal cages */}
-            <div className="p-4 border border-csf-light rounded-xl space-y-1">
-              <p className="text-sm font-medium text-csf-dark">Cages personnelles</p>
-              <p className="text-xs text-csf-muted mb-3">Nombre de cages que vous apportez vous-même</p>
-              <div className="flex items-center gap-3">
-                <button type="button"
-                  onClick={() => setPersonalCages(Math.max(0, personalCages - 1))}
-                  className="w-8 h-8 rounded-full border border-csf-light flex items-center justify-center text-csf-dark hover:bg-csf-light transition-colors font-bold">−</button>
-                <span className="w-8 text-center font-bold text-csf-dark">{personalCages}</span>
-                <button type="button"
-                  onClick={() => setPersonalCages(personalCages + 1)}
-                  className="w-8 h-8 rounded-full border border-csf-light flex items-center justify-center text-csf-dark hover:bg-csf-light transition-colors font-bold">+</button>
+            {/* Can bring own cage? */}
+            <div className="p-4 border border-csf-light rounded-xl space-y-3">
+              <p className="text-sm font-medium text-csf-dark">Pouvez-vous apporter votre propre cage ?</p>
+              <div className="flex gap-3">
+                {([{ value: true, label: 'Oui' }, { value: false, label: 'Non' }] as const).map(({ value, label }) => (
+                  <button
+                    key={label}
+                    type="button"
+                    onClick={() => {
+                      setCanBringOwnCage(value)
+                      if (value) setBorrowedCages(0)
+                    }}
+                    className={`flex-1 py-2 rounded-lg border text-sm font-medium transition-colors ${
+                      canBringOwnCage === value
+                        ? 'border-csf-orange bg-csf-orange/10 text-csf-orange'
+                        : 'border-gray-200 text-csf-muted hover:border-csf-orange/50'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
               </div>
             </div>
 
-            {/* Borrowed cages */}
-            <div className="p-4 border border-csf-light rounded-xl space-y-1">
-              <p className="text-sm font-medium text-csf-dark">Cages empruntées au club</p>
-              <p className="text-xs text-csf-muted mb-3">Nombre de cages à emprunter — gratuit, caution {formatPrice(pricing.cageDeposit)} par cage par chèque sur place</p>
-              <div className="flex items-center gap-3">
-                <button type="button"
-                  onClick={() => setBorrowedCages(Math.max(0, borrowedCages - 1))}
-                  className="w-8 h-8 rounded-full border border-csf-light flex items-center justify-center text-csf-dark hover:bg-csf-light transition-colors font-bold">−</button>
-                <span className="w-8 text-center font-bold text-csf-dark">{borrowedCages}</span>
-                <button type="button"
-                  onClick={() => setBorrowedCages(borrowedCages + 1)}
-                  className="w-8 h-8 rounded-full border border-csf-light flex items-center justify-center text-csf-dark hover:bg-csf-light transition-colors font-bold">+</button>
-              </div>
-              {borrowedCages > 0 && (
-                <p className="text-xs text-orange-600 mt-2 font-medium">
-                  Caution : {formatPrice(pricing.cageDeposit * borrowedCages)} ({borrowedCages} × {formatPrice(pricing.cageDeposit)}) — chèque remis sur place, restitué en fin d&apos;expo
+            {/* Borrowed cages — only if can't bring own */}
+            {canBringOwnCage === false && (
+              <div className="p-4 border border-csf-light rounded-xl space-y-1">
+                <p className="text-sm font-medium text-csf-dark">Cages empruntées au club</p>
+                <p className="text-xs text-csf-muted mb-3">
+                  Gratuit — caution {formatPrice(pricing.cageDeposit)} par cage par chèque sur place
                 </p>
-              )}
-            </div>
+                <div className="flex items-center gap-3">
+                  <button type="button"
+                    onClick={() => setBorrowedCages(Math.max(0, borrowedCages - 1))}
+                    className="w-8 h-8 rounded-full border border-csf-light flex items-center justify-center text-csf-dark hover:bg-csf-light transition-colors font-bold">−</button>
+                  <span className="w-8 text-center font-bold text-csf-dark">{borrowedCages}</span>
+                  <button type="button"
+                    onClick={() => setBorrowedCages(borrowedCages + 1)}
+                    className="w-8 h-8 rounded-full border border-csf-light flex items-center justify-center text-csf-dark hover:bg-csf-light transition-colors font-bold">+</button>
+                </div>
+                {borrowedCages > 0 && (
+                  <p className="text-xs text-orange-600 mt-2 font-medium">
+                    Caution : {formatPrice(pricing.cageDeposit * borrowedCages)} ({borrowedCages} × {formatPrice(pricing.cageDeposit)}) — chèque remis sur place, restitué en fin d&apos;expo
+                  </p>
+                )}
+              </div>
+            )}
 
             {/* Special length request — always available */}
             <div className="space-y-2">
@@ -448,7 +494,12 @@ export function RegistrationWizard({
 
             <div className="flex justify-between">
               <button onClick={() => setStep('options')} className="btn-secondary">← Retour</button>
-              <button onClick={() => setStep('summary')} className="btn-primary">Suivant →</button>
+              <button
+                onClick={() => setStep('summary')}
+                disabled={canBringOwnCage === null}
+                className="btn-primary">
+                Suivant →
+              </button>
             </div>
           </div>
         )}
@@ -493,13 +544,11 @@ export function RegistrationWizard({
                   <span>Longueur cage standard</span>
                   <span className="font-medium text-csf-dark">{standardCageLength} cm</span>
                 </div>
-                {personalCages > 0 && (
-                  <div className="flex justify-between">
-                    <span>Cage{personalCages > 1 ? 's' : ''} personnelle{personalCages > 1 ? 's' : ''}</span>
-                    <span>{personalCages}</span>
-                  </div>
-                )}
-                {borrowedCages > 0 && (
+                <div className="flex justify-between">
+                  <span>Cage propre</span>
+                  <span>{canBringOwnCage ? 'Oui' : 'Non'}</span>
+                </div>
+                {!canBringOwnCage && borrowedCages > 0 && (
                   <div className="flex justify-between">
                     <span>Cage{borrowedCages > 1 ? 's' : ''} empruntée{borrowedCages > 1 ? 's' : ''} au club</span>
                     <span>{borrowedCages} — caution {formatPrice(pricing.cageDeposit * borrowedCages)} sur place</span>
