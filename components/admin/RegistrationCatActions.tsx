@@ -34,7 +34,7 @@ export function RegistrationCatActions({
   if (registrationStatus !== 'VALIDATED') return null
 
   return (
-    <div className="flex flex-col gap-2 items-end min-w-36">
+    <div className="flex flex-row flex-wrap gap-1.5 items-center justify-end">
       <button
         onClick={() => patch({ vetValidated: !vetValidated })}
         disabled={loading}

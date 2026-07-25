@@ -1,5 +1,4 @@
 import { prisma } from '@/lib/prisma'
-import Link from 'next/link'
 
 export const dynamic = 'force-dynamic'
 import { formatDate, ROLE_LABELS } from '@/lib/utils'
@@ -13,6 +12,9 @@ export default async function AdminMembres({
 }) {
   const where: Record<string, unknown> = {}
   if (searchParams.filter === 'pending') where.membershipActive = false
+  if (searchParams.filter === 'ADMIN') where.role = 'ADMIN'
+  if (searchParams.filter === 'MEMBRE_ACTIF') where.role = 'MEMBRE_ACTIF'
+  if (searchParams.filter === 'ADHERENT_CLUB') where.role = 'ADHERENT_CLUB'
   if (searchParams.q) {
     where.OR = [
       { name: { contains: searchParams.q, mode: 'insensitive' } },
@@ -20,7 +22,7 @@ export default async function AdminMembres({
     ]
   }
 
-  const [members, pendingRequests] = await Promise.all([
+  const [members, pendingRequests, roleCounts, inactiveCount] = await Promise.all([
     prisma.user.findMany({
       where,
       orderBy: { createdAt: 'desc' },
@@ -31,6 +33,11 @@ export default async function AdminMembres({
       orderBy: { requestedAt: 'asc' },
       include: { user: { select: { id: true, name: true, email: true, createdAt: true } } },
     }),
+    prisma.user.groupBy({
+      by: ['role'],
+      _count: { role: true },
+    }),
+    prisma.user.count({ where: { membershipActive: false } }),
   ])
 
   return (
@@ -70,18 +77,30 @@ export default async function AdminMembres({
 
       {/* Filters */}
       <div className="bg-white rounded-xl border border-gray-200 p-4 flex flex-wrap gap-3">
-        <a href="/admin/membres"
-          className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-            !searchParams.filter ? 'bg-csf-dark text-white' : 'text-csf-muted hover:bg-gray-100'
-          }`}>
-          Tous ({members.length})
-        </a>
-        <a href="/admin/membres?filter=pending"
-          className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-            searchParams.filter === 'pending' ? 'bg-csf-dark text-white' : 'text-csf-muted hover:bg-gray-100'
-          }`}>
-          En attente
-        </a>
+        {(() => {
+          const countMap = Object.fromEntries(roleCounts.map((r) => [r.role, r._count.role]))
+          const totalCount = roleCounts.reduce((s, r) => s + r._count.role, 0)
+          const filters: { label: string; value: string | undefined; count: number }[] = [
+            { label: 'Tous', value: undefined, count: totalCount },
+            { label: 'Administrateurs', value: 'ADMIN', count: countMap['ADMIN'] ?? 0 },
+            { label: 'Membres Actifs', value: 'MEMBRE_ACTIF', count: countMap['MEMBRE_ACTIF'] ?? 0 },
+            { label: 'Adhérents Club', value: 'ADHERENT_CLUB', count: countMap['ADHERENT_CLUB'] ?? 0 },
+            { label: 'Non adhérents', value: 'pending', count: inactiveCount },
+          ]
+          return filters.map(({ label, value, count }) => {
+            const active = searchParams.filter === value || (!searchParams.filter && !value)
+            const href = value ? `/admin/membres?filter=${value}` : '/admin/membres'
+            const displayCount = active ? members.length : count
+            return (
+              <a key={label} href={href}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                  active ? 'bg-csf-dark text-white' : 'text-csf-muted hover:bg-gray-100'
+                }`}>
+                {label} ({displayCount})
+              </a>
+            )
+          })
+        })()}
         <form method="GET" className="ml-auto">
           <input name="q" defaultValue={searchParams.q}
             placeholder="Rechercher..." className="form-input text-sm py-1.5 w-64" />
