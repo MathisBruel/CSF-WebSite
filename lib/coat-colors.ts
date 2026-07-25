@@ -1,4 +1,5 @@
 export const COAT_COLORS: string[] = [
+  "*** a determiner ***",
   "black amber silver blotched tabby",
   "black amber silver blotched tabby & blanc",
   "black amber silver mackerel tabby",
@@ -1170,5 +1171,5 @@ export const COAT_COLORS: string[] = [
   "seal tortie tabby point mitted",
   "seal tortie tabby sepia & blanc",
   "seal tortie tabby sepia mitted",
-  "seal tortie ticked tabby mink & blanc"
+  "seal tortie ticked tabby mink & blanc",
 ]

@@ -12,20 +12,32 @@ import { COAT_COLORS } from '@/lib/coat-colors'
 const schema = z.object({
   name: z.string().min(1, 'Nom requis'),
   breed: z.string().min(1, 'Race requise'),
-  color: z.string().optional(),
+  color: z.string().min(1, 'Couleur de robe requise').refine(
+    (val) => COAT_COLORS.some((c) => c.toLowerCase() === val.toLowerCase()),
+    'Couleur non reconnue — sélectionner dans la liste LOOF'
+  ),
   gender: z.enum(['Mâle', 'Femelle', 'Neutre Mâle', 'Neutre Femelle']),
   birthDate: z.string().min(1, 'Date de naissance requise'),
-  eyeColor: z.string().optional(),
+  eyeColor: z.string().min(1, 'Couleur des yeux requise'),
   breeder: z.string().optional(),
-  countryOfOrigin: z.string().optional(),
+  countryOfOrigin: z.string().min(1, "Pays d'origine requis"),
   father: z.string().optional(),
   mother: z.string().optional(),
   isHouseCat: z.boolean().default(false),
-  icadNumber: z.string().optional(),
+  icadNumber: z.string().min(1, 'Numéro I-CAD requis'),
   pedigreeNumber: z.string().optional(),
   pedigreeInProgress: z.boolean().default(false),
   foreignCatCertificate: z.string().optional(),
   inscritChampionnatFrance: z.boolean().default(false),
+}).superRefine((data, ctx) => {
+  if (!data.isHouseCat) {
+    if (!data.father?.trim()) ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Nom du père requis', path: ['father'] })
+    if (!data.mother?.trim()) ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Nom de la mère requis', path: ['mother'] })
+    if (!data.breeder?.trim()) ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Éleveur requis', path: ['breeder'] })
+    if (!data.pedigreeInProgress && !data.pedigreeNumber?.trim()) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Numéro de pedigree requis', path: ['pedigreeNumber'] })
+    }
+  }
 })
 
 type FormData = z.infer<typeof schema>
@@ -215,7 +227,7 @@ export function AddCatForm({ catId, initialData }: { catId?: string; initialData
         </div>
 
         <div>
-          <label className="form-label">Couleur / Robe</label>
+          <label className="form-label">Couleur / Robe <span className="text-red-500">*</span></label>
           <input
             {...register('color')}
             className="form-input"
@@ -223,16 +235,18 @@ export function AddCatForm({ catId, initialData }: { catId?: string; initialData
             list="coat-colors-list"
             autoComplete="off"
           />
+          {errors.color && <p className="text-red-500 text-xs mt-1">{errors.color.message}</p>}
         </div>
 
         <div>
-          <label className="form-label">Couleur des yeux</label>
+          <label className="form-label">Couleur des yeux <span className="text-red-500">*</span></label>
           <select {...register('eyeColor')} className="form-select">
             <option value="">Sélectionner</option>
             {EYE_COLORS.map((e) => (
               <option key={e.id} value={e.nom}>{e.nom}</option>
             ))}
           </select>
+          {errors.eyeColor && <p className="text-red-500 text-xs mt-1">{errors.eyeColor.message}</p>}
         </div>
 
         <div>
@@ -242,48 +256,53 @@ export function AddCatForm({ catId, initialData }: { catId?: string; initialData
         </div>
 
         <div>
-          <label className="form-label">Nom du père</label>
+          <label className="form-label">Nom du père {!isHouseCat && <span className="text-red-500">*</span>}</label>
           <input
             {...register('father')}
             className={`form-input ${isHouseCat ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : ''}`}
             disabled={isHouseCat}
             placeholder={isHouseCat ? 'INCONNU' : 'Nom complet du père'}
           />
+          {!isHouseCat && errors.father && <p className="text-red-500 text-xs mt-1">{errors.father.message}</p>}
         </div>
 
         <div>
-          <label className="form-label">Nom de la mère</label>
+          <label className="form-label">Nom de la mère {!isHouseCat && <span className="text-red-500">*</span>}</label>
           <input
             {...register('mother')}
             className={`form-input ${isHouseCat ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : ''}`}
             disabled={isHouseCat}
             placeholder={isHouseCat ? 'INCONNU' : 'Nom complet de la mère'}
           />
+          {!isHouseCat && errors.mother && <p className="text-red-500 text-xs mt-1">{errors.mother.message}</p>}
         </div>
 
         <div>
-          <label className="form-label">Éleveur du chat</label>
+          <label className="form-label">Éleveur du chat {!isHouseCat && <span className="text-red-500">*</span>}</label>
           <input
             {...register('breeder')}
             className={`form-input ${isHouseCat ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : ''}`}
             disabled={isHouseCat}
             placeholder={isHouseCat ? 'INCONNU' : "Nom de l'éleveur"}
           />
+          {!isHouseCat && errors.breeder && <p className="text-red-500 text-xs mt-1">{errors.breeder.message}</p>}
         </div>
 
         <div>
-          <label className="form-label">Pays d&apos;origine</label>
+          <label className="form-label">Pays d&apos;origine <span className="text-red-500">*</span></label>
           <input {...register('countryOfOrigin')} className="form-input" placeholder="France" />
+          {errors.countryOfOrigin && <p className="text-red-500 text-xs mt-1">{errors.countryOfOrigin.message}</p>}
         </div>
 
         <div>
-          <label className="form-label">Numéro I-CAD (puce)</label>
+          <label className="form-label">Numéro I-CAD (puce) <span className="text-red-500">*</span></label>
           <input {...register('icadNumber')} className="form-input" placeholder="250269811234567" />
+          {errors.icadNumber && <p className="text-red-500 text-xs mt-1">{errors.icadNumber.message}</p>}
         </div>
 
         {/* Pedigree section */}
         <div className="col-span-2 space-y-2">
-          <label className="form-label mb-0">Pedigree (LOOF...)</label>
+          <label className="form-label mb-0">Pedigree (LOOF...) {!isHouseCat && !pedigreeInProgress && <span className="text-red-500">*</span>}</label>
           {isHouseCat ? (
             <div className="form-input bg-gray-100 text-gray-400 cursor-not-allowed select-none">SANS</div>
           ) : (
@@ -295,7 +314,10 @@ export function AddCatForm({ catId, initialData }: { catId?: string; initialData
               {pedigreeInProgress ? (
                 <div className="form-input bg-gray-100 text-gray-400 cursor-not-allowed select-none">EN COURS</div>
               ) : (
-                <input {...register('pedigreeNumber')} className="form-input" placeholder="LOOF-XXXX-XX-XXXXX" />
+                <>
+                  <input {...register('pedigreeNumber')} className="form-input" placeholder="LOOF-XXXX-XX-XXXXX" />
+                  {errors.pedigreeNumber && <p className="text-red-500 text-xs mt-1">{errors.pedigreeNumber.message}</p>}
+                </>
               )}
             </>
           )}
