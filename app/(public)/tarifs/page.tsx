@@ -15,7 +15,7 @@ export default async function TarifsPage() {
         <h1 className="section-title">Tarifs</h1>
         <p className="section-subtitle">
           Tarifs applicables à toutes les expositions organisées par Chats Sans Frontières.
-          Les tarifs adhérents s&apos;appliquent aux exposants à jour de leur cotisation (AS, ACEP, MCCF).
+          Les tarifs adhérents s&apos;appliquent aux membres à jour de leur cotisation.
         </p>
       </div>
 
@@ -34,9 +34,7 @@ export default async function TarifsPage() {
         <div className="card">
           <div className="mb-4 pb-3 border-b border-csf-light">
             <h2 className="font-bold text-csf-dark text-lg">Adhérents</h2>
-            <p className="text-xs text-csf-muted mt-0.5">
-              Membres à jour de cotisation — AS, ACEP, MCCF
-            </p>
+            <p className="text-xs text-csf-muted mt-0.5">Membres à jour de cotisation</p>
           </div>
 
           <section className="mb-4">

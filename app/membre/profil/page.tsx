@@ -25,7 +25,7 @@ export default async function ProfilPage() {
   if (!user) return null
 
   return (
-    <div className="max-w-2xl space-y-6">
+    <div className="max-w-4xl space-y-6">
       <div>
         <h1 className="text-2xl font-bold font-serif text-csf-dark">Mon profil</h1>
         <p className="text-csf-muted mt-1">Gérez vos informations personnelles</p>

@@ -46,7 +46,7 @@ export function LoginForm() {
   }
 
   return (
-    <div className="bg-white rounded-2xl shadow-xl p-8">
+    <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md mx-auto">
       <h1 className="text-2xl font-bold font-serif text-csf-dark mb-1 text-center">Connexion</h1>
       <p className="text-center text-csf-muted text-sm mb-6">Accédez à votre espace membre</p>
 

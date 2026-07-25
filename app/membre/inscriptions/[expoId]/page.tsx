@@ -19,7 +19,7 @@ export default async function InscriptionPage({ params }: Props) {
     }),
     prisma.cat.findMany({
       where: { ownerId: session.user.id },
-      include: { catDocuments: true },
+      include: {},
     }),
     prisma.user.findUnique({ where: { id: session.user.id }, select: { membershipActive: true } }),
     prisma.pricing.findFirst(),

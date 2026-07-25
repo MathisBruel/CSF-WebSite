@@ -3,13 +3,13 @@ import Link from 'next/link'
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-csf-dark flex flex-col">
+    <div className="min-h-screen bg-csf-dark relative">
       <div className="absolute inset-0 opacity-10 pointer-events-none">
         <div className="absolute inset-0" style={{
           backgroundImage: 'radial-gradient(circle at 10% 50%, #d48342 0%, transparent 50%)'
         }} />
       </div>
-      <div className="flex-1 flex flex-col items-center justify-center px-4 py-12 relative">
+      <div className="relative flex flex-col items-center px-4 py-12">
         <div className="mb-8">
           <Link href="/" className="flex justify-center">
             <div className="w-16 h-16">
@@ -22,7 +22,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           </Link>
           <p className="text-center text-csf-light/60 text-sm mt-2">Chats Sans Frontières</p>
         </div>
-        <div className="w-full max-w-md">
+        <div className="w-full max-w-3xl">
           {children}
         </div>
       </div>
