@@ -15,7 +15,6 @@ export default async function MesInscriptions() {
     orderBy: { createdAt: 'desc' },
     include: {
       exhibition: { select: { title: true, startDate: true, endDate: true, city: true, slug: true } },
-      cageOption: { select: { name: true } },
       cats: {
         include: { cat: { select: { name: true, breed: true } } },
       },
@@ -83,11 +82,9 @@ export default async function MesInscriptions() {
                 </div>
               </div>
 
-              {/* Logistics summary */}
-              {(reg.cageOption || reg.mealsCount > 0) && (
-                <div className="flex gap-4 mb-2 text-xs text-csf-muted">
-                  {reg.cageOption && <span>Cage : {reg.cageOption.name}</span>}
-                  {reg.mealsCount > 0 && <span>{reg.mealsCount} repas</span>}
+              {reg.needsCage && (
+                <div className="mb-2 text-xs text-csf-muted">
+                  <span>Cage club demandée</span>
                 </div>
               )}
 

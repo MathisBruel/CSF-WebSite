@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { notFound, redirect } from 'next/navigation'
 import { ExhibitionStatus } from '@prisma/client'
 import { RegistrationWizard } from '@/components/membre/RegistrationWizard'
+import { DEFAULT_PRICING } from '@/lib/utils'
 import Link from 'next/link'
 
 type Props = { params: { expoId: string } }
@@ -11,18 +12,14 @@ export default async function InscriptionPage({ params }: Props) {
   const session = await auth()
   if (!session) redirect('/login')
 
-  const [expo, cats] = await Promise.all([
-    prisma.exhibition.findUnique({
-      where: { id: params.expoId },
-      include: {
-        pricingTiers: { orderBy: { minCats: 'asc' } },
-        cageOptions: { orderBy: { order: 'asc' } },
-      },
-    }),
+  const [expo, cats, userRecord, globalPricing] = await Promise.all([
+    prisma.exhibition.findUnique({ where: { id: params.expoId } }),
     prisma.cat.findMany({
       where: { ownerId: session.user.id },
       include: { catDocuments: true },
     }),
+    prisma.user.findUnique({ where: { id: session.user.id }, select: { membershipActive: true } }),
+    prisma.pricing.findFirst(),
   ])
 
   if (!expo || expo.status !== ExhibitionStatus.OPEN) notFound()
@@ -46,13 +43,16 @@ export default async function InscriptionPage({ params }: Props) {
     )
   }
 
+  const pricing = globalPricing ?? DEFAULT_PRICING
+  const isMember = userRecord?.membershipActive ?? false
+
   return (
     <div className="max-w-2xl">
       <RegistrationWizard
         exhibition={JSON.parse(JSON.stringify(expo))}
         cats={JSON.parse(JSON.stringify(availableCats))}
-        pricingTiers={expo.pricingTiers.map(({ minCats, pricePerCat }) => ({ minCats, pricePerCat }))}
-        cageOptions={expo.cageOptions.map(({ id, name, price, order }) => ({ id, name, price, order }))}
+        pricing={pricing}
+        isMember={isMember}
       />
     </div>
   )

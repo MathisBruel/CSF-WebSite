@@ -87,6 +87,19 @@ export async function sendWelcomeEmail(user: { name: string; email: string }) {
   await send(user.email, `Bienvenue chez ${APP_NAME} !`, html)
 }
 
+export async function sendVerificationEmail(user: { name: string; email: string }, token: string) {
+  const url = `${APP_URL}/api/auth/verify-email?token=${token}`
+  const html = baseTemplate('Confirmez votre email', `
+    <h2 style="color:#C44B0C;margin-top:0;">Confirmez votre adresse email</h2>
+    <p>Bonjour ${user.name},</p>
+    <p>Merci pour votre inscription sur le site de <strong>${APP_NAME}</strong>.</p>
+    <p>Cliquez sur le bouton ci-dessous pour activer votre compte :</p>
+    ${btn(url, 'Confirmer mon email')}
+    <p style="margin-top:20px;font-size:13px;color:#666;">Ce lien expire dans 24 heures. Si vous n'avez pas créé de compte, ignorez cet email.</p>
+  `)
+  await send(user.email, `Confirmez votre email — ${APP_NAME}`, html)
+}
+
 // ── Adhésion ─────────────────────────────────────────────────────────────────
 
 export async function sendMembershipRequestReceivedEmail(user: { name: string; email: string }) {

@@ -38,7 +38,6 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
     where: { exhibitionId: params.id },
     include: {
       user: { select: { name: true, email: true, phone: true, city: true } },
-      cageOption: { select: { name: true, price: true } },
       cats: {
         orderBy: { catalogNumber: 'asc' },
         include: {
@@ -77,14 +76,14 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
     { header: 'Ville', key: 'city', width: 16 },
     { header: 'Statut', key: 'status', width: 14 },
     { header: 'Paiement', key: 'payment', width: 12 },
-    { header: 'Cage', key: 'cage', width: 16 },
-    { header: 'Prix cage (€)', key: 'cage_price', width: 13, numFmt: '#,##0.00' },
-    { header: 'Repas', key: 'meals', width: 8 },
+    { header: 'Cage club', key: 'cage', width: 12 },
     { header: 'Montant chat (€)', key: 'cat_amount', width: 16, numFmt: '#,##0.00' },
     { header: 'Jours', key: 'days', width: 16 },
     { header: 'Classe', key: 'class', width: 20 },
     { header: 'H.C.', key: 'hc', width: 7 },
+    { header: 'Maison', key: 'house_cat', width: 9 },
     { header: 'Conformité', key: 'conform', width: 11 },
+    { header: 'Diplôme', key: 'diploma', width: 10 },
     { header: 'Total inscription (€)', key: 'total', width: 18, numFmt: '#,##0.00' },
   ]
 
@@ -143,14 +142,14 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
         city: reg.user.city ?? '',
         status: STATUS_LABELS[reg.status] ?? reg.status,
         payment: PAYMENT_LABELS[reg.paymentStatus] ?? reg.paymentStatus,
-        cage: reg.cageOption?.name ?? '',
-        cage_price: reg.cageOption?.price ?? '',
-        meals: reg.mealsCount || '',
+        cage: reg.needsCage ? 'Oui' : '',
         cat_amount: rc.amount,
         days: rc.participationDays.join(' + '),
         class: rc.traditionalClass ?? '',
         hc: rc.isHorsConcours ? 'Oui' : '',
+        house_cat: rc.isHouseCat ? 'Oui' : '',
         conform: rc.wantsComplianceExam ? 'Oui' : '',
+        diploma: rc.wantsDiploma ? 'Oui' : '',
         total: reg.totalAmount,
       })
       dataRow.height = 18
@@ -214,8 +213,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
     { header: 'Ville', key: 'city', width: 16 },
     { header: 'Chats inscrits', key: 'cats', width: 40 },
     { header: 'Nb chats', key: 'nb_cats', width: 10 },
-    { header: 'Cage', key: 'cage', width: 16 },
-    { header: 'Repas', key: 'meals', width: 8 },
+    { header: 'Cage club', key: 'cage', width: 12 },
     { header: 'Statut', key: 'status', width: 14 },
     { header: 'Paiement', key: 'payment', width: 12 },
     { header: 'Total (€)', key: 'total', width: 13, numFmt: '#,##0.00' },
@@ -269,8 +267,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
       city: reg.user.city ?? '',
       cats: catNames,
       nb_cats: reg.cats.length,
-      cage: reg.cageOption?.name ?? '',
-      meals: reg.mealsCount || '',
+      cage: reg.needsCage ? 'Oui' : '',
       status: STATUS_LABELS[reg.status] ?? reg.status,
       payment: PAYMENT_LABELS[reg.paymentStatus] ?? reg.paymentStatus,
       total: reg.totalAmount,

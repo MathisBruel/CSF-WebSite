@@ -2,7 +2,7 @@ import { prisma } from '@/lib/prisma'
 import Link from 'next/link'
 
 export const dynamic = 'force-dynamic'
-import { formatDate, formatPrice, EXHIBITION_STATUS_LABELS } from '@/lib/utils'
+import { formatDate, EXHIBITION_STATUS_LABELS } from '@/lib/utils'
 import { ExhibitionStatusToggle } from '@/components/admin/ExhibitionStatusToggle'
 import { DeleteExhibitionButton } from '@/components/admin/DeleteExhibitionButton'
 
@@ -44,7 +44,6 @@ export default async function AdminExpositions() {
                   <span>{formatDate(expo.startDate)} – {formatDate(expo.endDate)}</span>
                   <span>{expo.location}</span>
                   <span>{expo._count.registrations} inscrits{expo.maxRegistrations ? ` / ${expo.maxRegistrations}` : ''}</span>
-                  <span>À partir de {formatPrice(expo.priceBase)}</span>
                 </div>
               </div>
               <div className="flex flex-col gap-2 items-end">

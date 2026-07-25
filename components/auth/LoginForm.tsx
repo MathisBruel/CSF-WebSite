@@ -32,7 +32,11 @@ export function LoginForm() {
     })
 
     if (result?.error) {
-      setError('Email ou mot de passe incorrect.')
+      if (result.error === 'EMAIL_NOT_VERIFIED') {
+        setError('Votre email n\'est pas encore confirmé. Vérifiez votre boîte mail.')
+      } else {
+        setError('Email ou mot de passe incorrect.')
+      }
       return
     }
 

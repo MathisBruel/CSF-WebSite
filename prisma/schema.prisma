@@ -42,6 +42,12 @@ enum DocumentType {
   OTHER
 }
 
+enum ExposantType {
+  PARTICULIER
+  ELEVEUR
+  SOCIETE
+}
+
 // ─── User ────────────────────────────────────────────────────────────────────
 
 model User {
@@ -52,11 +58,16 @@ model User {
   name          String
   firstName     String
   lastName      String
+  civilite      String?
   phone         String?
+  phoneFixed    String?
   address       String?
+  address2      String?
   city          String?
   postalCode    String?
   country       String   @default("France")
+  exposantType      ExposantType @default(PARTICULIER)
+  certificatCapacite String?
   role          Role     @default(ADHERENT_CLUB)
   membershipActive Boolean @default(false)
   membershipExpiry DateTime?
@@ -165,45 +176,14 @@ model Exhibition {
   maxRegistrations Int?
   coverImageUrl   String?
 
-  priceBase       Float
-  priceMeal       Float            @default(0)
-  mealsEnabled    Boolean          @default(false)
-  mealsRequired   Boolean          @default(false)
-
   rules           String?
   notes           String?
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
 
   registrations   Registration[]
-  pricingTiers    ExhibitionPricingTier[]
-  cageOptions     ExhibitionCageOption[]
 
   @@map("exhibitions")
-}
-
-model ExhibitionPricingTier {
-  id           String     @id @default(cuid())
-  exhibitionId String
-  exhibition   Exhibition @relation(fields: [exhibitionId], references: [id], onDelete: Cascade)
-  minCats      Int
-  pricePerCat  Float
-
-  @@unique([exhibitionId, minCats])
-  @@map("exhibition_pricing_tiers")
-}
-
-model ExhibitionCageOption {
-  id           String     @id @default(cuid())
-  exhibitionId String
-  exhibition   Exhibition @relation(fields: [exhibitionId], references: [id], onDelete: Cascade)
-  name         String
-  price        Float
-  order        Int        @default(0)
-
-  registrations Registration[]
-
-  @@map("exhibition_cage_options")
 }
 
 // ─── Registration ─────────────────────────────────────────────────────────────
@@ -217,12 +197,11 @@ model Registration {
 
   status         RegistrationStatus @default(PENDING)
   paymentStatus  PaymentStatus      @default(PENDING)
+  registrationFee Int               @default(5)
   totalAmount    Float
   paidAt         DateTime?
 
-  cageOptionId   String?
-  cageOption     ExhibitionCageOption? @relation(fields: [cageOptionId], references: [id])
-  mealsCount     Int                @default(0)
+  needsCage      Boolean            @default(false)
 
   adminNotes     String?
   rejectionReason String?
@@ -249,7 +228,9 @@ model RegistrationCat {
   traditionalClass     String?
   traditionalClassOther String?
   isHorsConcours       Boolean  @default(false)
+  isHouseCat           Boolean  @default(false)
   wantsComplianceExam  Boolean  @default(false)
+  wantsDiploma         Boolean  @default(false)
   specialParticipations String[]
 
   amount           Float
@@ -371,16 +352,43 @@ model SiteConfig {
   @@map("site_config")
 }
 
+// ─── Email Verification ───────────────────────────────────────────────────────
+
+model EmailVerificationToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@map("email_verification_tokens")
+}
+
 // ─── Pricing ──────────────────────────────────────────────────────────────────
 
 model Pricing {
-  id                  String   @id @default(cuid())
-  registrationOneDay  Int
-  registrationWeekend Int
-  extraCageOneDay     Int
-  extraCageWeekend    Int
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  id                      String   @id @default(cuid())
+  registrationFee         Int      @default(5)
+  memberOneDayCat12       Int      @default(36)
+  memberOneDayCat3Plus    Int      @default(31)
+  memberOneDayHouseCat    Int      @default(30)
+  memberTwoDayCat12       Int      @default(46)
+  memberTwoDayCat3Plus    Int      @default(41)
+  memberTwoDayHouseCat    Int      @default(35)
+  memberConformite        Int      @default(10)
+  memberDiploma           Int      @default(0)
+  nonMemberOneDayCat12    Int      @default(42)
+  nonMemberOneDayCat3Plus Int      @default(36)
+  nonMemberOneDayHouseCat Int      @default(30)
+  nonMemberTwoDayCat12    Int      @default(51)
+  nonMemberTwoDayCat3Plus Int      @default(46)
+  nonMemberTwoDayHouseCat Int      @default(35)
+  nonMemberConformite     Int      @default(15)
+  nonMemberDiploma        Int      @default(10)
+  membershipFee           Int      @default(25)
+  cageDeposit             Int      @default(100)
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
 
   @@map("pricing")
 }

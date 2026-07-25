@@ -2,20 +2,15 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Pricing } from '@prisma/client'
+import type { GlobalPricing } from '@/lib/utils'
 
 type PricingFormProps = {
-  initialData: Partial<Pricing>
+  initialData: GlobalPricing
 }
 
 export function PricingForm({ initialData }: PricingFormProps) {
   const router = useRouter()
-  const [values, setValues] = useState({
-    registrationOneDay: initialData.registrationOneDay ?? 40,
-    registrationWeekend: initialData.registrationWeekend ?? 70,
-    extraCageOneDay: initialData.extraCageOneDay ?? 20,
-    extraCageWeekend: initialData.extraCageWeekend ?? 35,
-  })
+  const [values, setValues] = useState<GlobalPricing>(initialData)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
 
@@ -37,10 +32,25 @@ export function PricingForm({ initialData }: PricingFormProps) {
     }
   }
 
-  const set = (key: keyof typeof values) => (e: React.ChangeEvent<HTMLInputElement>) => {
+  const set = (key: keyof GlobalPricing) => (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value === '' ? 0 : Number(e.target.value)
     setValues((v) => ({ ...v, [key]: value }))
   }
+
+  const field = (label: string, key: keyof GlobalPricing) => (
+    <div className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
+      <label className="text-sm text-csf-muted">{label}</label>
+      <div className="flex items-center gap-1">
+        <input
+          type="number" min="0" step="1"
+          value={values[key]}
+          onChange={set(key)}
+          className="form-input w-24 text-right"
+        />
+        <span className="text-sm text-csf-muted">€</span>
+      </div>
+    </div>
+  )
 
   return (
     <form onSubmit={save} className="space-y-6">
@@ -50,69 +60,54 @@ export function PricingForm({ initialData }: PricingFormProps) {
         </div>
       )}
 
-      <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-4">
-        <h2 className="font-semibold text-csf-dark">Inscription (par chat)</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="form-label">1 jour (€)</label>
-            <input
-              type="number"
-              min="0"
-              step="1"
-              value={values.registrationOneDay}
-              onChange={set('registrationOneDay')}
-              className="form-input w-40"
-              placeholder="40"
-            />
-          </div>
-          <div>
-            <label className="form-label">Week-end (€)</label>
-            <input
-              type="number"
-              min="0"
-              step="1"
-              value={values.registrationWeekend}
-              onChange={set('registrationWeekend')}
-              className="form-input w-40"
-              placeholder="70"
-            />
-          </div>
+      {field('Frais d\'inscription (par inscription)', 'registrationFee')}
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Adhérent */}
+        <div className="bg-white rounded-xl border border-gray-200 p-5">
+          <h2 className="font-semibold text-csf-dark mb-1">Adhérents</h2>
+          <p className="text-xs text-csf-muted mb-4">Membres à jour de cotisation</p>
+
+          <p className="text-xs font-semibold text-csf-muted uppercase tracking-wide mb-2">1 Jour</p>
+          {field('1er et 2ème chat', 'memberOneDayCat12')}
+          {field('3ème chat et +', 'memberOneDayCat3Plus')}
+          {field('Chat de maison', 'memberOneDayHouseCat')}
+
+          <p className="text-xs font-semibold text-csf-muted uppercase tracking-wide mb-2 mt-4">2 Jours</p>
+          {field('1er et 2ème chat', 'memberTwoDayCat12')}
+          {field('3ème chat et +', 'memberTwoDayCat3Plus')}
+          {field('Chat de maison', 'memberTwoDayHouseCat')}
+
+          <p className="text-xs font-semibold text-csf-muted uppercase tracking-wide mb-2 mt-4">Options</p>
+          {field('Conformité', 'memberConformite')}
+          {field('Diplôme', 'memberDiploma')}
+        </div>
+
+        {/* Non-adhérent */}
+        <div className="bg-white rounded-xl border border-gray-200 p-5">
+          <h2 className="font-semibold text-csf-dark mb-1">Non-adhérents</h2>
+          <p className="text-xs text-csf-muted mb-4">Exposants extérieurs</p>
+
+          <p className="text-xs font-semibold text-csf-muted uppercase tracking-wide mb-2">1 Jour</p>
+          {field('1er et 2ème chat', 'nonMemberOneDayCat12')}
+          {field('3ème chat et +', 'nonMemberOneDayCat3Plus')}
+          {field('Chat de maison', 'nonMemberOneDayHouseCat')}
+
+          <p className="text-xs font-semibold text-csf-muted uppercase tracking-wide mb-2 mt-4">2 Jours</p>
+          {field('1er et 2ème chat', 'nonMemberTwoDayCat12')}
+          {field('3ème chat et +', 'nonMemberTwoDayCat3Plus')}
+          {field('Chat de maison', 'nonMemberTwoDayHouseCat')}
+
+          <p className="text-xs font-semibold text-csf-muted uppercase tracking-wide mb-2 mt-4">Options</p>
+          {field('Conformité', 'nonMemberConformite')}
+          {field('Diplôme', 'nonMemberDiploma')}
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-4">
-        <h2 className="font-semibold text-csf-dark">Cage supplémentaire</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="form-label">1 jour (€)</label>
-            <input
-              type="number"
-              min="0"
-              step="1"
-              value={values.extraCageOneDay}
-              onChange={set('extraCageOneDay')}
-              className="form-input w-40"
-              placeholder="20"
-            />
-          </div>
-          <div>
-            <label className="form-label">Week-end (€)</label>
-            <input
-              type="number"
-              min="0"
-              step="1"
-              value={values.extraCageWeekend}
-              onChange={set('extraCageWeekend')}
-              className="form-input w-40"
-              placeholder="35"
-            />
-          </div>
-        </div>
-      </div>
-
-       <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-4">
-        <h2 className="font-semibold text-csf-dark">Catalogue</h2>
-        <p className="text-csf-muted">Le catalogue est gratuit et obligatoire pour chaque inscription.</p>
+      <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-1">
+        <h2 className="font-semibold text-csf-dark mb-3">Divers</h2>
+        {field('Cotisation annuelle', 'membershipFee')}
+        {field('Caution cage (chèque, remis sur place)', 'cageDeposit')}
       </div>
 
       <button type="submit" disabled={saving} className="btn-primary">

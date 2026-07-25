@@ -26,7 +26,6 @@ export default async function AdminInscriptions({
     include: {
       user: { select: { name: true, email: true, city: true } },
       exhibition: { select: { title: true, startDate: true } },
-      cageOption: { select: { name: true } },
       cats: {
         include: {
           cat: { include: { catDocuments: true } },
@@ -86,12 +85,8 @@ export default async function AdminInscriptions({
                 <p className="text-sm font-medium text-csf-dark mt-1">
                   {reg.cats.length} chat{reg.cats.length !== 1 ? 's' : ''} · {formatPrice(reg.totalAmount)}
                 </p>
-                {(reg.cageOption || reg.mealsCount > 0) && (
-                  <p className="text-xs text-csf-muted mt-0.5">
-                    {reg.cageOption && `Cage : ${reg.cageOption.name}`}
-                    {reg.cageOption && reg.mealsCount > 0 && ' · '}
-                    {reg.mealsCount > 0 && `${reg.mealsCount} repas`}
-                  </p>
+                {reg.needsCage && (
+                  <p className="text-xs text-csf-muted mt-0.5">Cage club demandée</p>
                 )}
               </div>
               <RegistrationActions

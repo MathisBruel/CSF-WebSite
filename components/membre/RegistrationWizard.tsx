@@ -2,26 +2,19 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import type { Exhibition, Cat, ExhibitionPricingTier, ExhibitionCageOption } from '@prisma/client'
+import type { Exhibition, Cat } from '@prisma/client'
+import { computeCatPrice, formatPrice, type GlobalPricing } from '@/lib/utils'
 
-function computeBasePrice(
-  catCount: number,
-  tiers: Pick<ExhibitionPricingTier, 'minCats' | 'pricePerCat'>[],
-  fallback: number
-): number {
-  if (tiers.length === 0) return fallback
-  const sorted = [...tiers].sort((a, b) => b.minCats - a.minCats)
-  return sorted.find((t) => catCount >= t.minCats)?.pricePerCat ?? fallback
-}
-
-type Step = 'cats' | 'options' | 'logistics' | 'summary' | 'done'
+type Step = 'cats' | 'options' | 'cage' | 'summary' | 'done'
 
 type CatEntry = {
   participationDays: string[]
   traditionalClass: string
   traditionalClassOther: string
   isHorsConcours: boolean
+  isHouseCat: boolean
   wantsComplianceExam: boolean
+  wantsDiploma: boolean
   specialParticipations: string[]
 }
 
@@ -30,7 +23,9 @@ const defaultCatEntry = (): CatEntry => ({
   traditionalClass: '',
   traditionalClassOther: '',
   isHorsConcours: false,
+  isHouseCat: false,
   wantsComplianceExam: false,
+  wantsDiploma: false,
   specialParticipations: [],
 })
 
@@ -46,25 +41,20 @@ const SPECIAL_PARTICIPATIONS = ["Lot d'Elevage", '3 Générations', 'Vétéran']
 export function RegistrationWizard({
   exhibition,
   cats,
-  pricingTiers = [],
-  cageOptions = [],
+  pricing,
+  isMember,
 }: {
   exhibition: Exhibition
   cats: (Cat & { catDocuments: { type: string; validated: boolean }[] })[]
-  pricingTiers?: Pick<ExhibitionPricingTier, 'minCats' | 'pricePerCat'>[]
-  cageOptions?: Pick<ExhibitionCageOption, 'id' | 'name' | 'price' | 'order'>[]
+  pricing: GlobalPricing
+  isMember: boolean
 }) {
   const [step, setStep] = useState<Step>('cats')
   const [selectedCatIds, setSelectedCatIds] = useState<string[]>([])
   const [catOptions, setCatOptions] = useState<Record<string, CatEntry>>({})
-  const [selectedCageOptionId, setSelectedCageOptionId] = useState<string | null>(null)
-  const [mealsCount, setMealsCount] = useState(0)
+  const [needsCage, setNeedsCage] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
-
-  const sortedCageOptions = [...cageOptions].sort((a, b) => a.order - b.order)
-  const lastTierIdx = pricingTiers.length - 1
-  const sortedTiers = [...pricingTiers].sort((a, b) => a.minCats - b.minCats)
 
   const toggleCat = (catId: string) => {
     if (selectedCatIds.includes(catId)) {
@@ -85,12 +75,21 @@ export function RegistrationWizard({
   }
 
   const selectedCats = cats.filter((c) => selectedCatIds.includes(c.id))
-  const currentBasePrice = computeBasePrice(selectedCatIds.length, pricingTiers, exhibition.priceBase)
-  const selectedCageOption = sortedCageOptions.find((o) => o.id === selectedCageOptionId)
-  const cagePrice = selectedCageOption?.price ?? 0
-  const mealsPrice = mealsCount * exhibition.priceMeal
-  const catsTotal = selectedCatIds.length * currentBasePrice
-  const totalAmount = catsTotal + cagePrice + mealsPrice
+
+  const catPrices = selectedCatIds.map((catId, idx) => {
+    const opts = catOptions[catId] ?? defaultCatEntry()
+    return computeCatPrice(
+      idx + 1,
+      opts.participationDays,
+      opts.isHouseCat,
+      opts.wantsComplianceExam,
+      opts.wantsDiploma,
+      isMember,
+      pricing
+    )
+  })
+  const catsTotal = catPrices.reduce((s, p) => s + p, 0)
+  const totalAmount = pricing.registrationFee + catsTotal
 
   const goToOptions = () => {
     const newOptions: Record<string, CatEntry> = { ...catOptions }
@@ -101,10 +100,6 @@ export function RegistrationWizard({
     setStep('options')
   }
 
-  const hasLogisticsStep = sortedCageOptions.length > 0 || exhibition.mealsEnabled
-
-  const goToLogisticsOrSummary = () => setStep(hasLogisticsStep ? 'logistics' : 'summary')
-
   const submit = async () => {
     setSubmitting(true)
     setError('')
@@ -114,8 +109,7 @@ export function RegistrationWizard({
         catId,
         ...(catOptions[catId] ?? defaultCatEntry()),
       })),
-      cageOptionId: selectedCageOptionId,
-      mealsCount,
+      needsCage,
     }
     const res = await fetch('/api/registrations', {
       method: 'POST',
@@ -131,12 +125,8 @@ export function RegistrationWizard({
     setStep('done')
   }
 
-  const steps: Step[] = hasLogisticsStep
-    ? ['cats', 'options', 'logistics', 'summary']
-    : ['cats', 'options', 'summary']
-  const stepLabels = hasLogisticsStep
-    ? ['Chats', 'Options', 'Logistique', 'Récapitulatif']
-    : ['Chats', 'Options', 'Récapitulatif']
+  const steps: Step[] = ['cats', 'options', 'cage', 'summary']
+  const stepLabels = ['Chats', 'Options', 'Cage', 'Récapitulatif']
   const currentStepIdx = steps.indexOf(step)
 
   if (step === 'done') {
@@ -166,6 +156,11 @@ export function RegistrationWizard({
           ← {exhibition.title}
         </Link>
         <h1 className="text-2xl font-bold font-serif text-csf-dark mt-1">Inscription à l&apos;exposition</h1>
+        {isMember && (
+          <span className="inline-block mt-1 px-2 py-0.5 rounded-full bg-green-100 text-green-700 text-xs font-medium">
+            Tarif adhérent appliqué
+          </span>
+        )}
       </div>
 
       {/* Progress */}
@@ -195,24 +190,6 @@ export function RegistrationWizard({
           <div>
             <h2 className="font-bold text-csf-dark mb-1">Sélectionner vos chats</h2>
             <p className="text-sm text-csf-muted mb-4">Vous pouvez inscrire plusieurs chats en une seule inscription.</p>
-
-            {/* Pricing tiers table */}
-            {sortedTiers.length > 0 && (
-              <div className="mb-4 p-3 bg-orange-50 border border-orange-100 rounded-xl text-xs">
-                <p className="font-medium text-csf-dark mb-2">Tarification dégressive :</p>
-                <div className="space-y-1">
-                  {sortedTiers.map((tier, i) => {
-                    const isLast = i === sortedTiers.length - 1
-                    return (
-                      <div key={i} className="flex justify-between text-csf-muted">
-                        <span>{isLast ? `${tier.minCats}+ chats` : `${tier.minCats} chat${tier.minCats > 1 ? 's' : ''}`}</span>
-                        <span className="font-medium text-csf-dark">{tier.pricePerCat.toFixed(2)} € / chat</span>
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-            )}
 
             {cats.length === 0 ? (
               <div className="text-center py-6">
@@ -244,12 +221,6 @@ export function RegistrationWizard({
               </div>
             )}
 
-            {selectedCatIds.length > 0 && (
-              <p className="text-sm text-csf-muted mt-3">
-                {selectedCatIds.length} chat{selectedCatIds.length > 1 ? 's' : ''} sélectionné{selectedCatIds.length > 1 ? 's' : ''}
-                {' · '}<span className="font-medium text-csf-dark">{currentBasePrice.toFixed(2)} € / chat</span>
-              </p>
-            )}
             <div className="flex justify-end mt-4">
               <button onClick={goToOptions} disabled={selectedCatIds.length === 0} className="btn-primary">
                 Suivant →
@@ -267,16 +238,26 @@ export function RegistrationWizard({
                 const opts = catOptions[cat.id] ?? defaultCatEntry()
                 const update = <K extends keyof CatEntry>(field: K, value: CatEntry[K]) =>
                   updateCatOption(cat.id, field, value)
+                const catPrice = computeCatPrice(
+                  idx + 1,
+                  opts.participationDays,
+                  opts.isHouseCat,
+                  opts.wantsComplianceExam,
+                  opts.wantsDiploma,
+                  isMember,
+                  pricing
+                )
                 return (
                   <div key={cat.id} className="border border-csf-light rounded-xl p-4">
-                    <h3 className="font-medium text-csf-dark mb-4 pb-2 border-b border-csf-light">
-                      {idx + 1}. {cat.name}{' '}
-                      <span className="text-sm font-normal text-csf-muted">({cat.breed})</span>
-                    </h3>
+                    <div className="flex items-center justify-between mb-4 pb-2 border-b border-csf-light">
+                      <h3 className="font-medium text-csf-dark">
+                        {idx + 1}. {cat.name}{' '}
+                        <span className="text-sm font-normal text-csf-muted">({cat.breed})</span>
+                      </h3>
+                      <span className="text-sm font-semibold text-csf-orange">{formatPrice(catPrice)}</span>
+                    </div>
 
                     <div className="space-y-4">
-                      <p className="text-xs font-semibold text-csf-muted uppercase tracking-wide">Compétition</p>
-
                       <div>
                         <label className="form-label text-sm">Jours de participation</label>
                         <div className="flex gap-4">
@@ -298,13 +279,20 @@ export function RegistrationWizard({
                       </div>
 
                       <label className="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" checked={opts.isHouseCat}
+                          onChange={(e) => update('isHouseCat', e.target.checked)}
+                          className="text-csf-orange rounded" />
+                        <span className="text-sm font-medium">Chat de maison</span>
+                      </label>
+
+                      <label className="flex items-center gap-2 cursor-pointer">
                         <input type="checkbox" checked={opts.isHorsConcours}
                           onChange={(e) => update('isHorsConcours', e.target.checked)}
                           className="text-csf-orange rounded" />
                         <span className="text-sm font-medium">Hors Concours (H.C.)</span>
                       </label>
 
-                      {!opts.isHorsConcours && (
+                      {!opts.isHorsConcours && !opts.isHouseCat && (
                         <>
                           <div>
                             <label className="form-label text-sm">Classe de jugement Traditionnel</label>
@@ -328,7 +316,27 @@ export function RegistrationWizard({
                         <input type="checkbox" checked={opts.wantsComplianceExam}
                           onChange={(e) => update('wantsComplianceExam', e.target.checked)}
                           className="text-csf-orange rounded" />
-                        <span className="text-sm">Examen de conformité</span>
+                        <span className="text-sm">
+                          Examen de conformité{' '}
+                          <span className="text-csf-muted">
+                            (+{formatPrice(isMember ? pricing.memberConformite : pricing.nonMemberConformite)})
+                          </span>
+                        </span>
+                      </label>
+
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" checked={opts.wantsDiploma}
+                          onChange={(e) => update('wantsDiploma', e.target.checked)}
+                          className="text-csf-orange rounded" />
+                        <span className="text-sm">
+                          Diplôme{' '}
+                          <span className="text-csf-muted">
+                            {isMember
+                              ? pricing.memberDiploma === 0 ? '(gratuit)' : `(+${formatPrice(pricing.memberDiploma)})`
+                              : pricing.nonMemberDiploma === 0 ? '(gratuit)' : `(+${formatPrice(pricing.nonMemberDiploma)})`
+                            }
+                          </span>
+                        </span>
                       </label>
 
                       <div>
@@ -357,94 +365,53 @@ export function RegistrationWizard({
             </div>
             <div className="flex justify-between mt-6">
               <button onClick={() => setStep('cats')} className="btn-secondary">← Retour</button>
-              <button onClick={goToLogisticsOrSummary} className="btn-primary">Suivant →</button>
+              <button onClick={() => setStep('cage')} className="btn-primary">Suivant →</button>
             </div>
           </div>
         )}
 
-        {/* ── Step 3: Global logistics ── */}
-        {step === 'logistics' && (
+        {/* ── Step 3: Cage ── */}
+        {step === 'cage' && (
           <div>
-            <h2 className="font-bold text-csf-dark mb-1">Logistique</h2>
-            <p className="text-sm text-csf-muted mb-5">Ces options s&apos;appliquent à toute l&apos;inscription.</p>
+            <h2 className="font-bold text-csf-dark mb-1">Cage</h2>
+            <p className="text-sm text-csf-muted mb-5">Les cages sont fournies gratuitement par le club.</p>
 
-            <div className="space-y-6">
-              {/* Cage options */}
-              {sortedCageOptions.length > 0 && (
-                <div>
-                  <p className="text-xs font-semibold text-csf-muted uppercase tracking-wide mb-3">Cage</p>
-                  <div className="space-y-2">
-                    <label className={`flex items-center justify-between p-3 border-2 rounded-xl cursor-pointer transition-colors ${
-                      selectedCageOptionId === null ? 'border-csf-orange bg-orange-50' : 'border-csf-light hover:border-csf-orange/50'
-                    }`}>
-                      <div>
-                        <p className="text-sm font-medium text-csf-dark">Aucune cage</p>
-                        <p className="text-xs text-csf-muted">Je gère mes propres cages</p>
-                      </div>
-                      <input type="radio" name="cage" checked={selectedCageOptionId === null}
-                        onChange={() => setSelectedCageOptionId(null)}
-                        className="w-5 h-5 text-csf-orange" />
-                    </label>
-                    {sortedCageOptions.map((opt) => (
-                      <label key={opt.id} className={`flex items-center justify-between p-3 border-2 rounded-xl cursor-pointer transition-colors ${
-                        selectedCageOptionId === opt.id ? 'border-csf-orange bg-orange-50' : 'border-csf-light hover:border-csf-orange/50'
-                      }`}>
-                        <div>
-                          <p className="text-sm font-medium text-csf-dark">{opt.name}</p>
-                          {opt.price > 0 && (
-                            <p className="text-xs text-csf-muted">+{opt.price.toFixed(2)} €</p>
-                          )}
-                          {opt.price === 0 && (
-                            <p className="text-xs text-csf-muted">Inclus</p>
-                          )}
-                        </div>
-                        <input type="radio" name="cage" checked={selectedCageOptionId === opt.id}
-                          onChange={() => setSelectedCageOptionId(opt.id)}
-                          className="w-5 h-5 text-csf-orange" />
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              )}
+            <div className="p-4 bg-orange-50 border border-orange-100 rounded-xl mb-5">
+              <p className="text-sm font-medium text-csf-dark mb-1">Caution cage</p>
+              <p className="text-sm text-csf-muted">
+                Une caution de <strong className="text-csf-dark">{formatPrice(pricing.cageDeposit)}</strong> par chèque
+                vous sera demandée sur place lors du retrait de votre cage. Elle vous sera restituée en fin d&apos;exposition.
+              </p>
+            </div>
 
-              {/* Meals */}
-              {exhibition.mealsEnabled && (
+            <div className="space-y-2">
+              <label className={`flex items-center justify-between p-4 border-2 rounded-xl cursor-pointer transition-colors ${
+                !needsCage ? 'border-csf-orange bg-orange-50' : 'border-csf-light hover:border-csf-orange/50'
+              }`}>
                 <div>
-                  <p className="text-xs font-semibold text-csf-muted uppercase tracking-wide mb-3">Repas</p>
-                  <div className="flex items-center justify-between p-3 border-2 rounded-xl border-csf-light">
-                    <div>
-                      <p className="text-sm font-medium text-csf-dark">Nombre de repas</p>
-                      <p className="text-xs text-csf-muted">{exhibition.priceMeal.toFixed(2)} € / repas</p>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <button type="button"
-                        onClick={() => setMealsCount((c) => Math.max(0, c - 1))}
-                        className="w-8 h-8 rounded-full border border-gray-300 text-csf-dark hover:bg-csf-light flex items-center justify-center font-bold">
-                        −
-                      </button>
-                      <span className="w-6 text-center font-medium text-sm">{mealsCount}</span>
-                      <button type="button"
-                        onClick={() => setMealsCount((c) => c + 1)}
-                        className="w-8 h-8 rounded-full border border-gray-300 text-csf-dark hover:bg-csf-light flex items-center justify-center font-bold">
-                        +
-                      </button>
-                    </div>
-                  </div>
-                  {exhibition.mealsRequired && mealsCount === 0 && (
-                    <p className="text-xs text-amber-600 mt-1">Ce champ est obligatoire pour cette exposition.</p>
-                  )}
+                  <p className="text-sm font-medium text-csf-dark">Je n&apos;ai pas besoin d&apos;une cage</p>
+                  <p className="text-xs text-csf-muted">J&apos;apporte ma propre cage</p>
                 </div>
-              )}
+                <input type="radio" name="cage" checked={!needsCage}
+                  onChange={() => setNeedsCage(false)}
+                  className="w-5 h-5 text-csf-orange" />
+              </label>
+              <label className={`flex items-center justify-between p-4 border-2 rounded-xl cursor-pointer transition-colors ${
+                needsCage ? 'border-csf-orange bg-orange-50' : 'border-csf-light hover:border-csf-orange/50'
+              }`}>
+                <div>
+                  <p className="text-sm font-medium text-csf-dark">Je souhaite une cage du club</p>
+                  <p className="text-xs text-csf-muted">Gratuit · caution {formatPrice(pricing.cageDeposit)} par chèque sur place</p>
+                </div>
+                <input type="radio" name="cage" checked={needsCage}
+                  onChange={() => setNeedsCage(true)}
+                  className="w-5 h-5 text-csf-orange" />
+              </label>
             </div>
 
             <div className="flex justify-between mt-6">
               <button onClick={() => setStep('options')} className="btn-secondary">← Retour</button>
-              <button
-                onClick={() => setStep('summary')}
-                disabled={exhibition.mealsEnabled && exhibition.mealsRequired && mealsCount === 0}
-                className="btn-primary">
-                Suivant →
-              </button>
+              <button onClick={() => setStep('summary')} className="btn-primary">Suivant →</button>
             </div>
           </div>
         )}
@@ -459,70 +426,49 @@ export function RegistrationWizard({
                 <span className="font-medium text-csf-dark text-right max-w-48">{exhibition.title}</span>
               </div>
 
+              <div className="flex justify-between py-1 text-csf-muted">
+                <span>Frais d&apos;inscription</span>
+                <span>{formatPrice(pricing.registrationFee)}</span>
+              </div>
+
               {/* Per-cat lines */}
-              {selectedCats.map((cat) => {
+              {selectedCats.map((cat, idx) => {
                 const opts = catOptions[cat.id] ?? defaultCatEntry()
+                const catPrice = catPrices[idx]
                 return (
                   <div key={cat.id} className="border border-csf-light rounded-xl p-3">
                     <div className="flex justify-between">
                       <p className="font-medium text-csf-dark">{cat.name}</p>
-                      <span className="text-csf-muted text-xs">{currentBasePrice.toFixed(2)} €</span>
+                      <span className="font-medium text-csf-dark">{formatPrice(catPrice)}</span>
                     </div>
                     <div className="space-y-0.5 mt-1 text-xs text-csf-muted">
-                      {opts.participationDays.length > 0 && (
-                        <p>{opts.participationDays.join(' + ')}</p>
-                      )}
-                      {opts.traditionalClass && <p>Classe : {opts.traditionalClass}</p>}
+                      {opts.participationDays.length > 0 && <p>{opts.participationDays.join(' + ')}</p>}
+                      {opts.isHouseCat && <p>Chat de maison</p>}
+                      {opts.traditionalClass && !opts.isHouseCat && <p>Classe : {opts.traditionalClass}</p>}
                       {opts.isHorsConcours && <p>Hors Concours</p>}
-                      {opts.specialParticipations.length > 0 && (
-                        <p>{opts.specialParticipations.join(', ')}</p>
-                      )}
+                      {opts.wantsComplianceExam && <p>Conformité</p>}
+                      {opts.wantsDiploma && <p>Diplôme</p>}
+                      {opts.specialParticipations.length > 0 && <p>{opts.specialParticipations.join(', ')}</p>}
                     </div>
                   </div>
                 )
               })}
 
-              {/* Applied pricing tier info */}
-              {pricingTiers.length > 0 && (
-                <div className="flex justify-between py-1 text-xs text-csf-muted">
-                  <span>Tarif appliqué</span>
-                  <span>
-                    {currentBasePrice.toFixed(2)} € / chat
-                    {lastTierIdx >= 0 && selectedCatIds.length >= sortedTiers[lastTierIdx]?.minCats
-                      ? ` (${sortedTiers[lastTierIdx].minCats}+ chats)`
-                      : ` (${selectedCatIds.length} chat${selectedCatIds.length > 1 ? 's' : ''})`}
-                  </span>
-                </div>
-              )}
-
-              {/* Cats subtotal */}
-              <div className="flex justify-between text-sm py-1 border-t border-csf-light">
-                <span className="text-csf-muted">
-                  {selectedCatIds.length} chat{selectedCatIds.length > 1 ? 's' : ''} × {currentBasePrice.toFixed(2)} €
-                </span>
-                <span>{catsTotal.toFixed(2)} €</span>
-              </div>
-
-              {/* Cage option line */}
-              {selectedCageOption && (
-                <div className="flex justify-between text-sm text-csf-muted">
-                  <span>Cage ({selectedCageOption.name})</span>
-                  <span>+{cagePrice.toFixed(2)} €</span>
-                </div>
-              )}
-
-              {/* Meals line */}
-              {mealsCount > 0 && (
-                <div className="flex justify-between text-sm text-csf-muted">
-                  <span>{mealsCount} repas × {exhibition.priceMeal.toFixed(2)} €</span>
-                  <span>+{mealsPrice.toFixed(2)} €</span>
+              {needsCage && (
+                <div className="flex justify-between text-csf-muted">
+                  <span>Cage club</span>
+                  <span>Gratuit (caution {formatPrice(pricing.cageDeposit)} sur place)</span>
                 </div>
               )}
 
               <div className="flex justify-between py-3 font-bold text-csf-dark text-lg border-t border-csf-light">
                 <span>Total</span>
-                <span className="text-csf-orange">{totalAmount.toFixed(2)} €</span>
+                <span className="text-csf-orange">{formatPrice(totalAmount)}</span>
               </div>
+
+              {isMember && (
+                <p className="text-xs text-green-600">Tarif adhérent appliqué</p>
+              )}
             </div>
 
             {error && (
@@ -534,9 +480,7 @@ export function RegistrationWizard({
             </p>
 
             <div className="flex justify-between mt-6">
-              <button onClick={() => setStep(hasLogisticsStep ? 'logistics' : 'options')} className="btn-secondary">
-                ← Retour
-              </button>
+              <button onClick={() => setStep('cage')} className="btn-secondary">← Retour</button>
               <button onClick={submit} disabled={submitting} className="btn-primary">
                 {submitting ? 'Envoi...' : "Confirmer l'inscription"}
               </button>

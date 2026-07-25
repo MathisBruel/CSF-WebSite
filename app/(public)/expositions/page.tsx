@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { prisma } from '@/lib/prisma'
-import { formatDate, formatPrice, EXHIBITION_STATUS_LABELS } from '@/lib/utils'
+import { formatDate, EXHIBITION_STATUS_LABELS } from '@/lib/utils'
 import { ExhibitionStatus } from '@prisma/client'
 
 export const dynamic = 'force-dynamic'
@@ -70,12 +70,6 @@ export default async function ExpositionsPage() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                     </svg>
                     {expo.location}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <svg className="w-4 h-4 text-csf-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    À partir de {formatPrice(expo.priceBase)}
                   </div>
                   {expo.registrationDeadline && (
                     <div className="flex items-center gap-2 text-xs text-orange-600">

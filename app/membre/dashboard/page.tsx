@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma'
 
 export const dynamic = 'force-dynamic'
 import Link from 'next/link'
-import { formatDate, formatPrice, REGISTRATION_STATUS_LABELS } from '@/lib/utils'
+import { formatDate, REGISTRATION_STATUS_LABELS } from '@/lib/utils'
 import { ExhibitionStatus } from '@prisma/client'
 import { MembershipRequestButton } from '@/components/membre/MembershipRequestButton'
 
@@ -208,7 +208,6 @@ export default async function MemberDashboard() {
                   <p className="text-xs text-csf-muted">{expo.city} · {formatDate(expo.startDate)}</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-medium text-csf-dark">{formatPrice(expo.priceBase)}</span>
                   <Link href={`/membre/inscriptions/${expo.id}`}
                     className="text-xs btn-primary py-1 px-3">
                     S&apos;inscrire
