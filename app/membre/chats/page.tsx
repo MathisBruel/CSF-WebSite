@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma'
 
 export const dynamic = 'force-dynamic'
 import Link from 'next/link'
-import { formatDate, DOCUMENT_TYPE_LABELS } from '@/lib/utils'
+import { formatDate } from '@/lib/utils'
 
 export default async function MesChatsList() {
   const session = await auth()
@@ -13,7 +13,6 @@ export default async function MesChatsList() {
     where: { ownerId: session.user.id },
     include: {
       vaccinations: true,
-      catDocuments: true,
     },
     orderBy: { createdAt: 'desc' },
   })
@@ -42,9 +41,6 @@ export default async function MesChatsList() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {cats.map((cat) => {
-            const missingDocs = ['PEDIGREE', 'ICAD', 'VACCIN'].filter(
-              (t) => !cat.catDocuments.some((d) => d.type === t && d.validated)
-            )
             return (
               <div key={cat.id} className="card hover:shadow-md transition-shadow">
                 <div className="flex items-start justify-between mb-3">
@@ -77,35 +73,6 @@ export default async function MesChatsList() {
                   )}
                 </div>
 
-                {/* Documents status */}
-                <div className="border-t border-csf-light pt-3">
-                  <p className="text-xs font-medium text-csf-muted uppercase tracking-wide mb-2">Documents</p>
-                  <div className="flex flex-wrap gap-2">
-                    {(['PEDIGREE', 'ICAD', 'VACCIN'] as const).map((type) => {
-                      const doc = cat.catDocuments.find((d) => d.type === type)
-                      return (
-                        <span key={type}
-                          className={`badge text-xs ${
-                            doc?.validated ? 'badge-green' :
-                            doc ? 'badge-yellow' : 'badge-red'
-                          }`}>
-                          {DOCUMENT_TYPE_LABELS[type]}: {
-                            doc?.validated ? '✓' : doc ? 'En attente' : 'Manquant'
-                          }
-                        </span>
-                      )
-                    })}
-                  </div>
-                </div>
-
-                {missingDocs.length > 0 && (
-                  <div className="mt-3">
-                    <Link href={`/membre/chats/${cat.id}`}
-                      className="text-xs text-orange-600 hover:text-orange-700 font-medium">
-                      → Uploader les documents manquants
-                    </Link>
-                  </div>
-                )}
               </div>
             )
           })}

@@ -12,7 +12,7 @@ export default async function CatDetailPage({ params }: Props) {
 
   const cat = await prisma.cat.findFirst({
     where: { id: params.id, ownerId: session.user.id },
-    include: { catDocuments: true, vaccinations: true },
+    include: { vaccinations: true },
   })
 
   if (!cat) notFound()

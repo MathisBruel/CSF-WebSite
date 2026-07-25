@@ -30,7 +30,7 @@ export async function GET() {
 
   const cats = await prisma.cat.findMany({
     where: { ownerId: session.user.id },
-    include: { vaccinations: true, catDocuments: true },
+    include: { vaccinations: true },
     orderBy: { createdAt: 'desc' },
   })
   return NextResponse.json(cats)

@@ -12,11 +12,13 @@ export default async function ProfilPage() {
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
     select: {
-      id: true, firstName: true, lastName: true, email: true,
-      phone: true, city: true, postalCode: true, address: true,
+      id: true, name: true, email: true,
+      firstName: true, lastName: true, civilite: true,
+      phone: true, phoneFixed: true,
+      address: true, address2: true, city: true, postalCode: true, country: true,
+      exposantType: true, certificatCapacite: true, siret: true, affixe: true,
       role: true, membershipActive: true, membershipExpiry: true,
-      newsletterSubscribed: true,
-      createdAt: true,
+      newsletterSubscribed: true, createdAt: true,
     },
   })
 
