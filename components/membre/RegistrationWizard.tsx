@@ -77,7 +77,8 @@ export function RegistrationWizard({
   const selectedCats = cats.filter((c) => selectedCatIds.includes(c.id))
 
   const catPrices = selectedCatIds.map((catId, idx) => {
-    const cat = cats.find((c) => c.id === catId)!
+    const cat = cats.find((c) => c.id === catId)
+    if (!cat) return 0
     const opts = catOptions[catId] ?? defaultCatEntry()
     return computeCatPrice(
       idx + 1,
@@ -135,8 +136,8 @@ export function RegistrationWizard({
       setError(body.error || "Erreur lors de l'inscription")
       return
     }
-    router.refresh()
     setStep('done')
+    router.refresh()
   }
 
   const steps: Step[] = ['cats', 'options', 'cage', 'summary']
