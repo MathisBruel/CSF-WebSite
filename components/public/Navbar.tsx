@@ -8,6 +8,7 @@ import { Logo } from '@/components/ui/Logo'
 const navLinks = [
   { href: '/actualites', label: 'Actualités' },
   { href: '/expositions', label: 'Expositions' },
+  { href: '/tarifs', label: 'Tarifs' },
   { href: '/equipe', label: 'L\'Équipe' },
   { href: '/contact', label: 'Contact' },
 ]
