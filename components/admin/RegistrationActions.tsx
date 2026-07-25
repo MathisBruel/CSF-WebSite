@@ -28,32 +28,46 @@ export function RegistrationActions({
   }
 
   return (
-    <div className="flex flex-col gap-2 items-end min-w-36">
+    <div className="flex flex-col gap-2 items-end min-w-40">
       {currentStatus === 'PENDING' && (
-        <div className="flex gap-2">
-          <button onClick={() => patch({ status: 'VALIDATED' })} disabled={loading}
-            className="px-3 py-1.5 bg-green-50 text-green-700 text-xs font-medium rounded-lg hover:bg-green-100 transition-colors">
-            Valider
+        <>
+          <button
+            onClick={() => patch({ action: 'payment_received' })}
+            disabled={loading}
+            className="px-3 py-1.5 bg-green-50 text-green-700 text-xs font-medium rounded-lg hover:bg-green-100 transition-colors w-full text-center"
+          >
+            ✓ Paiement reçu
           </button>
-          <button onClick={() => {
-            const reason = window.prompt('Motif de refus :')
-            if (reason) patch({ status: 'REJECTED', rejectionReason: reason })
-          }} disabled={loading}
-            className="px-3 py-1.5 bg-red-50 text-red-600 text-xs font-medium rounded-lg hover:bg-red-100 transition-colors">
+          <button
+            onClick={() => patch({ action: 'remind_payment' })}
+            disabled={loading}
+            className="px-3 py-1.5 bg-blue-50 text-blue-700 text-xs font-medium rounded-lg hover:bg-blue-100 transition-colors w-full text-center"
+          >
+            Rappel paiement
+          </button>
+          <button
+            onClick={() => {
+              const reason = window.prompt('Motif de refus :')
+              if (reason) patch({ status: 'REJECTED', rejectionReason: reason })
+            }}
+            disabled={loading}
+            className="px-3 py-1.5 bg-red-50 text-red-600 text-xs font-medium rounded-lg hover:bg-red-100 transition-colors w-full text-center"
+          >
             Refuser
           </button>
-        </div>
+        </>
       )}
 
       {currentStatus === 'VALIDATED' && (
-        <button onClick={() => patch({ paymentStatus: 'PAID' })} disabled={loading || currentPayment === 'PAID'}
-          className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
-            currentPayment === 'PAID'
-              ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-              : 'bg-blue-50 text-blue-700 hover:bg-blue-100'
-          }`}>
-          {currentPayment === 'PAID' ? '✓ Payé' : 'Marquer payé'}
-        </button>
+        <span className="px-3 py-1.5 bg-green-100 text-green-700 text-xs font-medium rounded-lg">
+          ✓ Validée &amp; Payée
+        </span>
+      )}
+
+      {currentStatus === 'REJECTED' && (
+        <span className="px-3 py-1.5 bg-red-100 text-red-600 text-xs font-medium rounded-lg">
+          Refusée
+        </span>
       )}
     </div>
   )

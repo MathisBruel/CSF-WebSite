@@ -2,41 +2,30 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import type { Exhibition, Cat } from '@prisma/client'
+import type { Exhibition, Cat, ExhibitionSpecial } from '@prisma/client'
 import { computeCatPrice, formatPrice, type GlobalPricing } from '@/lib/utils'
+import { computeAvailableClasses } from '@/lib/cat-data'
 
 type Step = 'cats' | 'options' | 'cage' | 'summary' | 'done'
 
 type CatEntry = {
   participationDays: string[]
   traditionalClass: string
-  traditionalClassOther: string
-  isHorsConcours: boolean
-  isHouseCat: boolean
   wantsComplianceExam: boolean
-  wantsDiploma: boolean
   specialParticipations: string[]
 }
 
 const defaultCatEntry = (): CatEntry => ({
   participationDays: [],
   traditionalClass: '',
-  traditionalClassOther: '',
-  isHorsConcours: false,
-  isHouseCat: false,
   wantsComplianceExam: false,
-  wantsDiploma: false,
   specialParticipations: [],
 })
 
-const TRADITIONAL_CLASSES = [
-  '3/6 Mois', '6/10 Mois',
-  'CAC', 'CACIB', 'CAGCI', 'CACE', 'CAGCE',
-  'CAP', 'CAPIB', 'CAGPI', 'CAPE', 'CAGPE',
-  'Honneur', 'RIA', 'Nouvelle Race / AE', 'Autre',
-]
-
-const SPECIAL_PARTICIPATIONS = ["Lot d'Elevage", '3 Générations', 'Vétéran']
+function computeCageLength(catCount: number): number {
+  if (catCount <= 0) return 0
+  return 80 + (catCount - 1) * 60
+}
 
 export function RegistrationWizard({
   exhibition,
@@ -44,8 +33,8 @@ export function RegistrationWizard({
   pricing,
   isMember,
 }: {
-  exhibition: Exhibition
-  cats: (Cat & { catDocuments: { type: string; validated: boolean }[] })[]
+  exhibition: Exhibition & { specials: ExhibitionSpecial[] }
+  cats: (Cat & { catDocuments: { type: string; validated: boolean }[]; isHouseCat: boolean })[]
   pricing: GlobalPricing
   isMember: boolean
 }) {
@@ -53,6 +42,10 @@ export function RegistrationWizard({
   const [selectedCatIds, setSelectedCatIds] = useState<string[]>([])
   const [catOptions, setCatOptions] = useState<Record<string, CatEntry>>({})
   const [needsCage, setNeedsCage] = useState(false)
+  const [cageSpecialRequest, setCageSpecialRequest] = useState('')
+  const [wantsSpecialCage, setWantsSpecialCage] = useState(false)
+  const [nextTo, setNextTo] = useState('')
+  const [comment, setComment] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
 
@@ -77,19 +70,22 @@ export function RegistrationWizard({
   const selectedCats = cats.filter((c) => selectedCatIds.includes(c.id))
 
   const catPrices = selectedCatIds.map((catId, idx) => {
+    const cat = cats.find((c) => c.id === catId)!
     const opts = catOptions[catId] ?? defaultCatEntry()
     return computeCatPrice(
       idx + 1,
       opts.participationDays,
-      opts.isHouseCat,
+      cat.isHouseCat,
       opts.wantsComplianceExam,
-      opts.wantsDiploma,
+      false,
       isMember,
       pricing
     )
   })
   const catsTotal = catPrices.reduce((s, p) => s + p, 0)
   const totalAmount = pricing.registrationFee + catsTotal
+
+  const standardCageLength = computeCageLength(selectedCatIds.length)
 
   const goToOptions = () => {
     const newOptions: Record<string, CatEntry> = { ...catOptions }
@@ -110,6 +106,9 @@ export function RegistrationWizard({
         ...(catOptions[catId] ?? defaultCatEntry()),
       })),
       needsCage,
+      cageSpecialLengthRequest: needsCage && wantsSpecialCage ? cageSpecialRequest : undefined,
+      nextTo: nextTo || undefined,
+      comment: comment || undefined,
     }
     const res = await fetch('/api/registrations', {
       method: 'POST',
@@ -138,8 +137,8 @@ export function RegistrationWizard({
           </svg>
         </div>
         <h2 className="text-xl font-bold font-serif text-csf-dark mb-2">Inscription enregistrée !</h2>
-        <p className="text-csf-muted mb-2">Votre inscription est en attente de validation par le bureau.</p>
-        <p className="text-sm text-csf-muted mb-6">Vous recevrez une confirmation par email une fois validée.</p>
+        <p className="text-csf-muted mb-2">Votre inscription est en attente de réception du paiement.</p>
+        <p className="text-sm text-csf-muted mb-6">Vous recevrez une confirmation par email une fois le paiement reçu et validé.</p>
         <div className="flex gap-3 justify-center">
           <Link href="/membre/inscriptions" className="btn-primary">Mes inscriptions</Link>
           <Link href="/membre/dashboard" className="btn-secondary">Tableau de bord</Link>
@@ -241,11 +240,18 @@ export function RegistrationWizard({
                 const catPrice = computeCatPrice(
                   idx + 1,
                   opts.participationDays,
-                  opts.isHouseCat,
+                  cat.isHouseCat,
                   opts.wantsComplianceExam,
-                  opts.wantsDiploma,
+                  false,
                   isMember,
                   pricing
+                )
+                const availableClasses = computeAvailableClasses(
+                  new Date(cat.birthDate),
+                  cat.gender,
+                  cat.breed,
+                  cat.isHouseCat,
+                  new Date(exhibition.startDate)
                 )
                 return (
                   <div key={cat.id} className="border border-csf-light rounded-xl p-4">
@@ -253,6 +259,9 @@ export function RegistrationWizard({
                       <h3 className="font-medium text-csf-dark">
                         {idx + 1}. {cat.name}{' '}
                         <span className="text-sm font-normal text-csf-muted">({cat.breed})</span>
+                        {cat.isHouseCat && (
+                          <span className="ml-2 text-xs px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded">Chat de maison</span>
+                        )}
                       </h3>
                       <span className="text-sm font-semibold text-csf-orange">{formatPrice(catPrice)}</span>
                     </div>
@@ -278,39 +287,20 @@ export function RegistrationWizard({
                         </div>
                       </div>
 
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input type="checkbox" checked={opts.isHouseCat}
-                          onChange={(e) => update('isHouseCat', e.target.checked)}
-                          className="text-csf-orange rounded" />
-                        <span className="text-sm font-medium">Chat de maison</span>
-                      </label>
-
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input type="checkbox" checked={opts.isHorsConcours}
-                          onChange={(e) => update('isHorsConcours', e.target.checked)}
-                          className="text-csf-orange rounded" />
-                        <span className="text-sm font-medium">Hors Concours (H.C.)</span>
-                      </label>
-
-                      {!opts.isHorsConcours && !opts.isHouseCat && (
-                        <>
-                          <div>
-                            <label className="form-label text-sm">Classe de jugement Traditionnel</label>
-                            <select className="form-select" value={opts.traditionalClass}
-                              onChange={(e) => update('traditionalClass', e.target.value)}>
-                              <option value="">Sélectionner une classe</option>
-                              {TRADITIONAL_CLASSES.map((c) => <option key={c} value={c}>{c}</option>)}
-                            </select>
-                          </div>
-                          {opts.traditionalClass === 'Autre' && (
-                            <div>
-                              <label className="form-label text-sm">Précisez la classe</label>
-                              <input type="text" className="form-input" value={opts.traditionalClassOther}
-                                onChange={(e) => update('traditionalClassOther', e.target.value)} />
-                            </div>
-                          )}
-                        </>
-                      )}
+                      <div>
+                        <label className="form-label text-sm">Classe de jugement</label>
+                        {availableClasses.length === 0 ? (
+                          <p className="text-sm text-red-500">Chat trop jeune pour cette exposition.</p>
+                        ) : (
+                          <select className="form-select" value={opts.traditionalClass}
+                            onChange={(e) => update('traditionalClass', e.target.value)}>
+                            <option value="">Sélectionner une classe</option>
+                            {availableClasses.map((c) => (
+                              <option key={c.idClasses} value={c.nom}>{c.nom}</option>
+                            ))}
+                          </select>
+                        )}
+                      </div>
 
                       <label className="flex items-center gap-2 cursor-pointer">
                         <input type="checkbox" checked={opts.wantsComplianceExam}
@@ -324,40 +314,27 @@ export function RegistrationWizard({
                         </span>
                       </label>
 
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input type="checkbox" checked={opts.wantsDiploma}
-                          onChange={(e) => update('wantsDiploma', e.target.checked)}
-                          className="text-csf-orange rounded" />
-                        <span className="text-sm">
-                          Diplôme{' '}
-                          <span className="text-csf-muted">
-                            {isMember
-                              ? pricing.memberDiploma === 0 ? '(gratuit)' : `(+${formatPrice(pricing.memberDiploma)})`
-                              : pricing.nonMemberDiploma === 0 ? '(gratuit)' : `(+${formatPrice(pricing.nonMemberDiploma)})`
-                            }
-                          </span>
-                        </span>
-                      </label>
-
-                      <div>
-                        <label className="form-label text-sm">Participations spéciales (Optionnel)</label>
-                        <div className="flex flex-col gap-2">
-                          {SPECIAL_PARTICIPATIONS.map((sp) => (
-                            <label key={sp} className="flex items-center gap-2 cursor-pointer">
-                              <input type="checkbox"
-                                checked={opts.specialParticipations.includes(sp)}
-                                onChange={(e) => {
-                                  const newSp = e.target.checked
-                                    ? [...opts.specialParticipations, sp]
-                                    : opts.specialParticipations.filter((s) => s !== sp)
-                                  update('specialParticipations', newSp)
-                                }}
-                                className="text-csf-orange rounded" />
-                              <span className="text-sm">{sp}</span>
-                            </label>
-                          ))}
+                      {exhibition.specials.length > 0 && (
+                        <div>
+                          <label className="form-label text-sm">Spéciaux de race</label>
+                          <div className="flex flex-col gap-2">
+                            {exhibition.specials.map((sp) => (
+                              <label key={sp.id} className="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox"
+                                  checked={opts.specialParticipations.includes(sp.name)}
+                                  onChange={(e) => {
+                                    const newSp = e.target.checked
+                                      ? [...opts.specialParticipations, sp.name]
+                                      : opts.specialParticipations.filter((s) => s !== sp.name)
+                                    update('specialParticipations', newSp)
+                                  }}
+                                  className="text-csf-orange rounded" />
+                                <span className="text-sm">{sp.name}</span>
+                              </label>
+                            ))}
+                          </div>
                         </div>
-                      </div>
+                      )}
                     </div>
                   </div>
                 )
@@ -372,11 +349,13 @@ export function RegistrationWizard({
 
         {/* ── Step 3: Cage ── */}
         {step === 'cage' && (
-          <div>
-            <h2 className="font-bold text-csf-dark mb-1">Cage</h2>
-            <p className="text-sm text-csf-muted mb-5">Les cages sont fournies gratuitement par le club.</p>
+          <div className="space-y-5">
+            <div>
+              <h2 className="font-bold text-csf-dark mb-1">Cage</h2>
+              <p className="text-sm text-csf-muted">Les cages sont fournies gratuitement par le club.</p>
+            </div>
 
-            <div className="p-4 bg-orange-50 border border-orange-100 rounded-xl mb-5">
+            <div className="p-4 bg-orange-50 border border-orange-100 rounded-xl">
               <p className="text-sm font-medium text-csf-dark mb-1">Caution cage</p>
               <p className="text-sm text-csf-muted">
                 Une caution de <strong className="text-csf-dark">{formatPrice(pricing.cageDeposit)}</strong> par chèque
@@ -409,7 +388,65 @@ export function RegistrationWizard({
               </label>
             </div>
 
-            <div className="flex justify-between mt-6">
+            {needsCage && (
+              <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl space-y-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-medium text-csf-dark">
+                    Longueur standard pour {selectedCatIds.length} chat{selectedCatIds.length > 1 ? 's' : ''}
+                  </p>
+                  <span className="text-sm font-bold text-csf-orange">{standardCageLength} cm</span>
+                </div>
+                <p className="text-xs text-csf-muted">
+                  1 chat = 80 cm · chaque chat supplémentaire = +60 cm
+                </p>
+
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" checked={wantsSpecialCage}
+                    onChange={(e) => { setWantsSpecialCage(e.target.checked); if (!e.target.checked) setCageSpecialRequest('') }}
+                    className="text-csf-orange rounded" />
+                  <span className="text-sm">Demander une longueur différente</span>
+                </label>
+
+                {wantsSpecialCage && (
+                  <div>
+                    <label className="form-label text-sm">Raison de la demande spéciale</label>
+                    <textarea
+                      value={cageSpecialRequest}
+                      onChange={(e) => setCageSpecialRequest(e.target.value)}
+                      className="form-textarea"
+                      rows={2}
+                      placeholder="Ex : cage décorée 120cm, cage double pour deux chatons..."
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* À côté de + commentaire */}
+            <div className="space-y-4 pt-2 border-t border-csf-light">
+              <div>
+                <label className="form-label">À côté de...</label>
+                <input
+                  type="text"
+                  value={nextTo}
+                  onChange={(e) => setNextTo(e.target.value)}
+                  className="form-input"
+                  placeholder="Nom(s) des personnes à côté desquelles vous souhaitez être"
+                />
+              </div>
+              <div>
+                <label className="form-label">Commentaire</label>
+                <textarea
+                  value={comment}
+                  onChange={(e) => setComment(e.target.value)}
+                  className="form-textarea"
+                  rows={2}
+                  placeholder="Informations complémentaires pour le bureau..."
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-between">
               <button onClick={() => setStep('options')} className="btn-secondary">← Retour</button>
               <button onClick={() => setStep('summary')} className="btn-primary">Suivant →</button>
             </div>
@@ -431,7 +468,6 @@ export function RegistrationWizard({
                 <span>{formatPrice(pricing.registrationFee)}</span>
               </div>
 
-              {/* Per-cat lines */}
               {selectedCats.map((cat, idx) => {
                 const opts = catOptions[cat.id] ?? defaultCatEntry()
                 const catPrice = catPrices[idx]
@@ -443,21 +479,38 @@ export function RegistrationWizard({
                     </div>
                     <div className="space-y-0.5 mt-1 text-xs text-csf-muted">
                       {opts.participationDays.length > 0 && <p>{opts.participationDays.join(' + ')}</p>}
-                      {opts.isHouseCat && <p>Chat de maison</p>}
-                      {opts.traditionalClass && !opts.isHouseCat && <p>Classe : {opts.traditionalClass}</p>}
-                      {opts.isHorsConcours && <p>Hors Concours</p>}
+                      {cat.isHouseCat && <p>Chat de maison</p>}
+                      {opts.traditionalClass && <p>Classe : {opts.traditionalClass}</p>}
                       {opts.wantsComplianceExam && <p>Conformité</p>}
-                      {opts.wantsDiploma && <p>Diplôme</p>}
-                      {opts.specialParticipations.length > 0 && <p>{opts.specialParticipations.join(', ')}</p>}
+                      {opts.specialParticipations.length > 0 && <p>Spéciaux : {opts.specialParticipations.join(', ')}</p>}
                     </div>
                   </div>
                 )
               })}
 
               {needsCage && (
+                <div className="text-csf-muted space-y-0.5">
+                  <div className="flex justify-between">
+                    <span>Cage club ({standardCageLength} cm)</span>
+                    <span>Gratuit (caution {formatPrice(pricing.cageDeposit)} sur place)</span>
+                  </div>
+                  {wantsSpecialCage && cageSpecialRequest && (
+                    <p className="text-xs italic">Demande spéciale : {cageSpecialRequest}</p>
+                  )}
+                </div>
+              )}
+
+              {nextTo && (
                 <div className="flex justify-between text-csf-muted">
-                  <span>Cage club</span>
-                  <span>Gratuit (caution {formatPrice(pricing.cageDeposit)} sur place)</span>
+                  <span>À côté de</span>
+                  <span className="text-right max-w-48">{nextTo}</span>
+                </div>
+              )}
+
+              {comment && (
+                <div className="text-csf-muted">
+                  <p className="mb-1">Commentaire :</p>
+                  <p className="text-xs italic">{comment}</p>
                 </div>
               )}
 
@@ -476,7 +529,7 @@ export function RegistrationWizard({
             )}
 
             <p className="text-xs text-csf-muted mt-3">
-              Le paiement s&apos;effectue par virement bancaire après validation de votre inscription.
+              Votre inscription sera validée dès réception de votre règlement.
             </p>
 
             <div className="flex justify-between mt-6">

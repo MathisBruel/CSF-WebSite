@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { sendRegistrationValidatedEmail, sendRegistrationRejectedEmail } from '@/lib/email'
+import { sendRegistrationValidatedEmail, sendRegistrationRejectedEmail, sendPaymentReminderEmail } from '@/lib/email'
 import type { RegistrationStatus, PaymentStatus } from '@prisma/client'
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
@@ -25,6 +25,13 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     updateData.convocationSentAt = new Date()
   }
 
+  // "Paiement reçu" validates both status and payment atomically
+  if (data.action === 'payment_received') {
+    updateData.status = 'VALIDATED'
+    updateData.paymentStatus = 'PAID'
+    updateData.paidAt = new Date()
+  }
+
   const reg = await prisma.registration.update({
     where: { id: params.id },
     data: updateData,
@@ -34,8 +41,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     },
   })
 
-  // Send email notifications on status change
-  if (data.status === 'VALIDATED') {
+  if (data.action === 'payment_received' || data.status === 'VALIDATED') {
     sendRegistrationValidatedEmail(
       { name: reg.user.name, email: reg.user.email },
       { title: reg.exhibition.title, startDate: reg.exhibition.startDate, city: reg.exhibition.city }
@@ -45,6 +51,12 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       { name: reg.user.name, email: reg.user.email },
       { title: reg.exhibition.title },
       data.rejectionReason
+    ).catch(console.error)
+  } else if (data.action === 'remind_payment') {
+    sendPaymentReminderEmail(
+      { name: reg.user.name, email: reg.user.email },
+      { title: reg.exhibition.title, startDate: reg.exhibition.startDate, city: reg.exhibition.city },
+      reg.totalAmount
     ).catch(console.error)
   }
 

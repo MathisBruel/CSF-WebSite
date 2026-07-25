@@ -1,0 +1,292 @@
+{
+    "Classes": [
+        {
+            "IDClasses": 1,
+            "Nom": "3-6 Mois",
+            "Description": "3-6 Mois",
+            "OrdreAffichage": 2,
+            "bJugement": true,
+            "IDLOOF": 1,
+            "bBIS": true
+        },
+        {
+            "IDClasses": 2,
+            "Nom": "6-10 Mois",
+            "Description": "6-10 Mois",
+            "OrdreAffichage": 3,
+            "bJugement": true,
+            "IDLOOF": 2,
+            "bBIS": true
+        },
+        {
+            "IDClasses": 3,
+            "Nom": "CAC",
+            "Description": "Champion",
+            "OrdreAffichage": 4,
+            "bJugement": true,
+            "IDLOOF": 3,
+            "bBIS": true
+        },
+        {
+            "IDClasses": 4,
+            "Nom": "CACIB",
+            "Description": "Champion International",
+            "OrdreAffichage": 5,
+            "bJugement": true,
+            "IDLOOF": 4,
+            "bBIS": true
+        },
+        {
+            "IDClasses": 5,
+            "Nom": "CAGCI",
+            "Description": "Grand Champion International",
+            "OrdreAffichage": 6,
+            "bJugement": true,
+            "IDLOOF": 5,
+            "bBIS": true
+        },
+        {
+            "IDClasses": 6,
+            "Nom": "CACE",
+            "Description": "Champion d'Europe",
+            "OrdreAffichage": 7,
+            "bJugement": true,
+            "IDLOOF": 6,
+            "bBIS": true
+        },
+        {
+            "IDClasses": 7,
+            "Nom": "CAGCE",
+            "Description": "Grand Champion d'Europe",
+            "OrdreAffichage": 8,
+            "bJugement": true,
+            "IDLOOF": 8,
+            "bBIS": true
+        },
+        {
+            "IDClasses": 8,
+            "Nom": "CAP",
+            "Description": "Premior",
+            "OrdreAffichage": 9,
+            "bJugement": true,
+            "IDLOOF": 9,
+            "bBIS": true
+        },
+        {
+            "IDClasses": 9,
+            "Nom": "CAPIB",
+            "Description": "Premior International",
+            "OrdreAffichage": 10,
+            "bJugement": true,
+            "IDLOOF": 10,
+            "bBIS": true
+        },
+        {
+            "IDClasses": 10,
+            "Nom": "CAGPI",
+            "Description": "Grand Premior International",
+            "OrdreAffichage": 11,
+            "bJugement": true,
+            "IDLOOF": 11,
+            "bBIS": true
+        },
+        {
+            "IDClasses": 11,
+            "Nom": "CAPE",
+            "Description": "Premior d'Europe",
+            "OrdreAffichage": 12,
+            "bJugement": true,
+            "IDLOOF": 12,
+            "bBIS": true
+        },
+        {
+            "IDClasses": 12,
+            "Nom": "CAGPE",
+            "Description": "Grand Premior d'Europe",
+            "OrdreAffichage": 13,
+            "bJugement": true,
+            "IDLOOF": 14,
+            "bBIS": true
+        },
+        {
+            "IDClasses": 13,
+            "Nom": "Honneur",
+            "Description": "Honneur",
+            "OrdreAffichage": 14,
+            "bJugement": true,
+            "IDLOOF": 15,
+            "bBIS": true
+        },
+        {
+            "IDClasses": 14,
+            "Nom": "Hors Concours",
+            "Description": "Hors Concours",
+            "OrdreAffichage": 15,
+            "bJugement": false,
+            "IDLOOF": 17,
+            "bBIS": false
+        },
+        {
+            "IDClasses": 15,
+            "Nom": "Chat de maison",
+            "Description": "Chat de maison",
+            "OrdreAffichage": 16,
+            "bJugement": true,
+            "IDLOOF": 18,
+            "bBIS": false
+        },
+        {
+            "IDClasses": 16,
+            "Nom": "Absent",
+            "Description": "Absent",
+            "OrdreAffichage": 1,
+            "bJugement": false,
+            "IDLOOF": 23,
+            "bBIS": false
+        },
+        {
+            "IDClasses": 17,
+            "Nom": "NC",
+            "Description": "Nouvelle Couleur",
+            "OrdreAffichage": 17,
+            "bJugement": false,
+            "IDLOOF": 19,
+            "bBIS": false
+        },
+        {
+            "IDClasses": 18,
+            "Nom": "NR",
+            "Description": "Nouvelle Race",
+            "OrdreAffichage": 18,
+            "bJugement": false,
+            "IDLOOF": 20,
+            "bBIS": false
+        },
+        {
+            "IDClasses": 19,
+            "Nom": "RIA",
+            "Description": "Registre d'inscription Apparence",
+            "OrdreAffichage": 19,
+            "bJugement": false,
+            "IDLOOF": 21,
+            "bBIS": false
+        },
+        {
+            "IDClasses": 20,
+            "Nom": "AE",
+            "Description": "Auxili\u00e8re d'Elevage",
+            "OrdreAffichage": 20,
+            "bJugement": true,
+            "IDLOOF": 22,
+            "bBIS": false
+        },
+        {
+            "IDClasses": 21,
+            "Nom": "Non-Inscrit",
+            "Description": "Non-Inscrit",
+            "OrdreAffichage": 0,
+            "bJugement": false,
+            "IDLOOF": 23,
+            "bBIS": false
+        },
+        {
+            "IDClasses": 22,
+            "Nom": "CACM",
+            "Description": "",
+            "OrdreAffichage": 21,
+            "bJugement": true,
+            "IDLOOF": 61,
+            "bBIS": true
+        },
+        {
+            "IDClasses": 23,
+            "Nom": "CAPM",
+            "Description": "",
+            "OrdreAffichage": 22,
+            "bJugement": true,
+            "IDLOOF": 62,
+            "bBIS": true
+        },
+        {
+            "IDClasses": 24,
+            "Nom": "V\u00e9t\u00e9ran",
+            "Description": "V\u00e9t\u00e9ran",
+            "OrdreAffichage": 23,
+            "bJugement": true,
+            "IDLOOF": 63,
+            "bBIS": true
+        },
+        {
+            "IDClasses": 25,
+            "Nom": "Port\u00e9e",
+            "Description": "Port\u00e9e",
+            "OrdreAffichage": 24,
+            "bJugement": true,
+            "IDLOOF": 64,
+            "bBIS": false
+        },
+        {
+            "IDClasses": 26,
+            "Nom": "Conformit\u00e9 Seule",
+            "Description": "Conformit\u00e9 Seule",
+            "OrdreAffichage": 25,
+            "bJugement": false,
+            "IDLOOF": 0,
+            "bBIS": false
+        },
+        {
+            "IDClasses": 27,
+            "Nom": "CAB",
+            "Description": "Certificat d'Aptitude Bronze",
+            "OrdreAffichage": 26,
+            "bJugement": true,
+            "IDLOOF": 0,
+            "bBIS": true
+        },
+        {
+            "IDClasses": 28,
+            "Nom": "CAA",
+            "Description": "Certificat d'Aptitude Argent",
+            "OrdreAffichage": 27,
+            "bJugement": true,
+            "IDLOOF": 0,
+            "bBIS": true
+        },
+        {
+            "IDClasses": 29,
+            "Nom": "CAV",
+            "Description": "Certificat d'Aptitude Vermeil",
+            "OrdreAffichage": 28,
+            "bJugement": true,
+            "IDLOOF": 0,
+            "bBIS": true
+        },
+        {
+            "IDClasses": 30,
+            "Nom": "CAO",
+            "Description": "Certificat d'Aptitude Or",
+            "OrdreAffichage": 29,
+            "bJugement": true,
+            "IDLOOF": 0,
+            "bBIS": true
+        },
+        {
+            "IDClasses": 31,
+            "Nom": "CAPL",
+            "Description": "Certificat d'Aptitude Platine",
+            "OrdreAffichage": 30,
+            "bJugement": true,
+            "IDLOOF": 0,
+            "bBIS": true
+        },
+        {
+            "IDClasses": 32,
+            "Nom": "4-10 Mois",
+            "Description": "4-10 Mois Chat de Maison",
+            "OrdreAffichage": 31,
+            "bJugement": true,
+            "IDLOOF": 0,
+            "bBIS": true
+        }
+    ]
+}

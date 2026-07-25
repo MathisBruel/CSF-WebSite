@@ -39,8 +39,6 @@ export default async function CatDetailPage({ params }: Props) {
             { label: 'Couleur', value: cat.color || '—' },
             { label: 'Date de naissance', value: formatDate(cat.birthDate) },
             { label: 'I-CAD', value: cat.icadNumber || '—' },
-            { label: 'Pedigree', value: cat.pedigreeNumber || '—' },
-            { label: 'Castré/stérilisé', value: cat.neutered ? 'Oui' : 'Non' },
           ].map(({ label, value }) => (
             <div key={label}>
               <dt className="text-csf-muted">{label}</dt>
@@ -49,6 +47,31 @@ export default async function CatDetailPage({ params }: Props) {
           ))}
         </dl>
       </div>
+
+      {/* Pedigree card */}
+      <div className="card">
+        <h2 className="font-bold text-csf-dark mb-4">Pedigree</h2>
+        {cat.pedigreeInProgress ? (
+          <p className="text-gray-400 font-medium">EN COURS</p>
+        ) : (
+          <p className="font-medium text-csf-dark">{cat.pedigreeNumber || '—'}</p>
+        )}
+      </div>
+
+      {/* Certificat étranger */}
+      {cat.foreignCatCertificate && (
+        <div className="card">
+          <h2 className="font-bold text-csf-dark mb-2">Certificat chat étranger</h2>
+          <p className="text-sm font-medium text-csf-dark">{cat.foreignCatCertificate}</p>
+        </div>
+      )}
+
+      {/* Championnat de France */}
+      {cat.inscritChampionnatFrance && (
+        <div className="card">
+          <p className="text-sm font-medium text-csf-dark">✓ Inscrit au Championnat de France (CDF)</p>
+        </div>
+      )}
     </div>
   )
 }

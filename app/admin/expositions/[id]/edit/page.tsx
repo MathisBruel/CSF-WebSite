@@ -1,11 +1,15 @@
 import { prisma } from '@/lib/prisma'
 import { ExhibitionForm } from '@/components/admin/ExhibitionForm'
+import { ExhibitionSpecials } from '@/components/admin/ExhibitionSpecials'
 import { notFound } from 'next/navigation'
 
 export const dynamic = 'force-dynamic'
 
 export default async function AdminExpoEdit({ params }: { params: { id: string } }) {
-  const exhibition = await prisma.exhibition.findUnique({ where: { id: params.id } })
+  const exhibition = await prisma.exhibition.findUnique({
+    where: { id: params.id },
+    include: { specials: { orderBy: { createdAt: 'asc' } } },
+  })
   if (!exhibition) notFound()
 
   return (
@@ -29,6 +33,11 @@ export default async function AdminExpoEdit({ params }: { params: { id: string }
           maxRegistrations: exhibition.maxRegistrations || undefined,
           rules: exhibition.rules || '',
         }}
+      />
+
+      <ExhibitionSpecials
+        exhibitionId={exhibition.id}
+        initialSpecials={exhibition.specials}
       />
     </div>
   )

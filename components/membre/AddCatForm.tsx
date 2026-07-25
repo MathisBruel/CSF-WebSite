@@ -6,11 +6,12 @@ import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import Link from 'next/link'
+import { RACES, EYE_COLORS } from '@/lib/cat-data'
+import { COAT_COLORS } from '@/lib/coat-colors'
 
 const schema = z.object({
   name: z.string().min(1, 'Nom requis'),
   breed: z.string().min(1, 'Race requise'),
-  otherBreed: z.string().optional(),
   color: z.string().optional(),
   gender: z.enum(['Mâle', 'Femelle', 'Neutre Mâle', 'Neutre Femelle']),
   birthDate: z.string().min(1, 'Date de naissance requise'),
@@ -19,41 +20,50 @@ const schema = z.object({
   countryOfOrigin: z.string().optional(),
   father: z.string().optional(),
   mother: z.string().optional(),
-  forSale: z.boolean().default(false),
-  loofLitterNumber: z.string().optional(),
+  isHouseCat: z.boolean().default(false),
   icadNumber: z.string().optional(),
   pedigreeNumber: z.string().optional(),
-  neutered: z.boolean().default(false),
-  notes: z.string().optional(),
+  pedigreeInProgress: z.boolean().default(false),
+  foreignCatCertificate: z.string().optional(),
+  inscritChampionnatFrance: z.boolean().default(false),
 })
 
 type FormData = z.infer<typeof schema>
 
-const BREEDS = [
-  'Abyssin', 'Bengal', 'Birman', 'British Shorthair', 'Chartreux', 'Devon Rex',
-  'Exotic Shorthair', 'Maine Coon', 'Norvégien', 'Persan', 'Ragdoll', 'Sacré de Birmanie',
-  'Siamois', 'Sibérien', 'Sphynx', 'Autre',
-]
+function Tooltip({ text }: { text: string }) {
+  return (
+    <div className="relative group inline-flex ml-1">
+      <span className="w-4 h-4 rounded-full bg-gray-200 text-gray-600 text-xs flex items-center justify-center cursor-help font-bold leading-none">?</span>
+      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 w-60 p-2 bg-gray-800 text-white text-xs rounded hidden group-hover:block z-10 normal-case font-normal">
+        {text}
+      </div>
+    </div>
+  )
+}
 
 export function AddCatForm({ catId }: { catId?: string }) {
   const router = useRouter()
   const [error, setError] = useState('')
-  
+
   const { register, handleSubmit, watch, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: { gender: 'Mâle', neutered: false, forSale: false },
+    defaultValues: {
+      gender: 'Mâle',
+      pedigreeInProgress: false,
+      inscritChampionnatFrance: false,
+      isHouseCat: false,
+    },
   })
 
-  const currentBreed = watch('breed');
-  const isForSale = watch('forSale');
+  const pedigreeInProgress = watch('pedigreeInProgress')
 
   const onSubmit = async (data: FormData) => {
     setError('')
-    const payload = { ...data };
-    if (payload.breed === 'Autre' && payload.otherBreed) {
-      payload.breed = payload.otherBreed;
+    const payload = { ...data }
+    if (payload.pedigreeInProgress) {
+      payload.pedigreeNumber = undefined
     }
-    
+
     const res = await fetch(catId ? `/api/cats/${catId}` : '/api/cats', {
       method: catId ? 'PUT' : 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -74,6 +84,11 @@ export function AddCatForm({ catId }: { catId?: string }) {
         <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">{error}</div>
       )}
 
+      {/* datalist for coat colors autocomplete */}
+      <datalist id="coat-colors-list">
+        {COAT_COLORS.map((c) => <option key={c} value={c} />)}
+      </datalist>
+
       <div className="grid grid-cols-2 gap-4">
         <div className="col-span-2">
           <label className="form-label">Nom du chat <span className="text-red-500">*</span></label>
@@ -85,26 +100,11 @@ export function AddCatForm({ catId }: { catId?: string }) {
           <label className="form-label">Race <span className="text-red-500">*</span></label>
           <select {...register('breed')} className="form-select">
             <option value="">Choisir une race</option>
-            {BREEDS.map((b) => <option key={b} value={b}>{b}</option>)}
+            {RACES.map((r) => (
+              <option key={r.id} value={r.nom}>{r.nom}</option>
+            ))}
           </select>
           {errors.breed && <p className="text-red-500 text-xs mt-1">{errors.breed.message}</p>}
-        </div>
-
-        {currentBreed === 'Autre' && (
-          <div>
-            <label className="form-label">Précisez la race <span className="text-red-500">*</span></label>
-            <input {...register('otherBreed')} className="form-input" placeholder="Nom de la race" />
-          </div>
-        )}
-
-        <div>
-          <label className="form-label">Couleur / Robe</label>
-          <input {...register('color')} className="form-input" placeholder="Brown tabby" />
-        </div>
-
-        <div>
-          <label className="form-label">Couleur des yeux</label>
-          <input {...register('eyeColor')} className="form-input" placeholder="Vert, Bleu, Or..." />
         </div>
 
         <div>
@@ -114,6 +114,27 @@ export function AddCatForm({ catId }: { catId?: string }) {
             <option value="Femelle">Femelle</option>
             <option value="Neutre Mâle">Neutre Mâle</option>
             <option value="Neutre Femelle">Neutre Femelle</option>
+          </select>
+        </div>
+
+        <div>
+          <label className="form-label">Couleur / Robe</label>
+          <input
+            {...register('color')}
+            className="form-input"
+            placeholder="Commencer à taper..."
+            list="coat-colors-list"
+            autoComplete="off"
+          />
+        </div>
+
+        <div>
+          <label className="form-label">Couleur des yeux</label>
+          <select {...register('eyeColor')} className="form-select">
+            <option value="">Sélectionner</option>
+            {EYE_COLORS.map((e) => (
+              <option key={e.id} value={e.nom}>{e.nom}</option>
+            ))}
           </select>
         </div>
 
@@ -148,35 +169,46 @@ export function AddCatForm({ catId }: { catId?: string }) {
           <input {...register('icadNumber')} className="form-input" placeholder="250269811234567" />
         </div>
 
-        <div>
-          <label className="form-label">Numéro de pedigree (LOOF...)</label>
-          <input {...register('pedigreeNumber')} className="form-input" placeholder="LOOF-XXXX-XX-XXXXX" />
+        {/* Pedigree section */}
+        <div className="col-span-2 space-y-2">
+          <label className="form-label mb-0">Pedigree (LOOF...)</label>
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input {...register('pedigreeInProgress')} type="checkbox" className="w-4 h-4 rounded text-csf-orange" />
+            <span className="text-sm text-csf-dark">Demande de pedigree en cours</span>
+          </label>
+          {pedigreeInProgress ? (
+            <div className="form-input bg-gray-100 text-gray-400 cursor-not-allowed select-none">
+              EN COURS
+            </div>
+          ) : (
+            <input {...register('pedigreeNumber')} className="form-input" placeholder="LOOF-XXXX-XX-XXXXX" />
+          )}
         </div>
 
+        {/* Chat de maison */}
         <div className="col-span-2">
           <label className="flex items-center gap-2 cursor-pointer">
-            <input {...register('neutered')} type="checkbox" className="w-4 h-4 rounded text-csf-orange" />
-            <span className="text-sm text-csf-dark">Chat castré / stérilisé</span>
+            <input {...register('isHouseCat')} type="checkbox" className="w-4 h-4 rounded text-csf-orange" />
+            <span className="text-sm text-csf-dark">Chat de maison</span>
           </label>
         </div>
 
+        {/* Certificat chat étranger */}
         <div className="col-span-2">
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input {...register('forSale')} type="checkbox" className="w-4 h-4 rounded text-csf-orange" />
-            <span className="text-sm text-csf-dark">Chat disponible à la vente (éleveurs)</span>
+          <label className="form-label flex items-center">
+            Certificat chat étranger
+            <Tooltip text="Remplir uniquement si votre chat est né à l'étranger. Laisser vide si le chat est né en France." />
           </label>
+          <input {...register('foreignCatCertificate')} className="form-input" placeholder="Numéro / référence du certificat" />
         </div>
 
-        {isForSale && (
-          <div className="col-span-2">
-            <label className="form-label">Numéro de dossier LOOF de la portée</label>
-            <input {...register('loofLitterNumber')} className="form-input" placeholder="Obligatoire si à vendre" />
-          </div>
-        )}
-
+        {/* Championnat de France */}
         <div className="col-span-2">
-          <label className="form-label">Notes</label>
-          <textarea {...register('notes')} className="form-textarea" placeholder="Informations complémentaires..." rows={3} />
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input {...register('inscritChampionnatFrance')} type="checkbox" className="w-4 h-4 rounded text-csf-orange" />
+            <span className="text-sm text-csf-dark">Inscrit au Championnat de France</span>
+            <Tooltip text="Cocher uniquement si le chat est bien inscrit au Championnat de France (CDF) sur MyLoof." />
+          </label>
         </div>
       </div>
 

@@ -1,0 +1,40 @@
+{
+    "CouleurYeux": [
+        {
+            "IDCouleurYeux": 1,
+            "Nom": "Bleus",
+            "CodeEMS": "61",
+            "IDLOOF": 2
+        },
+        {
+            "IDCouleurYeux": 2,
+            "Nom": "Or",
+            "CodeEMS": "62",
+            "IDLOOF": 4
+        },
+        {
+            "IDCouleurYeux": 3,
+            "Nom": "Impairs",
+            "CodeEMS": "63",
+            "IDLOOF": 3
+        },
+        {
+            "IDCouleurYeux": 4,
+            "Nom": "Verts",
+            "CodeEMS": "64",
+            "IDLOOF": 6
+        },
+        {
+            "IDCouleurYeux": 5,
+            "Nom": "Aigue-Marine",
+            "CodeEMS": "66",
+            "IDLOOF": 1
+        },
+        {
+            "IDCouleurYeux": 6,
+            "Nom": "Or \u00e0 Vert",
+            "CodeEMS": "",
+            "IDLOOF": 5
+        }
+    ]
+}

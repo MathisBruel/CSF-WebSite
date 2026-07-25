@@ -180,6 +180,27 @@ export async function sendRegistrationValidatedEmail(
   await send(user.email, `Inscription validée — ${exhibition.title}`, html)
 }
 
+export async function sendPaymentReminderEmail(
+  user: { name: string; email: string },
+  exhibition: { title: string; startDate: Date; city: string },
+  totalAmount: number
+) {
+  const date = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }).format(exhibition.startDate)
+  const amount = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(totalAmount)
+  const html = baseTemplate('Rappel de paiement', `
+    <h2 style="color:#C44B0C;margin-top:0;">Rappel : paiement en attente</h2>
+    <p>Bonjour ${user.name},</p>
+    <p>Votre inscription à l'exposition <strong>${exhibition.title}</strong> (${exhibition.city}, ${date}) est enregistrée mais nous n'avons pas encore reçu votre règlement.</p>
+    <div style="background:#fdf6f2;border-left:4px solid #C44B0C;padding:16px 20px;margin:20px 0;border-radius:0 6px 6px 0;">
+      <p style="margin:0;font-weight:bold;">Montant à régler : ${amount}</p>
+    </div>
+    <p>Merci de procéder au règlement dès que possible afin de valider définitivement votre place.</p>
+    <p style="margin-top:24px;font-size:13px;color:#666;">Pour toute question : <a href="mailto:${CONTACT}" style="color:#C44B0C;">${CONTACT}</a></p>
+    ${btn(`${APP_URL}/membre/inscriptions`, 'Voir mon inscription')}
+  `)
+  await send(user.email, `Rappel paiement — ${exhibition.title}`, html)
+}
+
 export async function sendRegistrationRejectedEmail(
   user: { name: string; email: string },
   exhibition: { title: string },

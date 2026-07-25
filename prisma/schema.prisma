@@ -103,17 +103,17 @@ model Cat {
   gender        String
   birthDate     DateTime
   icadNumber    String?  @unique
-  pedigreeNumber String?
-  neutered      Boolean  @default(false)
+  pedigreeNumber         String?
+  pedigreeInProgress     Boolean  @default(false)
+  foreignCatCertificate  String?
+  inscritChampionnatFrance Boolean @default(false)
+  isHouseCat    Boolean  @default(false)
   photoUrl      String?
-  notes         String?
   eyeColor        String?
   breeder         String?
   father          String?
   mother          String?
   countryOfOrigin String?
-  forSale         Boolean  @default(false)
-  loofLitterNumber String?
   ownerId       String
   owner         User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   createdAt     DateTime @default(now())
@@ -182,8 +182,19 @@ model Exhibition {
   updatedAt       DateTime         @updatedAt
 
   registrations   Registration[]
+  specials        ExhibitionSpecial[]
 
   @@map("exhibitions")
+}
+
+model ExhibitionSpecial {
+  id           String     @id @default(cuid())
+  exhibitionId String
+  exhibition   Exhibition @relation(fields: [exhibitionId], references: [id], onDelete: Cascade)
+  name         String
+  createdAt    DateTime   @default(now())
+
+  @@map("exhibition_specials")
 }
 
 // ─── Registration ─────────────────────────────────────────────────────────────
@@ -201,7 +212,11 @@ model Registration {
   totalAmount    Float
   paidAt         DateTime?
 
-  needsCage      Boolean            @default(false)
+  needsCage                Boolean  @default(false)
+  cageSpecialLengthRequest String?
+
+  nextTo         String?
+  comment        String?
 
   adminNotes     String?
   rejectionReason String?

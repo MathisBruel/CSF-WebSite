@@ -16,12 +16,12 @@ const catSchema = z.object({
   countryOfOrigin: z.string().optional(),
   father: z.string().optional(),
   mother: z.string().optional(),
-  forSale: z.boolean().default(false),
-  loofLitterNumber: z.string().optional(),
   icadNumber: z.string().optional().nullable(),
   pedigreeNumber: z.string().optional().nullable(),
-  neutered: z.boolean().default(false),
-  notes: z.string().optional(),
+  pedigreeInProgress: z.boolean().default(false),
+  foreignCatCertificate: z.string().optional(),
+  inscritChampionnatFrance: z.boolean().default(false),
+  isHouseCat: z.boolean().default(false),
 })
 
 export async function GET() {

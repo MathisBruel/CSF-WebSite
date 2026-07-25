@@ -13,7 +13,10 @@ export default async function InscriptionPage({ params }: Props) {
   if (!session) redirect('/login')
 
   const [expo, cats, userRecord, globalPricing] = await Promise.all([
-    prisma.exhibition.findUnique({ where: { id: params.expoId } }),
+    prisma.exhibition.findUnique({
+      where: { id: params.expoId },
+      include: { specials: { orderBy: { createdAt: 'asc' } } },
+    }),
     prisma.cat.findMany({
       where: { ownerId: session.user.id },
       include: { catDocuments: true },

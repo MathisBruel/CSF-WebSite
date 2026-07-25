@@ -12,10 +12,8 @@ const catEntrySchema = z.object({
   participationDays: z.array(z.string()).default([]),
   traditionalClass: z.string().optional(),
   traditionalClassOther: z.string().optional(),
-  isHorsConcours: z.boolean().default(false),
   isHouseCat: z.boolean().default(false),
   wantsComplianceExam: z.boolean().default(false),
-  wantsDiploma: z.boolean().default(false),
   specialParticipations: z.array(z.string()).default([]),
 })
 
@@ -23,6 +21,9 @@ const registrationSchema = z.object({
   exhibitionId: z.string(),
   cats: z.array(catEntrySchema).min(1, 'Au moins un chat requis'),
   needsCage: z.boolean().default(false),
+  cageSpecialLengthRequest: z.string().optional(),
+  nextTo: z.string().optional(),
+  comment: z.string().optional(),
 })
 
 export async function POST(req: NextRequest) {
@@ -78,7 +79,7 @@ export async function POST(req: NextRequest) {
         entry.participationDays,
         entry.isHouseCat,
         entry.wantsComplianceExam,
-        entry.wantsDiploma,
+        false,
         isMember,
         pricing
       )
@@ -87,10 +88,8 @@ export async function POST(req: NextRequest) {
         participationDays: entry.participationDays,
         traditionalClass: entry.traditionalClass,
         traditionalClassOther: entry.traditionalClassOther,
-        isHorsConcours: entry.isHorsConcours,
         isHouseCat: entry.isHouseCat,
         wantsComplianceExam: entry.wantsComplianceExam,
-        wantsDiploma: entry.wantsDiploma,
         specialParticipations: entry.specialParticipations,
         amount,
       }
@@ -106,7 +105,13 @@ export async function POST(req: NextRequest) {
         }),
         prisma.registration.update({
           where: { id: existingReg.id },
-          data: { totalAmount: newTotalAmount, needsCage: data.needsCage || existingReg.needsCage },
+          data: {
+            totalAmount: newTotalAmount,
+            needsCage: data.needsCage || existingReg.needsCage,
+            cageSpecialLengthRequest: data.cageSpecialLengthRequest || existingReg.cageSpecialLengthRequest,
+            nextTo: data.nextTo || existingReg.nextTo,
+            comment: data.comment || existingReg.comment,
+          },
         }),
       ])
       return NextResponse.json({ id: existingReg.id }, { status: 200 })
@@ -133,6 +138,9 @@ export async function POST(req: NextRequest) {
         registrationFee,
         totalAmount,
         needsCage: data.needsCage,
+        cageSpecialLengthRequest: data.cageSpecialLengthRequest || null,
+        nextTo: data.nextTo || null,
+        comment: data.comment || null,
         cats: { create: newCatData },
       },
     })
