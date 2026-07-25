@@ -494,6 +494,22 @@ export async function sendNewsletterToSubscribers(
   await Promise.allSettled(subscribers.map((s) => send(s.email, subject, html)))
 }
 
+export async function sendExhibitionCancelledEmail(
+  user: { name: string; email: string },
+  exhibition: { title: string; startDate: Date; city: string }
+) {
+  const date = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }).format(exhibition.startDate)
+  const html = baseTemplate("Exposition annulée", `
+    <h2 style="color:#C44B0C;margin-top:0;">Exposition annulée</h2>
+    <p>Bonjour ${user.name},</p>
+    <p>Nous avons le regret de vous informer que l'exposition <strong>${exhibition.title}</strong> prévue le <strong>${date}</strong> à <strong>${exhibition.city}</strong> est annulée.</p>
+    <p>Votre inscription est automatiquement annulée. Si vous avez déjà effectué un règlement, le bureau vous contactera pour le remboursement.</p>
+    <p style="margin-top:24px;font-size:13px;color:#666;">Pour toute question : <a href="mailto:${CONTACT}" style="color:#C44B0C;">${CONTACT}</a></p>
+    ${btn(`${APP_URL}/expositions`, 'Voir les expositions')}
+  `)
+  await send(user.email, `Exposition annulée — ${exhibition.title}`, html)
+}
+
 export async function sendExhibitionOpenNewsletter(exhibition: {
   id: string
   title: string

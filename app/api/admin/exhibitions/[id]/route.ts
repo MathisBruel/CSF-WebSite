@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { sendExhibitionOpenNewsletter } from '@/lib/email'
+import { sendExhibitionOpenNewsletter, sendExhibitionCancelledEmail } from '@/lib/email'
 import type { ExhibitionStatus } from '@prisma/client'
 
 export const dynamic = 'force-dynamic'
@@ -34,6 +34,24 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       city: expo.city,
       startDate: expo.startDate,
     }).catch(console.error)
+  }
+
+  // Notify registrants when cancelling
+  if (data.status === 'CANCELLED' && previous?.status !== 'CANCELLED') {
+    prisma.registration.findMany({
+      where: { exhibitionId: params.id },
+      select: { user: { select: { name: true, email: true } } },
+    }).then((registrations) =>
+      Promise.allSettled(
+        registrations.map((r) =>
+          sendExhibitionCancelledEmail(r.user, {
+            title: expo.title,
+            startDate: expo.startDate,
+            city: expo.city,
+          })
+        )
+      )
+    ).catch(console.error)
   }
 
   return NextResponse.json(expo)
