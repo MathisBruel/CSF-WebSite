@@ -60,6 +60,7 @@ export function Footer() {
                 { href: '/actualites', label: 'Actualités' },
                 { href: '/expositions', label: 'Expositions' },
                 { href: '/equipe', label: 'L\'Équipe' },
+                { href: '/documents', label: 'Documents' },
                 { href: '/contact', label: 'Contact' },
                 { href: '/register', label: 'Adhérer au club' },
               ].map((l) => (

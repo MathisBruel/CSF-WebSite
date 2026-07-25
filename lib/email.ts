@@ -218,6 +218,74 @@ export async function sendRegistrationRejectedEmail(
   await send(user.email, `Inscription refusée — ${exhibition.title}`, html)
 }
 
+export async function sendRegistrationConfirmationEmail(params: {
+  user: { name: string; email: string }
+  exhibition: { title: string; startDate: Date; city: string }
+  cats: { name: string; breed: string; participationDays: string[]; wantsComplianceExam: boolean; amount: number }[]
+  registrationFee: number
+  totalAmount: number
+  iban: string
+  bic: string
+  holder: string
+}) {
+  const { user, exhibition, cats, registrationFee, totalAmount, iban, bic, holder } = params
+  const date = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }).format(exhibition.startDate)
+  const fmt = (n: number) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(n)
+
+  const catRows = cats.map((cat, idx) => {
+    const days = cat.participationDays.length > 0 ? cat.participationDays.join(', ') : '–'
+    const options = cat.wantsComplianceExam ? 'Conformité' : '–'
+    return `
+      <tr>
+        <td style="padding:10px 12px;border-bottom:1px solid #f0f0f0;">${idx + 1}. ${cat.name} <span style="color:#888;font-size:13px;">(${cat.breed})</span></td>
+        <td style="padding:10px 12px;border-bottom:1px solid #f0f0f0;text-align:center;color:#555;font-size:13px;">${days}</td>
+        <td style="padding:10px 12px;border-bottom:1px solid #f0f0f0;text-align:center;color:#555;font-size:13px;">${options}</td>
+        <td style="padding:10px 12px;border-bottom:1px solid #f0f0f0;text-align:right;font-weight:bold;">${fmt(cat.amount)}</td>
+      </tr>`
+  }).join('')
+
+  const html = baseTemplate("Confirmation d'inscription", `
+    <h2 style="color:#C44B0C;margin-top:0;">Inscription enregistrée !</h2>
+    <p>Bonjour ${user.name},</p>
+    <p>Votre inscription à l'exposition <strong>${exhibition.title}</strong> a bien été enregistrée.</p>
+    <p><strong>Date :</strong> ${date} &mdash; <strong>Lieu :</strong> ${exhibition.city}</p>
+
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin:20px 0;border:1px solid #e8e8e8;border-radius:6px;overflow:hidden;font-size:14px;">
+      <thead>
+        <tr style="background:#f8f8f8;">
+          <th style="padding:10px 12px;text-align:left;font-weight:600;color:#555;">Chat</th>
+          <th style="padding:10px 12px;text-align:center;font-weight:600;color:#555;">Jours</th>
+          <th style="padding:10px 12px;text-align:center;font-weight:600;color:#555;">Options</th>
+          <th style="padding:10px 12px;text-align:right;font-weight:600;color:#555;">Montant</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${catRows}
+        <tr style="background:#fdf6f2;">
+          <td colspan="3" style="padding:10px 12px;font-weight:600;color:#555;">Frais d'inscription</td>
+          <td style="padding:10px 12px;text-align:right;font-weight:bold;">${fmt(registrationFee)}</td>
+        </tr>
+        <tr style="background:#fff3ed;">
+          <td colspan="3" style="padding:12px;font-size:16px;font-weight:bold;color:#C44B0C;">Total à régler</td>
+          <td style="padding:12px;text-align:right;font-size:16px;font-weight:bold;color:#C44B0C;">${fmt(totalAmount)}</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div style="background:#fdf6f2;border-left:4px solid #C44B0C;padding:16px 20px;margin:24px 0;border-radius:0 6px 6px 0;">
+      <p style="margin:0 0 8px;font-weight:bold;">Règlement par virement bancaire</p>
+      <p style="margin:0 0 4px;font-family:monospace;font-size:14px;">IBAN : ${iban || 'Non configuré'}</p>
+      <p style="margin:4px 0;font-family:monospace;font-size:14px;">BIC&nbsp;&nbsp;: ${bic || 'Non configuré'}</p>
+      ${holder ? `<p style="margin:4px 0;font-family:monospace;font-size:14px;">Titulaire : ${holder}</p>` : ''}
+      <p style="margin:12px 0 0;font-size:12px;color:#888;">Référence à indiquer : Inscription ${exhibition.title} — ${user.name}</p>
+    </div>
+
+    <p style="font-size:13px;color:#666;">Le bureau validera votre inscription après réception du paiement. Pour toute question : <a href="mailto:${CONTACT}" style="color:#C44B0C;">${CONTACT}</a></p>
+    ${btn(`${APP_URL}/membre/inscriptions`, 'Voir mon inscription')}
+  `)
+  await send(user.email, `Confirmation inscription — ${exhibition.title}`, html)
+}
+
 // ── Newsletter ───────────────────────────────────────────────────────────────
 
 const unsubFooter = `

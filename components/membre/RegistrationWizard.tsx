@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import type { Exhibition, Cat, ExhibitionSpecial } from '@prisma/client'
 import { computeCatPrice, formatPrice, type GlobalPricing } from '@/lib/utils'
 import { computeAvailableClasses } from '@/lib/cat-data'
@@ -38,6 +39,7 @@ export function RegistrationWizard({
   pricing: GlobalPricing
   isMember: boolean
 }) {
+  const router = useRouter()
   const [step, setStep] = useState<Step>('cats')
   const [selectedCatIds, setSelectedCatIds] = useState<string[]>([])
   const [catOptions, setCatOptions] = useState<Record<string, CatEntry>>({})
@@ -49,6 +51,7 @@ export function RegistrationWizard({
   const [comment, setComment] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
+  const [hasReadRules, setHasReadRules] = useState(false)
 
   const toggleCat = (catId: string) => {
     if (selectedCatIds.includes(catId)) {
@@ -123,6 +126,7 @@ export function RegistrationWizard({
       setError(body.error || "Erreur lors de l'inscription")
       return
     }
+    router.refresh()
     setStep('done')
   }
 
@@ -538,9 +542,24 @@ export function RegistrationWizard({
               Votre inscription sera validée dès réception de votre règlement.
             </p>
 
+            <label className="flex items-start gap-2 cursor-pointer mt-4">
+              <input
+                type="checkbox"
+                checked={hasReadRules}
+                onChange={(e) => setHasReadRules(e.target.checked)}
+                className="mt-0.5 w-4 h-4 text-csf-orange rounded flex-shrink-0"
+              />
+              <span className="text-sm text-csf-muted">
+                J&apos;ai lu et j&apos;accepte le{' '}
+                <Link href="/documents" target="_blank" className="text-csf-orange underline hover:no-underline">
+                  règlement des expositions
+                </Link>
+              </span>
+            </label>
+
             <div className="flex justify-between mt-6">
               <button onClick={() => setStep('cage')} className="btn-secondary">← Retour</button>
-              <button onClick={submit} disabled={submitting} className="btn-primary">
+              <button onClick={submit} disabled={submitting || !hasReadRules} className="btn-primary">
                 {submitting ? 'Envoi...' : "Confirmer l'inscription"}
               </button>
             </div>

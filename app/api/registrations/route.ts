@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { ExhibitionStatus } from '@prisma/client'
 import { computeCatPrice, DEFAULT_PRICING } from '@/lib/utils'
+import { sendRegistrationConfirmationEmail } from '@/lib/email'
 
 export const dynamic = 'force-dynamic'
 
@@ -54,7 +55,7 @@ export async function POST(req: NextRequest) {
     const catIds = data.cats.map((c) => c.catId)
     const userCats = await prisma.cat.findMany({
       where: { id: { in: catIds }, ownerId: session.user.id },
-      select: { id: true },
+      select: { id: true, name: true, breed: true },
     })
     if (userCats.length !== catIds.length) {
       return NextResponse.json({ error: 'Un ou plusieurs chats introuvables' }, { status: 404 })
@@ -147,6 +148,36 @@ export async function POST(req: NextRequest) {
         cats: { create: newCatData },
       },
     })
+
+    // Send confirmation email (fire-and-forget)
+    if (session.user.email) {
+      const siteConfigs = await prisma.siteConfig.findMany({
+        where: { key: { in: ['membership_rib_iban', 'membership_rib_bic', 'membership_rib_holder'] } },
+      })
+      const cfg = Object.fromEntries(siteConfigs.map((c) => [c.key, c.value]))
+      const catMap = Object.fromEntries(userCats.map((c) => [c.id, c]))
+      sendRegistrationConfirmationEmail({
+        user: { name: session.user.name || 'Exposant', email: session.user.email },
+        exhibition: {
+          title: exhibition.title,
+          startDate: exhibition.startDate,
+          city: exhibition.city,
+        },
+        cats: newCatData.map((d) => ({
+          name: catMap[d.catId]?.name ?? d.catId,
+          breed: catMap[d.catId]?.breed ?? '',
+          participationDays: d.participationDays,
+          wantsComplianceExam: d.wantsComplianceExam,
+          amount: d.amount,
+        })),
+        registrationFee,
+        totalAmount,
+        iban: cfg['membership_rib_iban'] || '',
+        bic: cfg['membership_rib_bic'] || '',
+        holder: cfg['membership_rib_holder'] || '',
+      }).catch((err) => console.error('[email] Confirmation inscription:', err))
+    }
+
     return NextResponse.json({ id: registration.id }, { status: 201 })
   } catch (err) {
     if (err instanceof z.ZodError) return NextResponse.json({ error: 'Données invalides' }, { status: 400 })

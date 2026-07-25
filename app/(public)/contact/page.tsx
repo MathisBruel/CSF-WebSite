@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 
 export const metadata: Metadata = { title: 'Contact' }
 
@@ -44,10 +45,12 @@ export default function ContactPage() {
 
         <div className="card">
           <h2 className="font-bold text-csf-dark mb-3">Documents officiels</h2>
-          <p className="text-sm text-csf-muted leading-relaxed">
-            Retrouvez nos statuts, règlement intérieur et règlement des expositions
-            dans la section Documents de l&apos;espace membre.
+          <p className="text-sm text-csf-muted leading-relaxed mb-3">
+            Retrouvez nos statuts, règlement intérieur, règlement des expositions et autres documents officiels.
           </p>
+          <Link href="/documents" className="btn-primary text-sm inline-block">
+            Consulter les documents →
+          </Link>
         </div>
       </div>
     </div>
