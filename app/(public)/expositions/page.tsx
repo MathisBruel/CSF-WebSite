@@ -11,6 +11,7 @@ const STATUS_BADGE: Record<ExhibitionStatus, string> = {
   OPEN: 'badge-green',
   DRAFT: 'badge-blue',
   CLOSED: 'badge-yellow',
+  CANCELLED: 'badge-red',
   ARCHIVED: 'badge-gray',
 }
 

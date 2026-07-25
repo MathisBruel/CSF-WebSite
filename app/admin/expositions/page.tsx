@@ -13,7 +13,7 @@ export default async function AdminExpositions() {
   })
 
   const statusColors: Record<string, string> = {
-    DRAFT: 'badge-blue', OPEN: 'badge-green', CLOSED: 'badge-yellow', ARCHIVED: 'badge-gray',
+    DRAFT: 'badge-blue', OPEN: 'badge-green', CLOSED: 'badge-yellow', CANCELLED: 'badge-red', ARCHIVED: 'badge-gray',
   }
 
   return (
