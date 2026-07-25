@@ -41,13 +41,49 @@ function Tooltip({ text }: { text: string }) {
   )
 }
 
-export function AddCatForm({ catId }: { catId?: string }) {
+type CatInitialData = {
+  name: string
+  breed: string
+  color?: string | null
+  gender: string
+  birthDate: string
+  eyeColor?: string | null
+  breeder?: string | null
+  countryOfOrigin?: string | null
+  father?: string | null
+  mother?: string | null
+  isHouseCat: boolean
+  icadNumber?: string | null
+  pedigreeNumber?: string | null
+  pedigreeInProgress: boolean
+  foreignCatCertificate?: string | null
+  inscritChampionnatFrance: boolean
+}
+
+export function AddCatForm({ catId, initialData }: { catId?: string; initialData?: CatInitialData }) {
   const router = useRouter()
   const [error, setError] = useState('')
 
   const { register, handleSubmit, watch, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: {
+    defaultValues: initialData ? {
+      name: initialData.name,
+      breed: initialData.breed,
+      color: initialData.color ?? '',
+      gender: initialData.gender as FormData['gender'],
+      birthDate: initialData.birthDate,
+      eyeColor: initialData.eyeColor ?? '',
+      breeder: initialData.breeder ?? '',
+      countryOfOrigin: initialData.countryOfOrigin ?? '',
+      father: initialData.father ?? '',
+      mother: initialData.mother ?? '',
+      isHouseCat: initialData.isHouseCat,
+      icadNumber: initialData.icadNumber ?? '',
+      pedigreeNumber: initialData.pedigreeNumber ?? '',
+      pedigreeInProgress: initialData.pedigreeInProgress,
+      foreignCatCertificate: initialData.foreignCatCertificate ?? '',
+      inscritChampionnatFrance: initialData.inscritChampionnatFrance,
+    } : {
       gender: 'Mâle',
       pedigreeInProgress: false,
       inscritChampionnatFrance: false,
@@ -74,7 +110,7 @@ export function AddCatForm({ catId }: { catId?: string }) {
       setError(body.error || 'Erreur lors de la sauvegarde')
       return
     }
-    router.push('/membre/chats')
+    router.push(catId ? `/membre/chats/${catId}` : '/membre/chats')
     router.refresh()
   }
 
@@ -213,7 +249,7 @@ export function AddCatForm({ catId }: { catId?: string }) {
       </div>
 
       <div className="flex gap-3 pt-2">
-        <Link href="/membre/chats" className="btn-secondary flex-1 text-center">
+        <Link href={catId ? `/membre/chats/${catId}` : '/membre/chats'} className="btn-secondary flex-1 text-center">
           Annuler
         </Link>
         <button type="submit" disabled={isSubmitting} className="btn-primary flex-1">

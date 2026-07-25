@@ -27,6 +27,9 @@ export default async function CatDetailPage({ params }: Props) {
           <h1 className="text-2xl font-bold font-serif text-csf-dark mt-1">{cat.name}</h1>
           <p className="text-csf-muted">{cat.breed} · {cat.gender}</p>
         </div>
+        <Link href={`/membre/chats/${cat.id}/edit`} className="btn-primary text-sm">
+          Modifier
+        </Link>
       </div>
 
       {/* Info card */}
