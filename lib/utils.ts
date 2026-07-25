@@ -47,6 +47,7 @@ export const EXHIBITION_STATUS_LABELS: Record<string, string> = {
   DRAFT: 'Brouillon',
   OPEN: 'Inscriptions ouvertes',
   CLOSED: 'Inscriptions fermées',
+  CANCELLED: 'Annulée',
   ARCHIVED: 'Archivée',
 }
 

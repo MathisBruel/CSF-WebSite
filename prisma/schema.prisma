@@ -19,6 +19,7 @@ enum ExhibitionStatus {
   DRAFT
   OPEN
   CLOSED
+  CANCELLED
   ARCHIVED
 }
 
