@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
@@ -60,11 +60,14 @@ type CatInitialData = {
   inscritChampionnatFrance: boolean
 }
 
+const HOUSE_CAT_BREEDS = ['Chat de maison Poil Court', 'Chat de maison Poil Long']
+
 export function AddCatForm({ catId, initialData }: { catId?: string; initialData?: CatInitialData }) {
   const router = useRouter()
   const [error, setError] = useState('')
+  const isFirstRender = useRef(true)
 
-  const { register, handleSubmit, watch, formState: { errors, isSubmitting } } = useForm<FormData>({
+  const { register, handleSubmit, watch, setValue, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: initialData ? {
       name: initialData.name,
@@ -91,13 +94,37 @@ export function AddCatForm({ catId, initialData }: { catId?: string; initialData
     },
   })
 
+  const isHouseCat = watch('isHouseCat')
   const pedigreeInProgress = watch('pedigreeInProgress')
+  const currentBreed = watch('breed')
+
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false
+      return
+    }
+    if (isHouseCat) {
+      setValue('breed', '')
+      setValue('pedigreeNumber', 'SANS')
+      setValue('pedigreeInProgress', false)
+      setValue('breeder', 'INCONNU')
+      setValue('father', 'INCONNU')
+      setValue('mother', 'INCONNU')
+    } else {
+      if (HOUSE_CAT_BREEDS.includes(currentBreed)) setValue('breed', '')
+      setValue('pedigreeNumber', '')
+      setValue('breeder', '')
+      setValue('father', '')
+      setValue('mother', '')
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isHouseCat])
 
   const onSubmit = async (data: FormData) => {
     setError('')
     const payload = { ...data }
-    if (payload.pedigreeInProgress) {
-      payload.pedigreeNumber = undefined
+    if (payload.pedigreeInProgress || payload.isHouseCat) {
+      payload.pedigreeNumber = payload.isHouseCat ? 'SANS' : undefined
     }
 
     const res = await fetch(catId ? `/api/cats/${catId}` : '/api/cats', {
@@ -132,16 +159,50 @@ export function AddCatForm({ catId, initialData }: { catId?: string; initialData
           {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name.message}</p>}
         </div>
 
-        <div>
-          <label className="form-label">Race <span className="text-red-500">*</span></label>
-          <select {...register('breed')} className="form-select">
-            <option value="">Choisir une race</option>
-            {RACES.map((r) => (
-              <option key={r.id} value={r.nom}>{r.nom}</option>
-            ))}
-          </select>
-          {errors.breed && <p className="text-red-500 text-xs mt-1">{errors.breed.message}</p>}
+        {/* Chat de maison — above race */}
+        <div className="col-span-2">
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input {...register('isHouseCat')} type="checkbox" className="w-4 h-4 rounded text-csf-orange" />
+            <span className="text-sm font-medium text-csf-dark">Chat de maison</span>
+          </label>
         </div>
+
+        {/* Race — conditional on isHouseCat */}
+        {isHouseCat ? (
+          <div className="col-span-2">
+            <label className="form-label">Type de poil <span className="text-red-500">*</span></label>
+            <div className="flex gap-3">
+              {HOUSE_CAT_BREEDS.map((breed) => (
+                <label key={breed}
+                  className={`flex-1 flex items-center justify-center gap-2 p-3 border-2 rounded-xl cursor-pointer transition-colors text-sm font-medium ${
+                    currentBreed === breed
+                      ? 'border-csf-orange bg-orange-50 text-csf-dark'
+                      : 'border-csf-light hover:border-csf-orange/50 text-csf-muted'
+                  }`}>
+                  <input
+                    type="radio"
+                    className="sr-only"
+                    checked={currentBreed === breed}
+                    onChange={() => setValue('breed', breed, { shouldValidate: true })}
+                  />
+                  {breed}
+                </label>
+              ))}
+            </div>
+            {errors.breed && <p className="text-red-500 text-xs mt-1">{errors.breed.message}</p>}
+          </div>
+        ) : (
+          <div>
+            <label className="form-label">Race <span className="text-red-500">*</span></label>
+            <select {...register('breed')} className="form-select">
+              <option value="">Choisir une race</option>
+              {RACES.map((r) => (
+                <option key={r.id} value={r.nom}>{r.nom}</option>
+              ))}
+            </select>
+            {errors.breed && <p className="text-red-500 text-xs mt-1">{errors.breed.message}</p>}
+          </div>
+        )}
 
         <div>
           <label className="form-label">Sexe <span className="text-red-500">*</span></label>
@@ -182,17 +243,32 @@ export function AddCatForm({ catId, initialData }: { catId?: string; initialData
 
         <div>
           <label className="form-label">Nom du père</label>
-          <input {...register('father')} className="form-input" placeholder="Nom complet du père" />
+          <input
+            {...register('father')}
+            className={`form-input ${isHouseCat ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : ''}`}
+            disabled={isHouseCat}
+            placeholder={isHouseCat ? 'INCONNU' : 'Nom complet du père'}
+          />
         </div>
 
         <div>
           <label className="form-label">Nom de la mère</label>
-          <input {...register('mother')} className="form-input" placeholder="Nom complet de la mère" />
+          <input
+            {...register('mother')}
+            className={`form-input ${isHouseCat ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : ''}`}
+            disabled={isHouseCat}
+            placeholder={isHouseCat ? 'INCONNU' : 'Nom complet de la mère'}
+          />
         </div>
 
         <div>
           <label className="form-label">Éleveur du chat</label>
-          <input {...register('breeder')} className="form-input" placeholder="Nom de l'éleveur" />
+          <input
+            {...register('breeder')}
+            className={`form-input ${isHouseCat ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : ''}`}
+            disabled={isHouseCat}
+            placeholder={isHouseCat ? 'INCONNU' : "Nom de l'éleveur"}
+          />
         </div>
 
         <div>
@@ -208,25 +284,21 @@ export function AddCatForm({ catId, initialData }: { catId?: string; initialData
         {/* Pedigree section */}
         <div className="col-span-2 space-y-2">
           <label className="form-label mb-0">Pedigree (LOOF...)</label>
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input {...register('pedigreeInProgress')} type="checkbox" className="w-4 h-4 rounded text-csf-orange" />
-            <span className="text-sm text-csf-dark">Demande de pedigree en cours</span>
-          </label>
-          {pedigreeInProgress ? (
-            <div className="form-input bg-gray-100 text-gray-400 cursor-not-allowed select-none">
-              EN COURS
-            </div>
+          {isHouseCat ? (
+            <div className="form-input bg-gray-100 text-gray-400 cursor-not-allowed select-none">SANS</div>
           ) : (
-            <input {...register('pedigreeNumber')} className="form-input" placeholder="LOOF-XXXX-XX-XXXXX" />
+            <>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input {...register('pedigreeInProgress')} type="checkbox" className="w-4 h-4 rounded text-csf-orange" />
+                <span className="text-sm text-csf-dark">Demande de pedigree en cours</span>
+              </label>
+              {pedigreeInProgress ? (
+                <div className="form-input bg-gray-100 text-gray-400 cursor-not-allowed select-none">EN COURS</div>
+              ) : (
+                <input {...register('pedigreeNumber')} className="form-input" placeholder="LOOF-XXXX-XX-XXXXX" />
+              )}
+            </>
           )}
-        </div>
-
-        {/* Chat de maison */}
-        <div className="col-span-2">
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input {...register('isHouseCat')} type="checkbox" className="w-4 h-4 rounded text-csf-orange" />
-            <span className="text-sm text-csf-dark">Chat de maison</span>
-          </label>
         </div>
 
         {/* Certificat chat étranger */}
