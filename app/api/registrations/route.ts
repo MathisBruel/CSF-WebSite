@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { ExhibitionStatus } from '@prisma/client'
 import { computeCatPrice, DEFAULT_PRICING } from '@/lib/utils'
-import { sendRegistrationConfirmationEmail } from '@/lib/email'
+import { sendRegistrationConfirmationEmail, notifyAdminNewRegistration } from '@/lib/email'
 
 export const dynamic = 'force-dynamic'
 
@@ -148,6 +148,33 @@ export async function POST(req: NextRequest) {
         cats: { create: newCatData },
       },
     })
+
+    // Notify inscription desk (fire-and-forget)
+    notifyAdminNewRegistration({
+      registrationId: registration.id,
+      user: {
+        name: session.user.name || 'Exposant',
+        email: session.user.email || '',
+        membershipActive: isMember,
+      },
+      exhibition: { title: exhibition.title, startDate: exhibition.startDate, city: exhibition.city },
+      cats: newCatData.map((d, idx) => ({
+        name: userCats.find((c) => c.id === d.catId)?.name ?? d.catId,
+        breed: userCats.find((c) => c.id === d.catId)?.breed ?? '',
+        participationDays: d.participationDays,
+        traditionalClass: d.traditionalClass,
+        wantsComplianceExam: d.wantsComplianceExam,
+        specialParticipations: d.specialParticipations,
+        amount: d.amount,
+      })),
+      registrationFee,
+      totalAmount,
+      personalCages: data.personalCages,
+      borrowedCages: data.borrowedCages,
+      cageSpecialLengthRequest: data.cageSpecialLengthRequest,
+      nextTo: data.nextTo,
+      comment: data.comment,
+    }).catch((err) => console.error('[email] Notif inscription admin:', err))
 
     // Send confirmation email (fire-and-forget)
     if (session.user.email) {

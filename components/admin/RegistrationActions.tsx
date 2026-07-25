@@ -15,6 +15,8 @@ export function RegistrationActions({
 }) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
+  const [reminded, setReminded] = useState(false)
+  const [remindLoading, setRemindLoading] = useState(false)
 
   const patch = async (data: Record<string, unknown>) => {
     setLoading(true)
@@ -25,6 +27,18 @@ export function RegistrationActions({
     })
     setLoading(false)
     router.refresh()
+  }
+
+  const sendReminder = async () => {
+    setRemindLoading(true)
+    await fetch(`/api/admin/registrations/${registrationId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'remind_payment' }),
+    })
+    setRemindLoading(false)
+    setReminded(true)
+    setTimeout(() => setReminded(false), 3000)
   }
 
   return (
@@ -39,11 +53,15 @@ export function RegistrationActions({
             ✓ Paiement reçu
           </button>
           <button
-            onClick={() => patch({ action: 'remind_payment' })}
-            disabled={loading}
-            className="px-3 py-1.5 bg-blue-50 text-blue-700 text-xs font-medium rounded-lg hover:bg-blue-100 transition-colors w-full text-center"
+            onClick={sendReminder}
+            disabled={remindLoading || reminded}
+            className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors w-full text-center ${
+              reminded
+                ? 'bg-green-50 text-green-700 cursor-default'
+                : 'bg-blue-50 text-blue-700 hover:bg-blue-100'
+            }`}
           >
-            Rappel paiement
+            {remindLoading ? 'Envoi...' : reminded ? '✓ Rappel envoyé' : 'Rappel paiement'}
           </button>
           <button
             onClick={() => {

@@ -57,14 +57,19 @@ function btn(href: string, label: string) {
   return `<a href="${href}" style="display:inline-block;background:#C44B0C;color:#ffffff;padding:12px 28px;border-radius:6px;text-decoration:none;font-weight:bold;font-size:14px;margin-top:20px;">${label}</a>`
 }
 
-async function send(to: string | string[], subject: string, html: string) {
+async function send(
+  to: string | string[],
+  subject: string,
+  html: string,
+  attachments?: { filename: string; content: string; contentType: string }[]
+) {
   const transporter = getTransporter()
   if (!transporter) {
     console.warn('[email] SMTP non configuré — email ignoré vers', to)
     return
   }
   try {
-    await transporter.sendMail({ from: from(), to, subject, html })
+    await transporter.sendMail({ from: from(), to, subject, html, attachments })
   } catch (err) {
     console.error('[email] Échec envoi:', err)
   }
@@ -216,6 +221,125 @@ export async function sendRegistrationRejectedEmail(
     <p>Pour toute question : <a href="mailto:${CONTACT}" style="color:#C44B0C;">${CONTACT}</a></p>
   `)
   await send(user.email, `Inscription refusée — ${exhibition.title}`, html)
+}
+
+export async function notifyAdminNewRegistration(params: {
+  registrationId: string
+  user: { name: string; email: string; city?: string | null; membershipActive: boolean }
+  exhibition: { title: string; startDate: Date; city: string }
+  cats: {
+    name: string
+    breed: string
+    participationDays: string[]
+    traditionalClass?: string | null
+    wantsComplianceExam: boolean
+    specialParticipations: string[]
+    amount: number
+  }[]
+  registrationFee: number
+  totalAmount: number
+  personalCages: number
+  borrowedCages: number
+  cageSpecialLengthRequest?: string | null
+  nextTo?: string | null
+  comment?: string | null
+}) {
+  const inscriptionEmail = process.env.INSCRIPTION_EMAIL || 'inscription@assocsf.fr'
+  const { registrationId, user, exhibition, cats, registrationFee, totalAmount, personalCages, borrowedCages, cageSpecialLengthRequest, nextTo, comment } = params
+  const date = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }).format(exhibition.startDate)
+  const fmt = (n: number) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(n)
+
+  const catRows = cats.map((cat, idx) => `
+    <tr>
+      <td style="padding:8px 10px;border-bottom:1px solid #f0f0f0;">${idx + 1}. <strong>${cat.name}</strong> <span style="color:#888;">(${cat.breed})</span></td>
+      <td style="padding:8px 10px;border-bottom:1px solid #f0f0f0;font-size:13px;color:#555;">${cat.participationDays.join(', ') || '–'}</td>
+      <td style="padding:8px 10px;border-bottom:1px solid #f0f0f0;font-size:13px;color:#555;">${cat.traditionalClass || '–'}</td>
+      <td style="padding:8px 10px;border-bottom:1px solid #f0f0f0;font-size:13px;color:#555;">${[cat.wantsComplianceExam && 'Conformité', ...(cat.specialParticipations)].filter(Boolean).join(', ') || '–'}</td>
+      <td style="padding:8px 10px;border-bottom:1px solid #f0f0f0;text-align:right;font-weight:bold;">${fmt(cat.amount)}</td>
+    </tr>`).join('')
+
+  const html = baseTemplate('Nouvelle inscription', `
+    <h2 style="color:#C44B0C;margin-top:0;">Nouvelle inscription reçue</h2>
+
+    <div style="background:#f8f8f8;border-radius:6px;padding:14px 16px;margin-bottom:20px;">
+      <p style="margin:0 0 4px;"><strong>Exposant :</strong> ${user.name} (${user.email})</p>
+      <p style="margin:0 0 4px;"><strong>Ville :</strong> ${user.city || 'Non renseignée'}</p>
+      <p style="margin:0 0 4px;"><strong>Statut :</strong> ${user.membershipActive ? 'Adhérent actif' : 'Non adhérent / cotisation non à jour'}</p>
+      <p style="margin:0;font-size:12px;color:#888;">ID inscription : ${registrationId}</p>
+    </div>
+
+    <p><strong>Exposition :</strong> ${exhibition.title} — ${exhibition.city}, ${date}</p>
+
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin:16px 0;border:1px solid #e8e8e8;border-radius:6px;overflow:hidden;font-size:14px;">
+      <thead>
+        <tr style="background:#f8f8f8;">
+          <th style="padding:8px 10px;text-align:left;font-size:13px;color:#555;">Chat</th>
+          <th style="padding:8px 10px;text-align:left;font-size:13px;color:#555;">Jours</th>
+          <th style="padding:8px 10px;text-align:left;font-size:13px;color:#555;">Classe</th>
+          <th style="padding:8px 10px;text-align:left;font-size:13px;color:#555;">Options</th>
+          <th style="padding:8px 10px;text-align:right;font-size:13px;color:#555;">Montant</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${catRows}
+        <tr style="background:#fdf6f2;">
+          <td colspan="4" style="padding:8px 10px;font-weight:600;color:#555;">Frais d'inscription</td>
+          <td style="padding:8px 10px;text-align:right;font-weight:bold;">${fmt(registrationFee)}</td>
+        </tr>
+        <tr style="background:#fff3ed;">
+          <td colspan="4" style="padding:10px;font-weight:bold;color:#C44B0C;">Total</td>
+          <td style="padding:10px;text-align:right;font-weight:bold;color:#C44B0C;">${fmt(totalAmount)}</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <table width="100%" cellpadding="0" cellspacing="0" style="font-size:13px;">
+      <tr>
+        <td style="padding:4px 0;color:#555;width:160px;">Cages personnelles :</td>
+        <td style="padding:4px 0;font-weight:600;">${personalCages}</td>
+      </tr>
+      <tr>
+        <td style="padding:4px 0;color:#555;">Cages empruntées :</td>
+        <td style="padding:4px 0;font-weight:600;">${borrowedCages}</td>
+      </tr>
+      ${cageSpecialLengthRequest ? `<tr><td style="padding:4px 0;color:#555;">Cage spéciale :</td><td style="padding:4px 0;">${cageSpecialLengthRequest}</td></tr>` : ''}
+      ${nextTo ? `<tr><td style="padding:4px 0;color:#555;">À côté de :</td><td style="padding:4px 0;">${nextTo}</td></tr>` : ''}
+      ${comment ? `<tr><td style="padding:4px 0;color:#555;">Commentaire :</td><td style="padding:4px 0;">${comment}</td></tr>` : ''}
+    </table>
+
+    ${btn(`${APP_URL}/admin/inscriptions`, 'Voir dans l\'admin')}
+  `)
+
+  const json = JSON.stringify({
+    id: registrationId,
+    createdAt: new Date().toISOString(),
+    exhibition: { title: exhibition.title, startDate: exhibition.startDate, city: exhibition.city },
+    user: { name: user.name, email: user.email, city: user.city, membershipActive: user.membershipActive },
+    cats: cats.map((cat, idx) => ({
+      position: idx + 1,
+      name: cat.name,
+      breed: cat.breed,
+      participationDays: cat.participationDays,
+      traditionalClass: cat.traditionalClass,
+      wantsComplianceExam: cat.wantsComplianceExam,
+      specialParticipations: cat.specialParticipations,
+      amount: cat.amount,
+    })),
+    registrationFee,
+    totalAmount,
+    cages: { personal: personalCages, borrowed: borrowedCages, specialRequest: cageSpecialLengthRequest },
+    nextTo,
+    comment,
+  }, null, 2)
+
+  const safeTitle = exhibition.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()
+  const safeName = user.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()
+  await send(
+    inscriptionEmail,
+    `Nouvelle inscription — ${exhibition.title} (${user.name})`,
+    html,
+    [{ filename: `inscription_${safeTitle}_${safeName}.json`, content: json, contentType: 'application/json' }]
+  )
 }
 
 export async function sendRegistrationConfirmationEmail(params: {
