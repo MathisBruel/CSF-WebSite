@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
@@ -8,6 +8,8 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import Link from 'next/link'
 import { RACES, EYE_COLORS } from '@/lib/cat-data'
 import { COAT_COLORS } from '@/lib/coat-colors'
+
+const RACE_NAMES = RACES.map((r) => r.nom)
 
 const schema = z.object({
   name: z.string().min(1, 'Nom requis'),
@@ -41,6 +43,91 @@ const schema = z.object({
 })
 
 type FormData = z.infer<typeof schema>
+
+function Combobox({
+  options,
+  value,
+  onChange,
+  placeholder,
+  disabled,
+}: {
+  options: string[]
+  value: string
+  onChange: (v: string) => void
+  placeholder?: string
+  disabled?: boolean
+}) {
+  const [inputText, setInputText] = useState(value)
+  const [open, setOpen] = useState(false)
+  const [highlighted, setHighlighted] = useState(0)
+  const listRef = useRef<HTMLUListElement>(null)
+
+  useEffect(() => { setInputText(value) }, [value])
+
+  const filtered = inputText
+    ? options.filter((o) => o.toLowerCase().includes(inputText.toLowerCase())).slice(0, 60)
+    : options.slice(0, 60)
+
+  const select = useCallback((opt: string) => {
+    onChange(opt)
+    setInputText(opt)
+    setOpen(false)
+    setHighlighted(0)
+  }, [onChange])
+
+  const handleBlur = () => {
+    setTimeout(() => {
+      setOpen(false)
+      const match = options.find((o) => o.toLowerCase() === inputText.toLowerCase())
+      if (match) {
+        onChange(match)
+        setInputText(match)
+      } else {
+        setInputText(value)
+      }
+    }, 150)
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (!open) { if (e.key === 'ArrowDown' || e.key === 'Enter') setOpen(true); return }
+    if (e.key === 'ArrowDown') { e.preventDefault(); setHighlighted((h) => Math.min(h + 1, filtered.length - 1)) }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); setHighlighted((h) => Math.max(h - 1, 0)) }
+    else if (e.key === 'Enter') { e.preventDefault(); if (filtered[highlighted]) select(filtered[highlighted]) }
+    else if (e.key === 'Escape') { setOpen(false); setInputText(value) }
+  }
+
+  return (
+    <div className="relative">
+      <input
+        type="text"
+        value={inputText}
+        onChange={(e) => { setInputText(e.target.value); setOpen(true); setHighlighted(0) }}
+        onFocus={() => setOpen(true)}
+        onBlur={handleBlur}
+        onKeyDown={handleKeyDown}
+        placeholder={placeholder}
+        disabled={disabled}
+        autoComplete="off"
+        className="form-input w-full"
+      />
+      {open && filtered.length > 0 && (
+        <ul ref={listRef}
+          className="absolute z-30 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-52 overflow-y-auto mt-1">
+          {filtered.map((opt, i) => (
+            <li key={opt}
+              onMouseDown={() => select(opt)}
+              className={`px-3 py-2 text-sm cursor-pointer ${
+                i === highlighted ? 'bg-orange-50 text-csf-orange font-medium' :
+                opt === value ? 'text-csf-orange' : 'text-csf-dark hover:bg-gray-50'
+              }`}>
+              {opt}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+}
 
 function Tooltip({ text }: { text: string }) {
   return (
@@ -109,6 +196,7 @@ export function AddCatForm({ catId, initialData }: { catId?: string; initialData
   const isHouseCat = watch('isHouseCat')
   const pedigreeInProgress = watch('pedigreeInProgress')
   const currentBreed = watch('breed')
+  const currentColor = watch('color')
 
   useEffect(() => {
     if (isFirstRender.current) {
@@ -159,11 +247,6 @@ export function AddCatForm({ catId, initialData }: { catId?: string; initialData
         <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">{error}</div>
       )}
 
-      {/* datalist for coat colors autocomplete */}
-      <datalist id="coat-colors-list">
-        {COAT_COLORS.map((c) => <option key={c} value={c} />)}
-      </datalist>
-
       <div className="grid grid-cols-2 gap-4">
         <div className="col-span-2">
           <label className="form-label">Nom du chat <span className="text-red-500">*</span></label>
@@ -206,12 +289,12 @@ export function AddCatForm({ catId, initialData }: { catId?: string; initialData
         ) : (
           <div>
             <label className="form-label">Race <span className="text-red-500">*</span></label>
-            <select {...register('breed')} className="form-select">
-              <option value="">Choisir une race</option>
-              {RACES.map((r) => (
-                <option key={r.id} value={r.nom}>{r.nom}</option>
-              ))}
-            </select>
+            <Combobox
+              options={RACE_NAMES}
+              value={currentBreed}
+              onChange={(v) => setValue('breed', v, { shouldValidate: true })}
+              placeholder="Rechercher une race..."
+            />
             {errors.breed && <p className="text-red-500 text-xs mt-1">{errors.breed.message}</p>}
           </div>
         )}
@@ -228,12 +311,11 @@ export function AddCatForm({ catId, initialData }: { catId?: string; initialData
 
         <div>
           <label className="form-label">Couleur / Robe <span className="text-red-500">*</span></label>
-          <input
-            {...register('color')}
-            className="form-input"
-            placeholder="Commencer à taper..."
-            list="coat-colors-list"
-            autoComplete="off"
+          <Combobox
+            options={COAT_COLORS}
+            value={currentColor ?? ''}
+            onChange={(v) => setValue('color', v, { shouldValidate: true })}
+            placeholder="Rechercher une couleur..."
           />
           {errors.color && <p className="text-red-500 text-xs mt-1">{errors.color.message}</p>}
         </div>
