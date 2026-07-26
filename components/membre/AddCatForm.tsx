@@ -6,7 +6,7 @@ import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import Link from 'next/link'
-import { RACES, EYE_COLORS } from '@/lib/cat-data'
+import { RACES, EYE_COLORS, isHouseCatBreed } from '@/lib/cat-data'
 import { COAT_COLORS } from '@/lib/coat-colors'
 
 const RACE_NAMES = RACES.map((r) => r.nom)
@@ -25,14 +25,13 @@ const schema = z.object({
   countryOfOrigin: z.string().min(1, "Pays d'origine requis"),
   father: z.string().optional(),
   mother: z.string().optional(),
-  isHouseCat: z.boolean().default(false),
   icadNumber: z.string().min(1, 'Numéro I-CAD requis'),
   pedigreeNumber: z.string().optional(),
   pedigreeInProgress: z.boolean().default(false),
   foreignCatCertificate: z.string().optional(),
   inscritChampionnatFrance: z.boolean().default(false),
 }).superRefine((data, ctx) => {
-  if (!data.isHouseCat) {
+  if (!isHouseCatBreed(data.breed)) {
     if (!data.father?.trim()) ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Nom du père requis', path: ['father'] })
     if (!data.mother?.trim()) ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Nom de la mère requis', path: ['mother'] })
     if (!data.breeder?.trim()) ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Éleveur requis', path: ['breeder'] })
@@ -151,15 +150,12 @@ type CatInitialData = {
   countryOfOrigin?: string | null
   father?: string | null
   mother?: string | null
-  isHouseCat: boolean
   icadNumber?: string | null
   pedigreeNumber?: string | null
   pedigreeInProgress: boolean
   foreignCatCertificate?: string | null
   inscritChampionnatFrance: boolean
 }
-
-const HOUSE_CAT_BREEDS = ['Chat de maison Poil Court', 'Chat de maison Poil Long']
 
 export function AddCatForm({ catId, initialData }: { catId?: string; initialData?: CatInitialData }) {
   const router = useRouter()
@@ -179,7 +175,6 @@ export function AddCatForm({ catId, initialData }: { catId?: string; initialData
       countryOfOrigin: initialData.countryOfOrigin ?? '',
       father: initialData.father ?? '',
       mother: initialData.mother ?? '',
-      isHouseCat: initialData.isHouseCat,
       icadNumber: initialData.icadNumber ?? '',
       pedigreeNumber: initialData.pedigreeNumber ?? '',
       pedigreeInProgress: initialData.pedigreeInProgress,
@@ -189,14 +184,13 @@ export function AddCatForm({ catId, initialData }: { catId?: string; initialData
       gender: 'Mâle',
       pedigreeInProgress: false,
       inscritChampionnatFrance: false,
-      isHouseCat: false,
     },
   })
 
-  const isHouseCat = watch('isHouseCat')
   const pedigreeInProgress = watch('pedigreeInProgress')
   const currentBreed = watch('breed')
   const currentColor = watch('color')
+  const isHouseCat = isHouseCatBreed(currentBreed ?? '')
 
   useEffect(() => {
     if (isFirstRender.current) {
@@ -204,14 +198,12 @@ export function AddCatForm({ catId, initialData }: { catId?: string; initialData
       return
     }
     if (isHouseCat) {
-      setValue('breed', '')
       setValue('pedigreeNumber', 'SANS')
       setValue('pedigreeInProgress', false)
       setValue('breeder', 'INCONNU')
       setValue('father', 'INCONNU')
       setValue('mother', 'INCONNU')
     } else {
-      if (HOUSE_CAT_BREEDS.includes(currentBreed)) setValue('breed', '')
       setValue('pedigreeNumber', '')
       setValue('breeder', '')
       setValue('father', '')
@@ -222,9 +214,10 @@ export function AddCatForm({ catId, initialData }: { catId?: string; initialData
 
   const onSubmit = async (data: FormData) => {
     setError('')
-    const payload = { ...data }
-    if (payload.pedigreeInProgress || payload.isHouseCat) {
-      payload.pedigreeNumber = payload.isHouseCat ? 'SANS' : undefined
+    const isHouse = isHouseCatBreed(data.breed)
+    const payload = { ...data, isHouseCat: isHouse }
+    if (payload.pedigreeInProgress || isHouse) {
+      payload.pedigreeNumber = isHouse ? 'SANS' : undefined
     }
 
     const res = await fetch(catId ? `/api/cats/${catId}` : '/api/cats', {
@@ -254,50 +247,22 @@ export function AddCatForm({ catId, initialData }: { catId?: string; initialData
           {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name.message}</p>}
         </div>
 
-        {/* Chat de maison — above race */}
+        {/* Race */}
         <div className="col-span-2">
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input {...register('isHouseCat')} type="checkbox" className="w-4 h-4 rounded text-csf-orange" />
-            <span className="text-sm font-medium text-csf-dark">Chat de maison</span>
-          </label>
+          <label className="form-label">Race <span className="text-red-500">*</span></label>
+          <Combobox
+            options={RACE_NAMES}
+            value={currentBreed ?? ''}
+            onChange={(v) => setValue('breed', v, { shouldValidate: true })}
+            placeholder="Rechercher une race..."
+          />
+          {errors.breed && <p className="text-red-500 text-xs mt-1">{errors.breed.message}</p>}
+          {isHouseCat && (
+            <p className="text-xs text-csf-muted mt-1">
+              Chat de maison — éleveur, parents et pedigree ne sont pas requis.
+            </p>
+          )}
         </div>
-
-        {/* Race — conditional on isHouseCat */}
-        {isHouseCat ? (
-          <div className="col-span-2">
-            <label className="form-label">Type de poil <span className="text-red-500">*</span></label>
-            <div className="flex gap-3">
-              {HOUSE_CAT_BREEDS.map((breed) => (
-                <label key={breed}
-                  className={`flex-1 flex items-center justify-center gap-2 p-3 border-2 rounded-xl cursor-pointer transition-colors text-sm font-medium ${
-                    currentBreed === breed
-                      ? 'border-csf-orange bg-orange-50 text-csf-dark'
-                      : 'border-csf-light hover:border-csf-orange/50 text-csf-muted'
-                  }`}>
-                  <input
-                    type="radio"
-                    className="sr-only"
-                    checked={currentBreed === breed}
-                    onChange={() => setValue('breed', breed, { shouldValidate: true })}
-                  />
-                  {breed}
-                </label>
-              ))}
-            </div>
-            {errors.breed && <p className="text-red-500 text-xs mt-1">{errors.breed.message}</p>}
-          </div>
-        ) : (
-          <div>
-            <label className="form-label">Race <span className="text-red-500">*</span></label>
-            <Combobox
-              options={RACE_NAMES}
-              value={currentBreed}
-              onChange={(v) => setValue('breed', v, { shouldValidate: true })}
-              placeholder="Rechercher une race..."
-            />
-            {errors.breed && <p className="text-red-500 text-xs mt-1">{errors.breed.message}</p>}
-          </div>
-        )}
 
         <div>
           <label className="form-label">Sexe <span className="text-red-500">*</span></label>

@@ -28,7 +28,11 @@ export const EYE_COLORS: { id: number; nom: string }[] = eyeColorsData.CouleurYe
 
 export type ClassOption = { nom: string; idClasses: number }
 
-const HOUSE_CAT_BREEDS = ['CHAT DE MAISON P.C.', 'CHAT DE MAISON P.L.']
+export const HOUSE_CAT_BREEDS = ['CHAT DE MAISON P.C.', 'CHAT DE MAISON P.L.']
+
+export function isHouseCatBreed(breed: string): boolean {
+  return breed.toUpperCase().includes('CHAT DE MAISON')
+}
 
 function isNouvelleRace(breed: string): boolean {
   const race = racesData.Race.find(
@@ -87,7 +91,7 @@ export function computeAvailableClasses(
   gbWCF = false
 ): ClassOption[] {
   const bNouvelleRace = isNouvelleRace(breed)
-  const isHouse = isHouseCat || HOUSE_CAT_BREEDS.includes(breed.toUpperCase())
+  const isHouse = isHouseCat || isHouseCatBreed(breed)
   const isNeutered = gender.startsWith('Neutre')
   const { years, months } = catAgeAtExpo(birthDate, expoDate)
 

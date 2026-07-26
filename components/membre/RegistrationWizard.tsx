@@ -43,7 +43,6 @@ export function RegistrationWizard({
   const [step, setStep] = useState<Step>('cats')
   const [selectedCatIds, setSelectedCatIds] = useState<string[]>([])
   const [catOptions, setCatOptions] = useState<Record<string, CatEntry>>({})
-  const [personalCages, setPersonalCages] = useState(0)
   const [wantsBorrowedCages, setWantsBorrowedCages] = useState(false)
   const [borrowedCages, setBorrowedCages] = useState(1)
   const [cageSpecialRequest, setCageSpecialRequest] = useState('')
@@ -54,7 +53,6 @@ export function RegistrationWizard({
   const [error, setError] = useState('')
   const [hasReadRules, setHasReadRules] = useState(false)
   const [triedOptionsNext, setTriedOptionsNext] = useState(false)
-  const [triedCageNext, setTriedCageNext] = useState(false)
 
   const toggleCat = (catId: string) => {
     if (selectedCatIds.includes(catId)) {
@@ -119,7 +117,6 @@ export function RegistrationWizard({
         catId,
         ...(catOptions[catId] ?? defaultCatEntry()),
       })),
-      personalCages,
       borrowedCages: wantsBorrowedCages ? borrowedCages : 0,
       cageSpecialLengthRequest: wantsSpecialCage ? cageSpecialRequest : undefined,
       nextTo: nextTo || undefined,
@@ -401,21 +398,6 @@ export function RegistrationWizard({
               <p className="text-xs text-csf-muted">1 chat = 80 cm · chaque chat supplémentaire = +60 cm</p>
             </div>
 
-            {/* Personal cages */}
-            <div className="p-4 border border-csf-light rounded-xl space-y-1">
-              <p className="text-sm font-medium text-csf-dark">Cages personnelles</p>
-              <p className="text-xs text-csf-muted mb-3">Nombre de cages que vous apportez vous-même</p>
-              <div className="flex items-center gap-3">
-                <button type="button"
-                  onClick={() => setPersonalCages(Math.max(0, personalCages - 1))}
-                  className="w-8 h-8 rounded-full border border-csf-light flex items-center justify-center text-csf-dark hover:bg-csf-light transition-colors font-bold">−</button>
-                <span className="w-8 text-center font-bold text-csf-dark">{personalCages}</span>
-                <button type="button"
-                  onClick={() => setPersonalCages(personalCages + 1)}
-                  className="w-8 h-8 rounded-full border border-csf-light flex items-center justify-center text-csf-dark hover:bg-csf-light transition-colors font-bold">+</button>
-              </div>
-            </div>
-
             {/* Borrowed cages */}
             <div className="p-4 border border-csf-light rounded-xl space-y-3">
               <label className="flex items-center gap-3 cursor-pointer">
@@ -495,18 +477,9 @@ export function RegistrationWizard({
               </div>
             </div>
 
-            {triedCageNext && personalCages === 0 && !wantsBorrowedCages && (
-              <p className="text-red-500 text-sm">Indiquez au moins une cage personnelle ou empruntez une cage au club.</p>
-            )}
-
             <div className="flex justify-between">
               <button onClick={() => setStep('options')} className="btn-secondary">← Retour</button>
-              <button
-                onClick={() => {
-                  setTriedCageNext(true)
-                  if (personalCages > 0 || wantsBorrowedCages) setStep('summary')
-                }}
-                className="btn-primary">
+              <button onClick={() => setStep('summary')} className="btn-primary">
                 Suivant →
               </button>
             </div>
@@ -553,12 +526,6 @@ export function RegistrationWizard({
                   <span>Longueur cage standard</span>
                   <span className="font-medium text-csf-dark">{standardCageLength} cm</span>
                 </div>
-                {personalCages > 0 && (
-                  <div className="flex justify-between">
-                    <span>Cage{personalCages > 1 ? 's' : ''} personnelle{personalCages > 1 ? 's' : ''}</span>
-                    <span>{personalCages}</span>
-                  </div>
-                )}
                 {wantsBorrowedCages && (
                   <div className="flex justify-between">
                     <span>Cage{borrowedCages > 1 ? 's' : ''} empruntée{borrowedCages > 1 ? 's' : ''} au club</span>

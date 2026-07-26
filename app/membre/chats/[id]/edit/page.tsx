@@ -27,7 +27,6 @@ export default async function EditCatPage({ params }: Props) {
     countryOfOrigin: cat.countryOfOrigin,
     father: cat.father,
     mother: cat.mother,
-    isHouseCat: cat.isHouseCat,
     icadNumber: cat.icadNumber,
     pedigreeNumber: cat.pedigreeNumber,
     pedigreeInProgress: cat.pedigreeInProgress,
