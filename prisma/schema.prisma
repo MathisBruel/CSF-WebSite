@@ -242,7 +242,8 @@ model RegistrationCat {
   cat              Cat          @relation(fields: [catId], references: [id])
 
   participationDays    String[]
-  traditionalClass     String?
+  traditionalClassSaturday String?
+  traditionalClassSunday   String?
   traditionalClassOther String?
   isHorsConcours       Boolean  @default(false)
   isHouseCat           Boolean  @default(false)

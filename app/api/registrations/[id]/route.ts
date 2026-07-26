@@ -1,6 +1,6 @@
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { notifyAdminRegistrationCancelled } from '@/lib/email'
+import { notifyAdminRegistrationCancelled, sendRegistrationCancelledEmail } from '@/lib/email'
 import { NextResponse } from 'next/server'
 
 export async function DELETE(
@@ -34,6 +34,7 @@ export async function DELETE(
     await prisma.registration.delete({ where: { id } })
 
     notifyAdminRegistrationCancelled(registration.user, registration.exhibition).catch(console.error)
+    sendRegistrationCancelledEmail(registration.user, registration.exhibition).catch(console.error)
 
     return NextResponse.json({ message: 'Registration deleted successfully' })
   } catch (error) {

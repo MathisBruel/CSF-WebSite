@@ -273,7 +273,8 @@ export async function notifyAdminNewRegistration(params: {
     name: string
     breed: string
     participationDays: string[]
-    traditionalClass?: string | null
+    traditionalClassSaturday?: string | null
+    traditionalClassSunday?: string | null
     traditionalClassOther?: string | null
     isHouseCat?: boolean
     wantsComplianceExam: boolean
@@ -293,11 +294,18 @@ export async function notifyAdminNewRegistration(params: {
   const date = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }).format(exhibition.startDate)
   const fmt = (n: number) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(n)
 
+  const formatClasses = (cat: (typeof cats)[number]) => {
+    const parts: string[] = []
+    if (cat.traditionalClassSaturday) parts.push(`Samedi : ${cat.traditionalClassSaturday}`)
+    if (cat.traditionalClassSunday) parts.push(`Dimanche : ${cat.traditionalClassSunday}`)
+    return parts.join(' · ') || '–'
+  }
+
   const catRows = cats.map((cat, idx) => `
     <tr>
       <td style="padding:8px 10px;border-bottom:1px solid #f0f0f0;">${idx + 1}. <strong>${cat.name}</strong> <span style="color:#888;">(${cat.breed})</span></td>
       <td style="padding:8px 10px;border-bottom:1px solid #f0f0f0;font-size:13px;color:#555;">${cat.participationDays.join(', ') || '–'}</td>
-      <td style="padding:8px 10px;border-bottom:1px solid #f0f0f0;font-size:13px;color:#555;">${cat.traditionalClass || '–'}</td>
+      <td style="padding:8px 10px;border-bottom:1px solid #f0f0f0;font-size:13px;color:#555;">${formatClasses(cat)}</td>
       <td style="padding:8px 10px;border-bottom:1px solid #f0f0f0;font-size:13px;color:#555;">${[cat.wantsComplianceExam && 'Conformité', ...(cat.specialParticipations)].filter(Boolean).join(', ') || '–'}</td>
       <td style="padding:8px 10px;border-bottom:1px solid #f0f0f0;text-align:right;font-weight:bold;">${fmt(cat.amount)}</td>
     </tr>`).join('')
@@ -388,7 +396,8 @@ export async function notifyAdminNewRegistration(params: {
       race: cat.breed,
       chat_de_maison: cat.isHouseCat ?? false,
       jours_participation: cat.participationDays,
-      classe: cat.traditionalClass || null,
+      classe_samedi: cat.traditionalClassSaturday || null,
+      classe_dimanche: cat.traditionalClassSunday || null,
       classe_autre: cat.traditionalClassOther || null,
       examen_conformite: cat.wantsComplianceExam,
       participations_speciales: cat.specialParticipations,
@@ -525,7 +534,7 @@ export async function notifyAdminRegistrationCancelled(
   user: { name: string; email: string },
   exhibition: { id: string; title: string; startDate: Date; city: string }
 ) {
-  const adminEmail = process.env.ADMIN_EMAIL || CONTACT
+  const inscriptionEmail = process.env.INSCRIPTION_EMAIL || 'inscription@assocsf.fr'
   const date = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }).format(exhibition.startDate)
   const html = baseTemplate('Annulation inscription', `
     <h2 style="color:#C44B0C;margin-top:0;">Inscription annulée</h2>
@@ -536,7 +545,22 @@ export async function notifyAdminRegistrationCancelled(
     </p>
     ${btn(`${APP_URL}/admin/expositions/${exhibition.id}`, "Voir l'exposition")}
   `)
-  await send(adminEmail, `Inscription annulée — ${user.name} / ${exhibition.title}`, html)
+  await send(inscriptionEmail, `Inscription annulée — ${user.name} / ${exhibition.title}`, html)
+}
+
+export async function sendRegistrationCancelledEmail(
+  user: { name: string; email: string },
+  exhibition: { title: string; startDate: Date; city: string }
+) {
+  const date = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }).format(exhibition.startDate)
+  const html = baseTemplate('Annulation confirmée', `
+    <h2 style="color:#C44B0C;margin-top:0;">Votre inscription a bien été annulée</h2>
+    <p>Bonjour ${user.name},</p>
+    <p>Nous confirmons l'annulation de votre inscription à l'exposition <strong>${exhibition.title}</strong> (${exhibition.city}, ${date}).</p>
+    <p style="margin-top:24px;font-size:13px;color:#666;">Pour toute question : <a href="mailto:${CONTACT}" style="color:#C44B0C;">${CONTACT}</a></p>
+    ${btn(`${APP_URL}/membre/inscriptions`, 'Voir mes inscriptions')}
+  `)
+  await send(user.email, `Annulation confirmée — ${exhibition.title}`, html)
 }
 
 export async function sendExhibitionMailing(

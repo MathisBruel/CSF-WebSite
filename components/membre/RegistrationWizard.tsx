@@ -11,14 +11,16 @@ type Step = 'cats' | 'options' | 'cage' | 'summary' | 'done'
 
 type CatEntry = {
   participationDays: string[]
-  traditionalClass: string
+  traditionalClassSaturday: string
+  traditionalClassSunday: string
   wantsComplianceExam: boolean
   specialParticipations: string[]
 }
 
 const defaultCatEntry = (): CatEntry => ({
   participationDays: [],
-  traditionalClass: '',
+  traditionalClassSaturday: '',
+  traditionalClassSunday: '',
   wantsComplianceExam: false,
   specialParticipations: [],
 })
@@ -95,7 +97,10 @@ export function RegistrationWizard({
 
   const isCatOptionsValid = (catId: string) => {
     const opts = catOptions[catId] ?? defaultCatEntry()
-    return opts.participationDays.length > 0 && opts.traditionalClass !== ''
+    if (opts.participationDays.length === 0) return false
+    if (opts.participationDays.includes('Samedi') && opts.traditionalClassSaturday === '') return false
+    if (opts.participationDays.includes('Dimanche') && opts.traditionalClassSunday === '') return false
+    return true
   }
   const allCatsOptionsValid = selectedCatIds.every(isCatOptionsValid)
 
@@ -307,21 +312,45 @@ export function RegistrationWizard({
                         </label>
                         {availableClasses.length === 0 ? (
                           <p className="text-sm text-red-500">Chat trop jeune pour cette exposition.</p>
+                        ) : opts.participationDays.length === 0 ? (
+                          <p className="text-sm text-csf-muted">Sélectionner d&apos;abord au moins un jour de participation.</p>
                         ) : (
-                          <>
-                            <select
-                              className={`form-select ${triedOptionsNext && opts.traditionalClass === '' ? 'border-red-400' : ''}`}
-                              value={opts.traditionalClass}
-                              onChange={(e) => update('traditionalClass', e.target.value)}>
-                              <option value="">Sélectionner une classe</option>
-                              {availableClasses.map((c) => (
-                                <option key={c.idClasses} value={c.nom}>{c.nom}</option>
-                              ))}
-                            </select>
-                            {triedOptionsNext && opts.traditionalClass === '' && (
-                              <p className="text-red-500 text-xs mt-1">Classe obligatoire</p>
+                          <div className="space-y-3">
+                            {opts.participationDays.includes('Samedi') && (
+                              <div>
+                                <label className="text-xs text-csf-muted mb-1 block">Samedi</label>
+                                <select
+                                  className={`form-select ${triedOptionsNext && opts.traditionalClassSaturday === '' ? 'border-red-400' : ''}`}
+                                  value={opts.traditionalClassSaturday}
+                                  onChange={(e) => update('traditionalClassSaturday', e.target.value)}>
+                                  <option value="">Sélectionner une classe</option>
+                                  {availableClasses.map((c) => (
+                                    <option key={c.idClasses} value={c.nom}>{c.nom}</option>
+                                  ))}
+                                </select>
+                                {triedOptionsNext && opts.traditionalClassSaturday === '' && (
+                                  <p className="text-red-500 text-xs mt-1">Classe obligatoire</p>
+                                )}
+                              </div>
                             )}
-                          </>
+                            {opts.participationDays.includes('Dimanche') && (
+                              <div>
+                                <label className="text-xs text-csf-muted mb-1 block">Dimanche</label>
+                                <select
+                                  className={`form-select ${triedOptionsNext && opts.traditionalClassSunday === '' ? 'border-red-400' : ''}`}
+                                  value={opts.traditionalClassSunday}
+                                  onChange={(e) => update('traditionalClassSunday', e.target.value)}>
+                                  <option value="">Sélectionner une classe</option>
+                                  {availableClasses.map((c) => (
+                                    <option key={c.idClasses} value={c.nom}>{c.nom}</option>
+                                  ))}
+                                </select>
+                                {triedOptionsNext && opts.traditionalClassSunday === '' && (
+                                  <p className="text-red-500 text-xs mt-1">Classe obligatoire</p>
+                                )}
+                              </div>
+                            )}
+                          </div>
                         )}
                       </div>
 
@@ -513,7 +542,8 @@ export function RegistrationWizard({
                     <div className="space-y-0.5 mt-1 text-xs text-csf-muted">
                       {opts.participationDays.length > 0 && <p>{opts.participationDays.join(' + ')}</p>}
                       {cat.isHouseCat && <p>Chat de maison</p>}
-                      {opts.traditionalClass && <p>Classe : {opts.traditionalClass}</p>}
+                      {opts.traditionalClassSaturday && <p>Classe Samedi : {opts.traditionalClassSaturday}</p>}
+                      {opts.traditionalClassSunday && <p>Classe Dimanche : {opts.traditionalClassSunday}</p>}
                       {opts.wantsComplianceExam && <p>Conformité</p>}
                       {opts.specialParticipations.length > 0 && <p>Spéciaux : {opts.specialParticipations.join(', ')}</p>}
                     </div>
