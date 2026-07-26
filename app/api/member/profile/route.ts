@@ -7,6 +7,9 @@ export async function PUT(req: NextRequest) {
   if (!session) return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
 
   const data = await req.json()
+  if (!data.civilite || !['M.', 'Mme'].includes(data.civilite)) {
+    return NextResponse.json({ error: 'Civilité requise' }, { status: 400 })
+  }
   const {
     civilite,
     firstName,

@@ -10,9 +10,11 @@ export default function MentionsLegales() {
         <h2>Éditeur du site</h2>
         <p>
           <strong>Chats Sans Frontières (C.S.F.)</strong><br />
-          Association loi 1901<br />
+          Association régie par la loi du 1er juillet 1901<br />
+          Numéro RNA : W763010519<br />
           Déclarée le 29 avril 2005<br />
           Réactivée le 17 février 2026<br />
+          Siège social : 60 Quai de la Libération, 76480 Duclair<br />
           Email : <a href="mailto:contact@assocsf.fr">contact@assocsf.fr</a><br />
           Site web : <a href="https://assocsf.fr">assocsf.fr</a>
         </p>

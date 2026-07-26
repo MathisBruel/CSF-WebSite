@@ -9,7 +9,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { AddressAutocomplete } from './AddressAutocomplete'
 
 const schema = z.object({
-  civilite: z.enum(['M.', 'Mme']).optional(),
+  civilite: z.enum(['M.', 'Mme'], { errorMap: () => ({ message: 'Civilité requise' }) }),
   firstName: z.string().min(2, 'Prénom requis'),
   lastName: z.string().min(2, 'Nom requis'),
   email: z.string().email('Email invalide'),
@@ -108,7 +108,7 @@ export function RegisterForm() {
             <SectionTitle>Identité</SectionTitle>
 
             <div>
-              <label className="form-label">Civilité</label>
+              <label className="form-label">Civilité <Req /></label>
               <div className="flex gap-2 mt-1">
                 {(['M.', 'Mme'] as const).map((c) => (
                   <label key={c} className="flex items-center gap-2 cursor-pointer">
@@ -117,6 +117,7 @@ export function RegisterForm() {
                   </label>
                 ))}
               </div>
+              {errors.civilite && <p className="text-red-500 text-xs mt-1">{errors.civilite.message}</p>}
             </div>
 
             <div className="grid grid-cols-2 gap-3">

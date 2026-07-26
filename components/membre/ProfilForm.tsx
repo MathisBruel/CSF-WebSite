@@ -8,7 +8,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { AddressAutocomplete } from '@/components/auth/AddressAutocomplete'
 
 const schema = z.object({
-  civilite: z.string().optional(),
+  civilite: z.enum(['M.', 'Mme'], { errorMap: () => ({ message: 'Civilité requise' }) }),
   firstName: z.string().min(2, 'Prénom requis'),
   lastName: z.string().min(2, 'Nom requis'),
   phone: z.string().min(1, 'Tél. mobile requis'),
@@ -67,7 +67,7 @@ export function ProfilForm({ user }: { user: ProfileUser }) {
   const { register, handleSubmit, setValue, watch, formState: { isSubmitting, errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: {
-      civilite: user.civilite || '',
+      civilite: (user.civilite === 'M.' || user.civilite === 'Mme') ? user.civilite : undefined,
       firstName: user.firstName || '',
       lastName: user.lastName || '',
       phone: user.phone || '',
@@ -134,7 +134,7 @@ export function ProfilForm({ user }: { user: ProfileUser }) {
           </div>
 
           <div>
-            <label className="form-label">Civilité</label>
+            <label className="form-label">Civilité <Req /></label>
             <div className="flex gap-4 mt-1">
               {(['M.', 'Mme'] as const).map((c) => (
                 <label key={c} className="flex items-center gap-2 cursor-pointer">
@@ -143,6 +143,7 @@ export function ProfilForm({ user }: { user: ProfileUser }) {
                 </label>
               ))}
             </div>
+            {errors.civilite && <p className="text-red-500 text-xs mt-1">{errors.civilite.message}</p>}
           </div>
 
           <div className="grid grid-cols-2 gap-3">

@@ -6,7 +6,7 @@ import crypto from 'crypto'
 import { z } from 'zod'
 
 const registerSchema = z.object({
-  civilite: z.string().optional(),
+  civilite: z.enum(['M.', 'Mme']),
   firstName: z.string().min(2),
   lastName: z.string().min(2),
   email: z.string().email(),

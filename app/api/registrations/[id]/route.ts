@@ -1,5 +1,6 @@
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { notifyAdminRegistrationCancelled } from '@/lib/email'
 import { NextResponse } from 'next/server'
 
 export async function DELETE(
@@ -16,25 +17,23 @@ export async function DELETE(
   try {
     const registration = await prisma.registration.findUnique({
       where: { id },
+      include: {
+        user: { select: { name: true, email: true } },
+        exhibition: { select: { id: true, title: true, startDate: true, city: true } },
+      },
     })
 
     if (!registration) {
       return NextResponse.json({ error: 'Registration not found' }, { status: 404 })
     }
 
-    // Allow deletion only if the user is the owner or an admin
     if (registration.userId !== session.user.id && session.user.role !== 'ADMIN') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    // A payment that has been completed should not be deleted, but refunded
-    // We allow deletion for all status for now for simplicity, but this should be refined
-    // For example, a VALIDATED registration might need a refund process.
-    // For now, we allow deletion of VALIDATED registrations.
+    await prisma.registration.delete({ where: { id } })
 
-    await prisma.registration.delete({
-      where: { id },
-    })
+    notifyAdminRegistrationCancelled(registration.user, registration.exhibition).catch(console.error)
 
     return NextResponse.json({ message: 'Registration deleted successfully' })
   } catch (error) {

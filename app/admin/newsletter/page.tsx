@@ -4,7 +4,14 @@ import { NewsletterForm } from '@/components/admin/NewsletterForm'
 export const dynamic = 'force-dynamic'
 
 export default async function AdminNewsletterPage() {
-  const subscriberCount = await prisma.user.count({ where: { newsletterSubscribed: true } })
+  const [subscriberCount, exhibitions] = await Promise.all([
+    prisma.user.count({ where: { newsletterSubscribed: true } }),
+    prisma.exhibition.findMany({
+      where: { status: { notIn: ['DRAFT', 'CANCELLED'] } },
+      select: { id: true, title: true, startDate: true, city: true },
+      orderBy: { startDate: 'desc' },
+    }),
+  ])
 
   return (
     <div className="space-y-6">
@@ -13,7 +20,7 @@ export default async function AdminNewsletterPage() {
         <p className="text-csf-muted">{subscriberCount} abonné{subscriberCount !== 1 ? 's' : ''}</p>
       </div>
 
-      <NewsletterForm />
+      <NewsletterForm exhibitions={exhibitions} />
     </div>
   )
 }

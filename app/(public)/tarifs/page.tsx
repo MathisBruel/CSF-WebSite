@@ -6,8 +6,18 @@ export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Tarifs — Chats Sans Frontières' }
 
 export default async function TarifsPage() {
-  const globalPricing = await prisma.pricing.findFirst()
+  const [globalPricing, siteConfigs] = await Promise.all([
+    prisma.pricing.findFirst(),
+    prisma.siteConfig.findMany({
+      where: { key: { in: ['membership_rib_iban', 'membership_rib_bic', 'membership_rib_holder', 'membership_paypal_link'] } },
+    }),
+  ])
   const p = globalPricing ?? DEFAULT_PRICING
+  const cfg = Object.fromEntries(siteConfigs.map((c) => [c.key, c.value]))
+  const iban = cfg['membership_rib_iban'] || ''
+  const bic = cfg['membership_rib_bic'] || ''
+  const holder = cfg['membership_rib_holder'] || ''
+  const paypalLink = cfg['membership_paypal_link'] || ''
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -231,12 +241,66 @@ export default async function TarifsPage() {
       </div>
 
       {/* Payment info */}
-      <div className="card mt-6">
-        <h2 className="font-bold text-csf-dark mb-3">Modalités de paiement</h2>
-        <p className="text-sm text-csf-muted">
-          Le paiement s&apos;effectue par virement bancaire après validation de votre inscription par le bureau.
-          Les coordonnées bancaires vous sont communiquées lors de la confirmation.
+      <div id="paiement" className="card mt-6 scroll-mt-8">
+        <h2 className="font-bold text-csf-dark mb-4">Modalités de paiement</h2>
+        <p className="text-sm text-csf-muted mb-5">
+          Le paiement s&apos;effectue après validation de votre inscription par le bureau.
         </p>
+
+        <div className="space-y-4">
+          {/* Virement */}
+          {(iban || bic) && (
+            <div className="rounded-lg border border-csf-light bg-gray-50 p-4">
+              <p className="font-semibold text-csf-dark text-sm mb-3">Virement bancaire</p>
+              <table className="text-sm w-full">
+                <tbody className="divide-y divide-csf-light">
+                  {iban && (
+                    <tr>
+                      <td className="py-2 text-csf-muted w-24">IBAN</td>
+                      <td className="py-2 font-mono text-csf-dark tracking-wide">{iban}</td>
+                    </tr>
+                  )}
+                  {bic && (
+                    <tr>
+                      <td className="py-2 text-csf-muted">BIC</td>
+                      <td className="py-2 font-mono text-csf-dark">{bic}</td>
+                    </tr>
+                  )}
+                  {holder && (
+                    <tr>
+                      <td className="py-2 text-csf-muted">Titulaire</td>
+                      <td className="py-2 text-csf-dark">{holder}</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+              <p className="mt-3 text-xs text-csf-muted">
+                Indiquer en référence : <span className="italic">Inscription [Nom de l&apos;exposition] — [Votre nom]</span>
+              </p>
+            </div>
+          )}
+
+          {/* PayPal */}
+          {paypalLink && (
+            <div className="rounded-lg border border-csf-light bg-gray-50 p-4">
+              <p className="font-semibold text-csf-dark text-sm mb-2">Paiement en ligne (PayPal)</p>
+              <a
+                href={paypalLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 text-sm text-csf-primary hover:underline font-medium"
+              >
+                {paypalLink}
+              </a>
+            </div>
+          )}
+
+          {!iban && !bic && !paypalLink && (
+            <p className="text-sm text-csf-muted italic">
+              Les coordonnées de paiement vous sont communiquées lors de la confirmation d&apos;inscription.
+            </p>
+          )}
+        </div>
       </div>
     </div>
   )

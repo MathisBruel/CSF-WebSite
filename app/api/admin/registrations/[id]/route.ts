@@ -53,11 +53,22 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       data.rejectionReason
     ).catch(console.error)
   } else if (data.action === 'remind_payment') {
-    sendPaymentReminderEmail(
-      { name: reg.user.name, email: reg.user.email },
-      { title: reg.exhibition.title, startDate: reg.exhibition.startDate, city: reg.exhibition.city },
-      reg.totalAmount
-    ).catch(console.error)
+    prisma.siteConfig.findMany({
+      where: { key: { in: ['membership_rib_iban', 'membership_rib_bic', 'membership_rib_holder', 'membership_paypal_link'] } },
+    }).then((configs) => {
+      const cfg = Object.fromEntries(configs.map((c) => [c.key, c.value]))
+      return sendPaymentReminderEmail(
+        { name: reg.user.name, email: reg.user.email },
+        { title: reg.exhibition.title, startDate: reg.exhibition.startDate, city: reg.exhibition.city },
+        reg.totalAmount,
+        {
+          iban: cfg['membership_rib_iban'] || '',
+          bic: cfg['membership_rib_bic'] || '',
+          holder: cfg['membership_rib_holder'] || '',
+          paypalLink: cfg['membership_paypal_link'] || '',
+        }
+      )
+    }).catch(console.error)
   }
 
   return NextResponse.json(reg)

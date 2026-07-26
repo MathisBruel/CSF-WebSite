@@ -20,6 +20,11 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     updateData.membershipActive = data.membershipActive
     if (data.membershipActive) {
       updateData.membershipExpiry = new Date(new Date().getFullYear(), 11, 31)
+    } else {
+      await prisma.membershipRequest.updateMany({
+        where: { userId: params.id, status: 'PENDING' },
+        data: { status: 'REJECTED', resolvedAt: new Date() },
+      })
     }
   }
 

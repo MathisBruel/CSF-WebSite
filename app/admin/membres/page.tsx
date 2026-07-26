@@ -26,7 +26,10 @@ export default async function AdminMembres({
     prisma.user.findMany({
       where,
       orderBy: { createdAt: 'desc' },
-      include: { _count: { select: { cats: true, registrations: true } } },
+      include: {
+        _count: { select: { cats: true, registrations: true } },
+        membershipRequests: { where: { status: 'PENDING' }, select: { id: true } },
+      },
     }),
     prisma.membershipRequest.findMany({
       where: { status: 'PENDING' },
@@ -131,9 +134,13 @@ export default async function AdminMembres({
                   <span className="badge badge-blue">{ROLE_LABELS[member.role]}</span>
                 </td>
                 <td className="px-4 py-3">
-                  <span className={`badge ${member.membershipActive ? 'badge-green' : 'badge-yellow'}`}>
-                    {member.membershipActive ? 'Active' : 'En attente'}
-                  </span>
+                  {member.membershipActive ? (
+                    <span className="badge badge-green">Active</span>
+                  ) : member.membershipRequests.length > 0 ? (
+                    <span className="badge badge-yellow">En attente</span>
+                  ) : (
+                    <span className="badge badge-gray">Non adhérent</span>
+                  )}
                 </td>
                 <td className="px-4 py-3 text-center">
                   <span className="font-medium">{member._count.cats}</span>
@@ -141,7 +148,7 @@ export default async function AdminMembres({
                 </td>
                 <td className="px-4 py-3 text-csf-muted">{formatDate(member.createdAt)}</td>
                 <td className="px-4 py-3">
-                  <MemberActions memberId={member.id} active={member.membershipActive} role={member.role} />
+                  <MemberActions memberId={member.id} active={member.membershipActive} role={member.role} hasPendingRequest={member.membershipRequests.length > 0} />
                 </td>
               </tr>
             ))}

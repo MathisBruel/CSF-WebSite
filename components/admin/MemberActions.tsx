@@ -5,7 +5,7 @@ import { useState } from 'react'
 import { useSession } from 'next-auth/react'
 import type { Role } from '@prisma/client'
 
-export function MemberActions({ memberId, active, role }: { memberId: string; active: boolean; role: Role }) {
+export function MemberActions({ memberId, active, role, hasPendingRequest }: { memberId: string; active: boolean; role: Role; hasPendingRequest: boolean }) {
   const router = useRouter()
   const { data: session } = useSession()
   const [loading, setLoading] = useState(false)
@@ -97,7 +97,7 @@ export function MemberActions({ memberId, active, role }: { memberId: string; ac
             ? 'bg-red-50 text-red-600 hover:bg-red-100'
             : 'bg-green-50 text-green-700 hover:bg-green-100'
         }`}>
-        {active ? 'Suspendre' : 'Valider'}
+        {active ? 'Révoquer' : hasPendingRequest ? 'Approuver' : 'Activer'}
       </button>
 
       {confirmAdmin ? (

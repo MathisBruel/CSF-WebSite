@@ -45,15 +45,28 @@ function buildPreviewHtml(title: string, body: string): string {
 </html>`
 }
 
-export function NewsletterForm() {
+type Exhibition = {
+  id: string
+  title: string
+  startDate: Date
+  city: string
+}
+
+type MailType = 'newsletter' | 'exhibition'
+
+export function NewsletterForm({ exhibitions }: { exhibitions: Exhibition[] }) {
+  const [mailType, setMailType] = useState<MailType>('newsletter')
+  const [selectedExhibitionId, setSelectedExhibitionId] = useState('')
   const [subject, setSubject] = useState('')
   const [content, setContent] = useState('')
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState<{ text: string; ok: boolean } | null>(null)
 
+  const previewBody = mailType === 'newsletter' ? content + UNSUB_FOOTER : content
+
   const previewHtml = useMemo(
-    () => buildPreviewHtml(subject || 'Prévisualisation', content + UNSUB_FOOTER),
-    [subject, content]
+    () => buildPreviewHtml(subject || 'Prévisualisation', previewBody),
+    [subject, previewBody]
   )
 
   const send = async (test: boolean) => {
@@ -61,17 +74,28 @@ export function NewsletterForm() {
       setMessage({ text: 'Sujet et contenu requis.', ok: false })
       return
     }
+    if (mailType === 'exhibition' && !selectedExhibitionId) {
+      setMessage({ text: 'Sélectionnez une exposition.', ok: false })
+      return
+    }
     setLoading(true)
     setMessage(null)
+    const body: Record<string, unknown> = { subject, content, test }
+    if (mailType === 'exhibition') body.exhibitionId = selectedExhibitionId
     const res = await fetch('/api/admin/newsletter', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ subject, content, test }),
+      body: JSON.stringify(body),
     })
     const data = await res.json()
     setLoading(false)
     setMessage({ text: data.message || (res.ok ? 'Envoyé !' : 'Erreur'), ok: res.ok })
   }
+
+  const fmt = (d: Date) =>
+    new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }).format(
+      new Date(d)
+    )
 
   return (
     <div className="space-y-5">
@@ -84,6 +108,55 @@ export function NewsletterForm() {
           {message.text}
         </div>
       )}
+
+      {/* Type selector */}
+      <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-4">
+        <label className="form-label">Type d&apos;envoi</label>
+        <div className="flex gap-3">
+          <button
+            type="button"
+            onClick={() => setMailType('newsletter')}
+            className={`flex-1 px-4 py-3 rounded-lg border text-sm font-medium transition-colors text-left ${
+              mailType === 'newsletter'
+                ? 'border-csf-primary bg-orange-50 text-csf-primary'
+                : 'border-gray-200 text-csf-dark hover:bg-gray-50'
+            }`}
+          >
+            <div className="font-semibold">Newsletter</div>
+            <div className="text-xs mt-0.5 opacity-70">Envoyé aux abonnés newsletter uniquement</div>
+          </button>
+          <button
+            type="button"
+            onClick={() => setMailType('exhibition')}
+            className={`flex-1 px-4 py-3 rounded-lg border text-sm font-medium transition-colors text-left ${
+              mailType === 'exhibition'
+                ? 'border-csf-primary bg-orange-50 text-csf-primary'
+                : 'border-gray-200 text-csf-dark hover:bg-gray-50'
+            }`}
+          >
+            <div className="font-semibold">Mailing expo</div>
+            <div className="text-xs mt-0.5 opacity-70">Envoyé à tous les inscrits validés d&apos;une expo</div>
+          </button>
+        </div>
+
+        {mailType === 'exhibition' && (
+          <div className="pt-1">
+            <label className="form-label">Exposition</label>
+            <select
+              value={selectedExhibitionId}
+              onChange={(e) => setSelectedExhibitionId(e.target.value)}
+              className="form-input"
+            >
+              <option value="">— Choisir une exposition —</option>
+              {exhibitions.map((ex) => (
+                <option key={ex.id} value={ex.id}>
+                  {ex.title} — {ex.city} ({fmt(ex.startDate)})
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+      </div>
 
       <div className="bg-white rounded-xl border border-gray-200 p-6">
         <label className="form-label">Sujet</label>
@@ -121,7 +194,7 @@ export function NewsletterForm() {
           <div className="border border-gray-200 rounded-lg overflow-hidden" style={{ height: 540 }}>
             <iframe
               srcDoc={previewHtml}
-              title="Prévisualisation newsletter"
+              title="Prévisualisation email"
               className="w-full h-full"
               sandbox="allow-same-origin"
             />
@@ -134,7 +207,11 @@ export function NewsletterForm() {
           onClick={() => send(false)}
           disabled={loading}
           className="btn-primary">
-          {loading ? 'Envoi...' : 'Envoyer à tous les abonnés'}
+          {loading
+            ? 'Envoi...'
+            : mailType === 'newsletter'
+              ? 'Envoyer à tous les abonnés'
+              : 'Envoyer aux inscrits validés'}
         </button>
         <button
           onClick={() => send(true)}

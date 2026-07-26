@@ -100,6 +100,7 @@ export function Footer() {
           <div className="flex gap-4">
             <Link href="/mentions-legales" className="hover:text-csf-orange transition-colors">Mentions légales</Link>
             <Link href="/confidentialite" className="hover:text-csf-orange transition-colors">Confidentialité</Link>
+            <Link href="/cgv" className="hover:text-csf-orange transition-colors">CGV</Link>
           </div>
         </div>
       </div>

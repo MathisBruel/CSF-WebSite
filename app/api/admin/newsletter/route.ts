@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
-import { sendNewsletterToSubscribers } from '@/lib/email'
+import { sendNewsletterToSubscribers, sendExhibitionMailing } from '@/lib/email'
 import { z } from 'zod'
 
 const schema = z.object({
   subject: z.string().min(1),
   content: z.string().min(1),
   test: z.boolean().optional(),
+  exhibitionId: z.string().optional(),
 })
 
 export async function POST(req: NextRequest) {
@@ -17,6 +18,24 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = schema.parse(await req.json())
+    const { prisma } = await import('@/lib/prisma')
+
+    if (body.exhibitionId) {
+      if (body.test) {
+        await sendExhibitionMailing(body.exhibitionId, body.subject, body.content, {
+          testEmail: session.user.email!,
+        })
+        return NextResponse.json({ ok: true, message: `Email de test envoyé à ${session.user.email}` })
+      }
+
+      const count = await prisma.registration.count({
+        where: { exhibitionId: body.exhibitionId, status: 'VALIDATED' },
+      })
+
+      sendExhibitionMailing(body.exhibitionId, body.subject, body.content).catch(console.error)
+
+      return NextResponse.json({ ok: true, message: `Mailing envoyé à ${count} inscrit(s) validé(s)` })
+    }
 
     if (body.test) {
       await sendNewsletterToSubscribers(body.subject, body.content, {
@@ -25,7 +44,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true, message: `Email de test envoyé à ${session.user.email}` })
     }
 
-    const count = await (await import('@/lib/prisma')).prisma.user.count({
+    const count = await prisma.user.count({
       where: { newsletterSubscribed: true },
     })
 

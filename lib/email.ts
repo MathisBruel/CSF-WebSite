@@ -188,10 +188,28 @@ export async function sendRegistrationValidatedEmail(
 export async function sendPaymentReminderEmail(
   user: { name: string; email: string },
   exhibition: { title: string; startDate: Date; city: string },
-  totalAmount: number
+  totalAmount: number,
+  payment?: { iban: string; bic: string; holder: string; paypalLink: string }
 ) {
   const date = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }).format(exhibition.startDate)
   const amount = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(totalAmount)
+
+  const paymentBlock = payment && (payment.iban || payment.paypalLink) ? `
+    <div style="background:#fdf6f2;border-left:4px solid #C44B0C;padding:16px 20px;margin:20px 0;border-radius:0 6px 6px 0;">
+      <p style="margin:0 0 8px;font-weight:bold;">Règlement par virement bancaire</p>
+      ${payment.iban ? `<p style="margin:0 0 4px;font-family:monospace;font-size:14px;">IBAN : ${payment.iban}</p>` : ''}
+      ${payment.bic ? `<p style="margin:4px 0;font-family:monospace;font-size:14px;">BIC&nbsp;&nbsp;: ${payment.bic}</p>` : ''}
+      ${payment.holder ? `<p style="margin:4px 0;font-family:monospace;font-size:14px;">Titulaire : ${payment.holder}</p>` : ''}
+      <p style="margin:12px 0 0;font-size:12px;color:#888;">Référence : Inscription ${exhibition.title} — ${user.name}</p>
+    </div>
+    ${payment.paypalLink ? `<p style="margin:16px 0;"><strong>Ou via PayPal :</strong> <a href="${payment.paypalLink}" style="color:#C44B0C;">${payment.paypalLink}</a></p>` : ''}
+    <p style="font-size:12px;color:#888;margin-top:8px;">
+      Retrouvez toujours les coordonnées à jour sur notre site : <a href="${APP_URL}/tarifs#paiement" style="color:#C44B0C;">page Tarifs — Modalités de paiement</a>
+    </p>` : `
+    <p style="font-size:13px;color:#666;">
+      Retrouvez les coordonnées de paiement sur : <a href="${APP_URL}/tarifs#paiement" style="color:#C44B0C;">${APP_URL}/tarifs#paiement</a>
+    </p>`
+
   const html = baseTemplate('Rappel de paiement', `
     <h2 style="color:#C44B0C;margin-top:0;">Rappel : paiement en attente</h2>
     <p>Bonjour ${user.name},</p>
@@ -200,6 +218,7 @@ export async function sendPaymentReminderEmail(
       <p style="margin:0;font-weight:bold;">Montant à régler : ${amount}</p>
     </div>
     <p>Merci de procéder au règlement dès que possible afin de valider définitivement votre place.</p>
+    ${paymentBlock}
     <p style="margin-top:24px;font-size:13px;color:#666;">Pour toute question : <a href="mailto:${CONTACT}" style="color:#C44B0C;">${CONTACT}</a></p>
     ${btn(`${APP_URL}/membre/inscriptions`, 'Voir mon inscription')}
   `)
@@ -401,8 +420,9 @@ export async function sendRegistrationConfirmationEmail(params: {
   iban: string
   bic: string
   holder: string
+  paypalLink?: string
 }) {
-  const { user, exhibition, cats, registrationFee, totalAmount, iban, bic, holder } = params
+  const { user, exhibition, cats, registrationFee, totalAmount, iban, bic, holder, paypalLink } = params
   const date = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }).format(exhibition.startDate)
   const fmt = (n: number) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(n)
 
@@ -454,6 +474,13 @@ export async function sendRegistrationConfirmationEmail(params: {
       <p style="margin:12px 0 0;font-size:12px;color:#888;">Référence à indiquer : Inscription ${exhibition.title} — ${user.name}</p>
     </div>
 
+    ${paypalLink ? `<p style="margin:0 0 16px;"><strong>Ou via PayPal :</strong> <a href="${paypalLink}" style="color:#C44B0C;">${paypalLink}</a></p>` : ''}
+
+    <p style="font-size:12px;color:#888;margin:0 0 20px;">
+      Vous pouvez vérifier que ces coordonnées sont toujours à jour sur notre site :
+      <a href="${APP_URL}/tarifs#paiement" style="color:#C44B0C;">page Tarifs — Modalités de paiement</a>
+    </p>
+
     <p style="font-size:13px;color:#666;">Le bureau validera votre inscription après réception du paiement. Pour toute question : <a href="mailto:${CONTACT}" style="color:#C44B0C;">${CONTACT}</a></p>
     ${btn(`${APP_URL}/membre/inscriptions`, 'Voir mon inscription')}
   `)
@@ -492,6 +519,51 @@ export async function sendNewsletterToSubscribers(
 
   const html = baseTemplate(subject, content + unsubFooter)
   await Promise.allSettled(subscribers.map((s) => send(s.email, subject, html)))
+}
+
+export async function notifyAdminRegistrationCancelled(
+  user: { name: string; email: string },
+  exhibition: { id: string; title: string; startDate: Date; city: string }
+) {
+  const adminEmail = process.env.ADMIN_EMAIL || CONTACT
+  const date = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }).format(exhibition.startDate)
+  const html = baseTemplate('Annulation inscription', `
+    <h2 style="color:#C44B0C;margin-top:0;">Inscription annulée</h2>
+    <p><strong>${user.name}</strong> (${user.email}) vient d'annuler son inscription à l'exposition suivante :</p>
+    <p style="margin:16px 0;padding:12px 16px;background:#f8f8f8;border-left:3px solid #C44B0C;border-radius:4px;">
+      <strong>${exhibition.title}</strong><br>
+      ${date} — ${exhibition.city}
+    </p>
+    ${btn(`${APP_URL}/admin/expositions/${exhibition.id}`, "Voir l'exposition")}
+  `)
+  await send(adminEmail, `Inscription annulée — ${user.name} / ${exhibition.title}`, html)
+}
+
+export async function sendExhibitionMailing(
+  exhibitionId: string,
+  subject: string,
+  content: string,
+  options?: { testEmail?: string }
+) {
+  if (options?.testEmail) {
+    const html = baseTemplate(subject, content + `
+      <div style="margin-top:24px;padding:12px 16px;background:#fffbeb;border:1px solid #fbbf24;border-radius:6px;font-size:13px;color:#92400e;">
+        <strong>Email de test</strong> — cet email n'a été envoyé qu'à vous, pas aux inscrits.
+      </div>`)
+    await send(options.testEmail, `[TEST] ${subject}`, html)
+    return
+  }
+
+  const registrations = await prisma.registration.findMany({
+    where: { exhibitionId, status: 'VALIDATED' },
+    select: { user: { select: { email: true } } },
+  })
+
+  const emails = [...new Set(registrations.map((r) => r.user.email))]
+  if (emails.length === 0) return
+
+  const html = baseTemplate(subject, content)
+  await Promise.allSettled(emails.map((email) => send(email, subject, html)))
 }
 
 export async function sendExhibitionCancelledEmail(

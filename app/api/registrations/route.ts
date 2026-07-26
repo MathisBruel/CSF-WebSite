@@ -210,7 +210,7 @@ export async function POST(req: NextRequest) {
     // Send confirmation email (fire-and-forget)
     if (session.user.email) {
       const siteConfigs = await prisma.siteConfig.findMany({
-        where: { key: { in: ['membership_rib_iban', 'membership_rib_bic', 'membership_rib_holder'] } },
+        where: { key: { in: ['membership_rib_iban', 'membership_rib_bic', 'membership_rib_holder', 'membership_paypal_link'] } },
       })
       const cfg = Object.fromEntries(siteConfigs.map((c) => [c.key, c.value]))
       const catMap = Object.fromEntries(userCats.map((c) => [c.id, c]))
@@ -233,6 +233,7 @@ export async function POST(req: NextRequest) {
         iban: cfg['membership_rib_iban'] || '',
         bic: cfg['membership_rib_bic'] || '',
         holder: cfg['membership_rib_holder'] || '',
+        paypalLink: cfg['membership_paypal_link'] || '',
       }).catch((err) => console.error('[email] Confirmation inscription:', err))
     }
 
