@@ -1,8 +1,14 @@
 import type { Metadata } from 'next'
+import { prisma } from '@/lib/prisma'
+import { formatPrice, DEFAULT_PRICING } from '@/lib/utils'
 
+export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Conditions Générales de Vente' }
 
-export default function CGV() {
+export default async function CGV() {
+  const globalPricing = await prisma.pricing.findFirst()
+  const p = globalPricing ?? DEFAULT_PRICING
+
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       <h1 className="text-3xl font-bold font-serif text-csf-dark mb-2">Conditions Générales de Vente</h1>
@@ -41,8 +47,8 @@ export default function CGV() {
 
         <h3>3.1 Adhésion annuelle</h3>
         <p>
-          L&apos;adhésion annuelle donne accès au statut de membre actif de l&apos;association et,
-          notamment, à des tarifs préférentiels lors des expositions. Elle est valable du 1er janvier
+          L&apos;adhésion annuelle confère le statut d&apos;<strong>adhérent</strong> de l&apos;association et
+          ouvre droit à des tarifs préférentiels lors des expositions. Elle est valable du 1er janvier
           au 31 décembre de l&apos;année en cours. Le tarif en vigueur est consultable sur la page
           <a href="/tarifs"> Tarifs</a> du site.
         </p>
@@ -52,7 +58,7 @@ export default function CGV() {
           L&apos;inscription à une exposition comprend :
         </p>
         <ul>
-          <li>Des <strong>frais de dossier</strong> (5 €) non remboursables en toutes circonstances ;</li>
+          <li>Des <strong>frais de dossier</strong> ({formatPrice(p.registrationFee)}) non remboursables en toutes circonstances ;</li>
           <li>Des <strong>frais d&apos;inscription par chat</strong> selon le barème en vigueur (nombre de jours,
             statut membre ou non-membre, rang du chat) ;</li>
           <li>Des options facultatives : examen de conformité, diplômes.</li>
@@ -64,7 +70,7 @@ export default function CGV() {
         <h3>3.3 Location de cage</h3>
         <p>
           La location de cage lors d&apos;une exposition est gratuite. Elle est conditionnée à la remise
-          d&apos;un <strong>chèque de caution de 100 €</strong> le jour de l&apos;événement. Ce chèque
+          d&apos;un <strong>chèque de caution de {formatPrice(p.cageDeposit)}</strong> le jour de l&apos;événement. Ce chèque
           est restitué à l&apos;issue de l&apos;exposition, sauf dans les cas suivants :
         </p>
         <ul>
@@ -124,7 +130,7 @@ export default function CGV() {
         <ul>
           <li>
             <strong>Plus de 15 jours avant le premier jour de l&apos;exposition :</strong> remboursement
-            intégral des frais d&apos;inscription par chat. Les frais de dossier (5 €) restent acquis
+            intégral des frais d&apos;inscription par chat. Les frais de dossier ({formatPrice(p.registrationFee)}) restent acquis
             à l&apos;association dans tous les cas.
           </li>
           <li>
@@ -142,7 +148,7 @@ export default function CGV() {
         <p>
           Le remboursement est effectué par le même moyen de paiement que celui utilisé lors du
           règlement initial. En cas d&apos;impossibilité, un virement bancaire sera effectué sur les
-          coordonnées communiquées par l&apos;adhérent.
+          coordonnées communiquées par l&apos;exposant.
         </p>
 
         <h2>Article 7 – Droit de rétractation</h2>
