@@ -6,13 +6,14 @@ import Link from 'next/link'
 import { formatDate, REGISTRATION_STATUS_LABELS } from '@/lib/utils'
 import { ExhibitionStatus } from '@prisma/client'
 import { MembershipRequestButton } from '@/components/membre/MembershipRequestButton'
+import { deriveMemberStatus } from '@/lib/membership'
 
 export default async function MemberDashboard() {
   const session = await auth()
   if (!session) return null
   const userId = session.user.id
 
-  const [cats, registrations, openExpos, membershipRequest, paymentConfig] = await Promise.all([
+  const [cats, registrations, openExpos, membershipRequest, paymentConfig, user] = await Promise.all([
     prisma.cat.count({ where: { ownerId: userId } }),
     prisma.registration.findMany({
       where: { userId },
@@ -39,6 +40,7 @@ export default async function MemberDashboard() {
         },
       },
     }),
+    prisma.user.findUnique({ where: { id: userId }, select: { membershipExpiry: true } }),
   ])
 
   const cfg = Object.fromEntries(paymentConfig.map((r) => [r.key, r.value]))
@@ -52,9 +54,33 @@ export default async function MemberDashboard() {
 
   const priceLabel = cfg['membership_price'] ? `${cfg['membership_price']} €` : null
 
-  // Membership banner logic
+  const memberStatus = deriveMemberStatus({
+    role: session.user.role,
+    membershipActive: session.user.membershipActive,
+    hasPendingRequest: membershipRequest?.status === 'PENDING',
+  })
+
+  // Membership banner logic — always shown, reflects current status
   const renderMembershipBanner = () => {
-    if (session.user.membershipActive || session.user.role === 'ADMIN') return null
+    if (memberStatus === 'admin') {
+      return (
+        <div className="bg-purple-50 border border-purple-200 rounded-xl p-4 flex items-center gap-3">
+          <span className="w-9 h-9 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 flex-shrink-0">★</span>
+          <p className="font-medium text-purple-800">Compte administrateur</p>
+        </div>
+      )
+    }
+
+    if (memberStatus === 'active') {
+      return (
+        <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex items-center gap-3">
+          <span className="w-9 h-9 rounded-full bg-green-100 flex items-center justify-center text-green-600 flex-shrink-0">✓</span>
+          <p className="font-medium text-green-800">
+            Adhésion active{user?.membershipExpiry ? ` jusqu'au ${formatDate(user.membershipExpiry)}` : ''}
+          </p>
+        </div>
+      )
+    }
 
     if (!membershipRequest || membershipRequest.status === 'REJECTED') {
       return (
@@ -142,12 +168,11 @@ export default async function MemberDashboard() {
       {renderMembershipBanner()}
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {[
           { label: 'Mes chats', value: cats, href: '/membre/chats', icon: '🐱' },
           { label: 'Inscriptions', value: registrations.length, href: '/membre/inscriptions', icon: '🎫' },
           { label: 'Expos ouvertes', value: openExpos.length, href: '/expositions', icon: '🏆' },
-          { label: 'Statut adhésion', value: session.user.membershipActive ? 'Active' : 'En attente', href: '/membre/profil', icon: '✅' },
         ].map((stat) => (
           <Link key={stat.label} href={stat.href}
             className="card hover:shadow-md transition-shadow group text-center">
