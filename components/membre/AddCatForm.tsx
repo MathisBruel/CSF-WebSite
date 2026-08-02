@@ -157,7 +157,7 @@ type CatInitialData = {
   inscritChampionnatFrance: boolean
 }
 
-export function AddCatForm({ catId, initialData, returnTo }: { catId?: string; initialData?: CatInitialData; returnTo?: string }) {
+export function AddCatForm({ catId, initialData, returnTo, editRedirectTo }: { catId?: string; initialData?: CatInitialData; returnTo?: string; editRedirectTo?: string }) {
   const router = useRouter()
   const safeReturnTo = returnTo?.startsWith('/') ? returnTo : undefined
   const [error, setError] = useState('')
@@ -238,7 +238,7 @@ export function AddCatForm({ catId, initialData, returnTo }: { catId?: string; i
       router.refresh()
       return
     }
-    router.push(catId ? `/membre/chats/${catId}` : '/membre/chats')
+    router.push(catId ? (editRedirectTo ?? `/membre/chats/${catId}`) : '/membre/chats')
     router.refresh()
   }
 

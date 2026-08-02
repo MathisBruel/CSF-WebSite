@@ -26,7 +26,9 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   const session = await auth()
   if (!session) return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
 
-  const cat = await prisma.cat.findFirst({ where: { id: params.id, ownerId: session.user.id } })
+  const cat = await prisma.cat.findFirst({
+    where: session.user.role === 'ADMIN' ? { id: params.id } : { id: params.id, ownerId: session.user.id },
+  })
   if (!cat) return NextResponse.json({ error: 'Introuvable' }, { status: 404 })
 
   try {

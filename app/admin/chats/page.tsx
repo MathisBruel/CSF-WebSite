@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma'
 
 export const dynamic = 'force-dynamic'
+import Link from 'next/link'
 import { formatDate } from '@/lib/utils'
 import { ChatsFilterBar } from '@/components/admin/ChatsFilterBar'
 import type { Prisma } from '@prisma/client'
@@ -68,6 +69,7 @@ export default async function AdminChats({
               <th className="text-left px-4 py-3 font-medium text-csf-muted">Exposant</th>
               <th className="text-left px-4 py-3 font-medium text-csf-muted">ICAD</th>
               <th className="text-left px-4 py-3 font-medium text-csf-muted">Inscriptions</th>
+              <th className="text-left px-4 py-3 font-medium text-csf-muted">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
@@ -87,11 +89,16 @@ export default async function AdminChats({
                 </td>
                 <td className="px-4 py-3 text-csf-muted">{cat.icadNumber ?? '—'}</td>
                 <td className="px-4 py-3 text-center">{cat._count.registrations}</td>
+                <td className="px-4 py-3">
+                  <Link href={`/admin/chats/${cat.id}/edit`} className="text-csf-orange hover:underline font-medium">
+                    Modifier
+                  </Link>
+                </td>
               </tr>
             ))}
             {cats.length === 0 && (
               <tr>
-                <td colSpan={8} className="px-4 py-8 text-center text-csf-muted">Aucun chat ne correspond à ces critères.</td>
+                <td colSpan={9} className="px-4 py-8 text-center text-csf-muted">Aucun chat ne correspond à ces critères.</td>
               </tr>
             )}
           </tbody>
