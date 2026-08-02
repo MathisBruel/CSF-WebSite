@@ -6,7 +6,7 @@ import { formatDate } from '@/lib/utils'
 import { ExhibitionStatus } from '@prisma/client'
 
 async function getData() {
-  const [latestNews, upcomingExpos] = await Promise.all([
+  const [latestNews, upcomingExpos, membershipPriceConfig] = await Promise.all([
     prisma.news.findMany({
       where: { published: true },
       orderBy: { publishedAt: 'desc' },
@@ -18,12 +18,13 @@ async function getData() {
       orderBy: { startDate: 'asc' },
       take: 3,
     }),
+    prisma.siteConfig.findUnique({ where: { key: 'membership_price' } }),
   ])
-  return { latestNews, upcomingExpos }
+  return { latestNews, upcomingExpos, membershipPrice: membershipPriceConfig?.value }
 }
 
 export default async function HomePage() {
-  const { latestNews, upcomingExpos } = await getData()
+  const { latestNews, upcomingExpos, membershipPrice } = await getData()
 
   return (
     <>
@@ -173,6 +174,7 @@ export default async function HomePage() {
           <p className="text-white/80 text-lg mb-8">
             Adhérez à l&apos;association pour accéder à l&apos;espace membre, inscrire vos chats aux expositions
             et rejoindre notre communauté de passionnés félins.
+            {membershipPrice && ` Cotisation annuelle : ${membershipPrice} €.`}
           </p>
           <div className="flex flex-wrap justify-center gap-4">
             <Link href="/register"

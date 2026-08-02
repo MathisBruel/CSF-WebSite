@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import {
@@ -19,7 +19,7 @@ export async function GET() {
   return NextResponse.json(request)
 }
 
-export async function POST(req: NextRequest) {
+export async function POST() {
   const session = await auth()
   if (!session) return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
 
@@ -41,12 +41,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Une demande est déjà en cours.' }, { status: 400 })
   }
 
-  const body = await req.json().catch(() => ({}))
   const request = await prisma.membershipRequest.create({
-    data: {
-      userId: session.user.id,
-      message: body.message?.trim() || null,
-    },
+    data: { userId: session.user.id },
   })
 
   // Notifications (fire-and-forget)

@@ -76,6 +76,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       registrationDeadline: new Date(data.registrationDeadline),
       maxRegistrations: data.maxRegistrations || null,
       rules: data.rules,
+      coverImageUrl: data.coverImageUrl || null,
     },
   })
   return NextResponse.json(expo)

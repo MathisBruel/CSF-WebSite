@@ -9,6 +9,8 @@ const KEYS = [
   'membership_rib_bic',
   'membership_rib_holder',
   'membership_paypal_link',
+  'social_facebook_url',
+  'social_instagram_url',
 ]
 
 export default async function AdminConfigPage() {

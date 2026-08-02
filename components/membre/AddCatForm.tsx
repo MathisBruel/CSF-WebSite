@@ -157,8 +157,9 @@ type CatInitialData = {
   inscritChampionnatFrance: boolean
 }
 
-export function AddCatForm({ catId, initialData }: { catId?: string; initialData?: CatInitialData }) {
+export function AddCatForm({ catId, initialData, returnTo }: { catId?: string; initialData?: CatInitialData; returnTo?: string }) {
   const router = useRouter()
+  const safeReturnTo = returnTo?.startsWith('/') ? returnTo : undefined
   const [error, setError] = useState('')
   const isFirstRender = useRef(true)
 
@@ -228,6 +229,13 @@ export function AddCatForm({ catId, initialData }: { catId?: string; initialData
     if (!res.ok) {
       const body = await res.json()
       setError(body.error || 'Erreur lors de la sauvegarde')
+      return
+    }
+    if (!catId && safeReturnTo) {
+      const created = await res.json()
+      const separator = safeReturnTo.includes('?') ? '&' : '?'
+      router.push(`${safeReturnTo}${separator}newCat=${created.id}`)
+      router.refresh()
       return
     }
     router.push(catId ? `/membre/chats/${catId}` : '/membre/chats')
@@ -390,7 +398,7 @@ export function AddCatForm({ catId, initialData }: { catId?: string; initialData
       </div>
 
       <div className="flex gap-3 pt-2">
-        <Link href={catId ? `/membre/chats/${catId}` : '/membre/chats'} className="btn-secondary flex-1 text-center">
+        <Link href={safeReturnTo || (catId ? `/membre/chats/${catId}` : '/membre/chats')} className="btn-secondary flex-1 text-center">
           Annuler
         </Link>
         <button type="submit" disabled={isSubmitting} className="btn-primary flex-1">

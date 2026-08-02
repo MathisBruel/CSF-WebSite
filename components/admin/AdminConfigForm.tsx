@@ -11,6 +11,8 @@ export function AdminConfigForm({ config }: { config: Record<string, string> }) 
     membership_rib_bic: config['membership_rib_bic'] || '',
     membership_rib_holder: config['membership_rib_holder'] || '',
     membership_paypal_link: config['membership_paypal_link'] || '',
+    social_facebook_url: config['social_facebook_url'] || '',
+    social_instagram_url: config['social_instagram_url'] || '',
   })
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
@@ -100,6 +102,28 @@ export function AdminConfigForm({ config }: { config: Record<string, string> }) 
             onChange={set('membership_paypal_link')}
             className="form-input"
             placeholder="https://paypal.me/..."
+          />
+        </div>
+      </div>
+
+      <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-4">
+        <h2 className="font-semibold text-csf-dark">Réseaux sociaux</h2>
+        <div>
+          <label className="form-label">URL Facebook</label>
+          <input
+            value={values.social_facebook_url}
+            onChange={set('social_facebook_url')}
+            className="form-input"
+            placeholder="https://facebook.com/..."
+          />
+        </div>
+        <div>
+          <label className="form-label">URL Instagram</label>
+          <input
+            value={values.social_instagram_url}
+            onChange={set('social_instagram_url')}
+            className="form-input"
+            placeholder="https://instagram.com/..."
           />
         </div>
       </div>

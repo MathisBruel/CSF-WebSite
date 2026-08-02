@@ -32,6 +32,7 @@ export default async function AdminExpoEdit({ params }: { params: { id: string }
           registrationDeadline: exhibition.registrationDeadline.toISOString().slice(0, 16),
           maxRegistrations: exhibition.maxRegistrations || undefined,
           rules: exhibition.rules || '',
+          coverImageUrl: exhibition.coverImageUrl || '',
         }}
       />
 

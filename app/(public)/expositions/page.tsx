@@ -47,6 +47,13 @@ export default async function ExpositionsPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             {exhibitions.map((expo) => (
               <div key={expo.id} className="card hover:shadow-md transition-shadow group flex flex-col">
+                {expo.coverImageUrl && (
+                  <div className="relative w-full aspect-[210/297] bg-gray-50 rounded-lg overflow-hidden border border-gray-100 mb-3">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={expo.coverImageUrl} alt={`Affiche ${expo.title}`}
+                      className="w-full h-full object-contain" />
+                  </div>
+                )}
                 <div className="flex items-center justify-between mb-3">
                   <span className={`badge ${STATUS_BADGE[expo.status]}`}>
                     {EXHIBITION_STATUS_LABELS[expo.status]}

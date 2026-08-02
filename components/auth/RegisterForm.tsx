@@ -47,7 +47,7 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 
 const Req = () => <span className="text-red-500 ml-0.5">*</span>
 
-export function RegisterForm() {
+export function RegisterForm({ membershipPrice }: { membershipPrice?: string }) {
   const router = useRouter()
   const [error, setError] = useState('')
 
@@ -268,6 +268,11 @@ export function RegisterForm() {
             />
             <span className="text-sm text-csf-dark leading-snug">
               Je souhaite adhérer à l&apos;association Chats Sans Frontières
+              {membershipPrice && (
+                <span className="block text-xs text-csf-muted mt-0.5">
+                  Cotisation annuelle : {membershipPrice} € — un email de règlement vous sera envoyé après inscription.
+                </span>
+              )}
             </span>
           </label>
 

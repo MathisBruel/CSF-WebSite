@@ -8,6 +8,8 @@ const ALLOWED_KEYS = [
   'membership_rib_bic',
   'membership_rib_holder',
   'membership_paypal_link',
+  'social_facebook_url',
+  'social_instagram_url',
 ]
 
 export async function GET() {

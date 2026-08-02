@@ -19,7 +19,7 @@ type FormData = {
   registrationDeadline: string
   maxRegistrations: number | null
   rules: string
-  coverImage?: string
+  coverImageUrl?: string
 }
 
 export function ExhibitionForm({
@@ -69,10 +69,10 @@ export function ExhibitionForm({
       <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
         <h2 className="font-bold text-csf-dark">Informations générales</h2>
         <div>
-          <Controller name="coverImage" control={control}
+          <Controller name="coverImageUrl" control={control}
             render={({ field }) => (
               <ImageUpload value={field.value as string} onChange={field.onChange}
-                category="exhibition" label="Image de couverture" />
+                category="exhibition" label="Affiche de l'exposition (format A3)" />
             )} />
         </div>
         <div>

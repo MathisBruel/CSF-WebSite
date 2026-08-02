@@ -25,6 +25,7 @@ export async function POST(req: NextRequest) {
         registrationDeadline: new Date(data.registrationDeadline),
         maxRegistrations: data.maxRegistrations || null,
         rules: data.rules,
+        coverImageUrl: data.coverImageUrl || null,
       },
     })
     return NextResponse.json(expo, { status: 201 })

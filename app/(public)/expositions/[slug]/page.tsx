@@ -187,6 +187,15 @@ export default async function ExpoDetailPage({ params }: Props) {
 
         {/* Sidebar */}
         <div className="space-y-4">
+          {/* Poster */}
+          {expo.coverImageUrl && (
+            <div className="relative w-full aspect-[210/297] bg-gray-50 rounded-xl overflow-hidden border border-gray-200">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={expo.coverImageUrl} alt={`Affiche ${expo.title}`}
+                className="w-full h-full object-contain" />
+            </div>
+          )}
+
           {/* Status card */}
           <div className={`card border-2 ${isOpen ? 'border-green-400' : 'border-gray-200'}`}>
             <div className={`inline-block px-3 py-1 rounded-full text-xs font-bold mb-3 ${

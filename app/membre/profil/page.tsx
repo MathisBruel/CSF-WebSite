@@ -9,20 +9,25 @@ export default async function ProfilPage() {
   const session = await auth()
   if (!session) return null
 
-  const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    select: {
-      id: true, name: true, email: true,
-      firstName: true, lastName: true, civilite: true,
-      phone: true, phoneFixed: true,
-      address: true, address2: true, city: true, postalCode: true, country: true,
-      exposantType: true, certificatCapacite: true, siret: true, affixe: true,
-      role: true, membershipActive: true, membershipExpiry: true,
-      newsletterSubscribed: true, createdAt: true,
-    },
-  })
+  const [user, membershipPriceConfig] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: {
+        id: true, name: true, email: true,
+        firstName: true, lastName: true, civilite: true,
+        phone: true, phoneFixed: true,
+        address: true, address2: true, city: true, postalCode: true, country: true,
+        exposantType: true, certificatCapacite: true, siret: true, affixe: true,
+        role: true, membershipActive: true, membershipExpiry: true,
+        newsletterSubscribed: true, createdAt: true,
+      },
+    }),
+    prisma.siteConfig.findUnique({ where: { key: 'membership_price' } }),
+  ])
 
   if (!user) return null
+
+  const priceLabel = membershipPriceConfig?.value ? `${membershipPriceConfig.value} €` : null
 
   return (
     <div className="max-w-4xl space-y-6">
@@ -41,6 +46,9 @@ export default async function ProfilPage() {
                 ? `Adhésion active${user.membershipExpiry ? ` jusqu'au ${formatDate(user.membershipExpiry)}` : ''}`
                 : 'Adhésion en attente de validation'}
             </p>
+            {!user.membershipActive && priceLabel && (
+              <p className="text-xs text-orange-700 mt-1">Cotisation annuelle : {priceLabel}</p>
+            )}
           </div>
           <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
             user.membershipActive ? 'bg-green-100' : 'bg-orange-100'

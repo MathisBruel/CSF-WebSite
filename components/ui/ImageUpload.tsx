@@ -18,6 +18,7 @@ export function ImageUpload({
   const [error, setError] = useState('')
   const [preview, setPreview] = useState(value)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const isPoster = category === 'exhibition'
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -59,11 +60,15 @@ export function ImageUpload({
       <label className="form-label">{label}</label>
 
       {preview && (
-        <div className="relative w-full aspect-video bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
+        <div
+          className={`relative bg-gray-100 rounded-lg overflow-hidden border border-gray-200 ${
+            isPoster ? 'w-full max-w-[220px] aspect-[210/297] mx-auto' : 'w-full aspect-video'
+          }`}
+        >
           <img
             src={preview}
             alt="Preview"
-            className="w-full h-full object-cover"
+            className={`w-full h-full ${isPoster ? 'object-contain' : 'object-cover'}`}
           />
           <button
             type="button"

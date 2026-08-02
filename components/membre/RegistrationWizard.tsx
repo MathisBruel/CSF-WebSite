@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import type { Exhibition, Cat, ExhibitionSpecial } from '@prisma/client'
 import { computeCatPrice, formatPrice, type GlobalPricing } from '@/lib/utils'
 import { computeAvailableClasses } from '@/lib/cat-data'
@@ -42,6 +42,8 @@ export function RegistrationWizard({
   isMember: boolean
 }) {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const wizardStorageKey = `csf-registration-wizard-${exhibition.id}`
   const [step, setStep] = useState<Step>('cats')
   const [selectedCatIds, setSelectedCatIds] = useState<string[]>([])
   const [catOptions, setCatOptions] = useState<Record<string, CatEntry>>({})
@@ -55,6 +57,35 @@ export function RegistrationWizard({
   const [error, setError] = useState('')
   const [hasReadRules, setHasReadRules] = useState(false)
   const [triedOptionsNext, setTriedOptionsNext] = useState(false)
+
+  // Resume an in-progress registration after being sent to /membre/chats/nouveau to add a cat.
+  useEffect(() => {
+    const saved = sessionStorage.getItem(wizardStorageKey)
+    if (saved) {
+      sessionStorage.removeItem(wizardStorageKey)
+      try {
+        const parsed = JSON.parse(saved) as { selectedCatIds: string[]; catOptions: Record<string, CatEntry> }
+        setSelectedCatIds(parsed.selectedCatIds ?? [])
+        setCatOptions(parsed.catOptions ?? {})
+      } catch {
+        // ignore malformed storage
+      }
+    }
+
+    const newCatId = searchParams.get('newCat')
+    if (newCatId && cats.some((c) => c.id === newCatId)) {
+      setSelectedCatIds((prev) => (prev.includes(newCatId) ? prev : [...prev, newCatId]))
+      setCatOptions((prev) => (prev[newCatId] ? prev : { ...prev, [newCatId]: defaultCatEntry() }))
+      router.replace(`/membre/inscriptions/${exhibition.id}`)
+    }
+    // Run once on mount only — restoring saved state and consuming the newCat param.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const addCatHref = `/membre/chats/nouveau?returnTo=${encodeURIComponent(`/membre/inscriptions/${exhibition.id}`)}`
+  const saveWizardStateBeforeLeaving = () => {
+    sessionStorage.setItem(wizardStorageKey, JSON.stringify({ selectedCatIds, catOptions }))
+  }
 
   const toggleCat = (catId: string) => {
     if (selectedCatIds.includes(catId)) {
@@ -211,7 +242,7 @@ export function RegistrationWizard({
             {cats.length === 0 ? (
               <div className="text-center py-6">
                 <p className="text-csf-muted mb-3">Vous n&apos;avez pas de chat disponible pour cette exposition.</p>
-                <Link href="/membre/chats/nouveau" className="btn-primary text-sm">Ajouter un chat</Link>
+                <Link href={addCatHref} onClick={saveWizardStateBeforeLeaving} className="btn-primary text-sm">Ajouter un chat</Link>
               </div>
             ) : (
               <div className="space-y-3">
@@ -231,6 +262,15 @@ export function RegistrationWizard({
                     </label>
                   )
                 })}
+              </div>
+            )}
+
+            {cats.length > 0 && (
+              <div className="mt-3">
+                <Link href={addCatHref} onClick={saveWizardStateBeforeLeaving}
+                  className="text-sm text-csf-orange hover:text-csf-orange-dark font-medium">
+                  + Ajouter un autre chat
+                </Link>
               </div>
             )}
 

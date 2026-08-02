@@ -50,6 +50,8 @@ export default async function MemberDashboard() {
     WAITING_DOCS: 'badge-blue',
   }
 
+  const priceLabel = cfg['membership_price'] ? `${cfg['membership_price']} €` : null
+
   // Membership banner logic
   const renderMembershipBanner = () => {
     if (session.user.membershipActive) return null
@@ -72,11 +74,14 @@ export default async function MemberDashboard() {
             ) : (
               <>
                 <p className="font-medium text-orange-800">Vous n&apos;êtes pas encore adhérent</p>
-                <p className="text-sm text-orange-700">Demandez votre adhésion pour accéder à toutes les fonctionnalités du club.</p>
+                <p className="text-sm text-orange-700">
+                  Demandez votre adhésion pour accéder à toutes les fonctionnalités du club et aux tarifs préférentiels.
+                  {priceLabel && ` Cotisation annuelle : ${priceLabel}.`}
+                </p>
               </>
             )}
             <div className="mt-3">
-              <MembershipRequestButton />
+              <MembershipRequestButton price={cfg['membership_price']} />
             </div>
           </div>
         </div>
@@ -85,42 +90,38 @@ export default async function MemberDashboard() {
 
     if (membershipRequest.status === 'PENDING') {
       return (
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-start gap-3">
-          <svg className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <div>
-            <p className="font-medium text-blue-800">Demande d&apos;adhésion en cours</p>
-            <p className="text-sm text-blue-700">Soumise le {formatDate(membershipRequest.requestedAt)}. Le bureau examinera votre demande prochainement.</p>
-          </div>
-        </div>
-      )
-    }
-
-    if (membershipRequest.status === 'APPROVED') {
-      return (
-        <div className="bg-green-50 border border-green-200 rounded-xl p-4">
-          <p className="font-medium text-green-800 mb-2">Adhésion approuvée — en attente de paiement</p>
-          <p className="text-sm text-green-700 mb-3">
-            Veuillez régler {cfg['membership_price'] ? `${cfg['membership_price']} €` : 'le montant indiqué'} pour finaliser votre adhésion.
-          </p>
-          {cfg['membership_rib_iban'] && (
-            <div className="bg-white border border-green-200 rounded-lg p-3 text-sm space-y-1 mb-3">
-              <p><strong>Virement bancaire :</strong></p>
-              <p className="font-mono">IBAN : {cfg['membership_rib_iban']}</p>
-              {cfg['membership_rib_bic'] && <p className="font-mono">BIC : {cfg['membership_rib_bic']}</p>}
-              {cfg['membership_rib_holder'] && <p className="font-mono">Titulaire : {cfg['membership_rib_holder']}</p>}
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+          <div className="flex items-start gap-3">
+            <svg className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <div>
+              <p className="font-medium text-blue-800">Demande d&apos;adhésion en cours</p>
+              <p className="text-sm text-blue-700">Soumise le {formatDate(membershipRequest.requestedAt)}. Le bureau validera votre adhésion dès réception du règlement.</p>
             </div>
-          )}
-          {cfg['membership_paypal_link'] && (
-            <a
-              href={cfg['membership_paypal_link']}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-block btn-primary text-sm">
-              Payer via PayPal
-            </a>
-          )}
+          </div>
+          <div className="mt-3 ml-8">
+            <p className="text-sm text-blue-800 font-medium mb-2">
+              Cotisation annuelle à régler{priceLabel ? ` : ${priceLabel}` : ''}
+            </p>
+            {cfg['membership_rib_iban'] && (
+              <div className="bg-white border border-blue-200 rounded-lg p-3 text-sm space-y-1 mb-3">
+                <p><strong>Virement bancaire :</strong></p>
+                <p className="font-mono">IBAN : {cfg['membership_rib_iban']}</p>
+                {cfg['membership_rib_bic'] && <p className="font-mono">BIC : {cfg['membership_rib_bic']}</p>}
+                {cfg['membership_rib_holder'] && <p className="font-mono">Titulaire : {cfg['membership_rib_holder']}</p>}
+              </div>
+            )}
+            {cfg['membership_paypal_link'] && (
+              <a
+                href={cfg['membership_paypal_link']}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-block btn-primary text-sm">
+                Payer via PayPal
+              </a>
+            )}
+          </div>
         </div>
       )
     }
