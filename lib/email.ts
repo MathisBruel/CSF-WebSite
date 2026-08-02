@@ -120,28 +120,7 @@ export async function sendPasswordResetEmail(user: { name: string; email: string
 
 // ── Adhésion ─────────────────────────────────────────────────────────────────
 
-export async function sendMembershipRequestReceivedEmail(user: { name: string; email: string }) {
-  const html = baseTemplate("Demande d'adhésion reçue", `
-    <h2 style="color:#C44B0C;margin-top:0;">Demande reçue</h2>
-    <p>Bonjour ${user.name},</p>
-    <p>Nous avons bien reçu votre demande d'adhésion à <strong>${APP_NAME}</strong>.</p>
-    <p>Le bureau va l'examiner et vous répondra prochainement par email.</p>
-    <p style="margin-top:24px;font-size:13px;color:#666;">Pour toute question : <a href="mailto:${CONTACT}" style="color:#C44B0C;">${CONTACT}</a></p>
-  `)
-  await send(user.email, "Demande d'adhésion reçue — " + APP_NAME, html)
-}
-
-export async function notifyAdminMembershipRequest(user: { name: string; email: string }) {
-  const adminEmail = process.env.ADMIN_EMAIL || CONTACT
-  const html = baseTemplate("Nouvelle demande d'adhésion", `
-    <h2 style="color:#C44B0C;margin-top:0;">Nouvelle demande d'adhésion</h2>
-    <p><strong>${user.name}</strong> (${user.email}) vient de soumettre une demande d'adhésion.</p>
-    ${btn(`${APP_URL}/admin/membres`, 'Gérer les demandes')}
-  `)
-  await send(adminEmail, `Nouvelle demande d'adhésion — ${user.name}`, html)
-}
-
-export async function sendMembershipApprovedEmail(
+export async function sendMembershipPaymentRequestEmail(
   user: { name: string; email: string },
   payment: { price: string; iban: string; bic: string; holder: string; paypalLink: string }
 ) {
@@ -150,11 +129,11 @@ export async function sendMembershipApprovedEmail(
        <a href="${payment.paypalLink}" style="color:#C44B0C;">${payment.paypalLink}</a></p>`
     : ''
 
-  const html = baseTemplate('Adhésion approuvée', `
-    <h2 style="color:#C44B0C;margin-top:0;">Votre adhésion est approuvée !</h2>
+  const html = baseTemplate("Demande d'adhésion reçue", `
+    <h2 style="color:#C44B0C;margin-top:0;">Demande d'adhésion reçue !</h2>
     <p>Bonjour ${user.name},</p>
-    <p>Le bureau a validé votre demande d'adhésion à <strong>${APP_NAME}</strong>. Félicitations !</p>
-    <p>Pour finaliser votre adhésion, veuillez régler le montant de <strong>${payment.price}&nbsp;€</strong> selon l'une des modalités ci-dessous :</p>
+    <p>Nous avons bien reçu votre demande d'adhésion à <strong>${APP_NAME}</strong>.</p>
+    <p>Pour que le bureau puisse valider votre adhésion, merci de régler la cotisation annuelle de <strong>${payment.price}&nbsp;€</strong> selon l'une des modalités ci-dessous :</p>
     <div style="background:#fdf6f2;border-left:4px solid #C44B0C;padding:16px 20px;margin:20px 0;border-radius:0 6px 6px 0;">
       <p style="margin:0 0 6px;font-weight:bold;">Virement bancaire :</p>
       <p style="margin:0;font-family:monospace;font-size:14px;">IBAN : ${payment.iban}</p>
@@ -163,9 +142,31 @@ export async function sendMembershipApprovedEmail(
       <p style="margin:10px 0 0;font-size:13px;color:#888;">Référence à indiquer : Adhésion ${user.name}</p>
     </div>
     ${paypalRow}
+    <p style="margin-top:24px;font-size:13px;color:#666;">Votre adhésion sera activée par le bureau dès réception du paiement. Pour toute question : <a href="mailto:${CONTACT}" style="color:#C44B0C;">${CONTACT}</a></p>
+  `)
+  await send(user.email, `Cotisation annuelle à régler — ${APP_NAME}`, html)
+}
+
+export async function notifyAdminMembershipRequest(user: { name: string; email: string }) {
+  const inscriptionEmail = process.env.INSCRIPTION_EMAIL || CONTACT
+  const html = baseTemplate("Nouvelle demande d'adhésion", `
+    <h2 style="color:#C44B0C;margin-top:0;">Nouvelle demande d'adhésion</h2>
+    <p><strong>${user.name}</strong> (${user.email}) vient de soumettre une demande d'adhésion. Un email lui demandant de régler la cotisation vient de lui être envoyé.</p>
+    ${btn(`${APP_URL}/admin/membres`, 'Gérer les demandes')}
+  `)
+  await send(inscriptionEmail, `Nouvelle demande d'adhésion — ${user.name}`, html)
+}
+
+export async function sendMembershipApprovedEmail(user: { name: string; email: string }) {
+  const html = baseTemplate('Adhésion validée', `
+    <h2 style="color:#C44B0C;margin-top:0;">Votre adhésion est validée !</h2>
+    <p>Bonjour ${user.name},</p>
+    <p>Le bureau a bien reçu votre règlement et a validé votre adhésion à <strong>${APP_NAME}</strong>. Félicitations !</p>
+    <p>Vous bénéficiez désormais des tarifs préférentiels adhérents sur les expositions.</p>
+    ${btn(`${APP_URL}/membre/dashboard`, 'Accéder à mon espace')}
     <p style="margin-top:24px;font-size:13px;color:#666;">Pour toute question : <a href="mailto:${CONTACT}" style="color:#C44B0C;">${CONTACT}</a></p>
   `)
-  await send(user.email, `Adhésion approuvée — ${APP_NAME}`, html)
+  await send(user.email, `Adhésion validée — ${APP_NAME}`, html)
 }
 
 export async function sendMembershipRejectedEmail(user: { name: string; email: string }, reason: string) {

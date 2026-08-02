@@ -5,7 +5,7 @@ import { useState } from 'react'
 import { useSession } from 'next-auth/react'
 import type { Role } from '@prisma/client'
 
-export function MemberActions({ memberId, active, role, hasPendingRequest }: { memberId: string; active: boolean; role: Role; hasPendingRequest: boolean }) {
+export function MemberActions({ memberId, active, role, pendingRequestId }: { memberId: string; active: boolean; role: Role; pendingRequestId: string | null }) {
   const router = useRouter()
   const { data: session } = useSession()
   const [loading, setLoading] = useState(false)
@@ -15,11 +15,20 @@ export function MemberActions({ memberId, active, role, hasPendingRequest }: { m
 
   const toggle = async () => {
     setLoading(true)
-    await fetch(`/api/admin/members/${memberId}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ membershipActive: !active }),
-    })
+    if (!active && pendingRequestId) {
+      // Go through the membership-request flow so the request is resolved and the member is notified.
+      await fetch(`/api/admin/membership-requests/${pendingRequestId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'approve' }),
+      })
+    } else {
+      await fetch(`/api/admin/members/${memberId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ membershipActive: !active }),
+      })
+    }
     setLoading(false)
     router.refresh()
   }
@@ -97,7 +106,7 @@ export function MemberActions({ memberId, active, role, hasPendingRequest }: { m
             ? 'bg-red-50 text-red-600 hover:bg-red-100'
             : 'bg-green-50 text-green-700 hover:bg-green-100'
         }`}>
-        {active ? 'Révoquer' : hasPendingRequest ? 'Approuver' : 'Activer'}
+        {active ? 'Révoquer' : pendingRequestId ? 'Approuver' : 'Activer'}
       </button>
 
       {confirmAdmin ? (

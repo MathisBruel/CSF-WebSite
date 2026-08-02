@@ -7,13 +7,15 @@ export function MembershipRequestActions({ requestId }: { requestId: string }) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
 
-  const action = async (type: 'approve' | 'reject') => {
+  const action = async (type: 'approve' | 'reject' | 'remind') => {
     let rejectionReason: string | null = null
     if (type === 'reject') {
       rejectionReason = window.prompt('Motif du refus (sera envoyé par email) :')
       if (!rejectionReason?.trim()) return
+    } else if (type === 'remind') {
+      if (!window.confirm('Renvoyer le mail de relance pour le règlement de la cotisation ?')) return
     } else {
-      if (!window.confirm('Approuver cette demande ? Le membre deviendra actif et recevra les instructions de paiement par email.')) return
+      if (!window.confirm('Approuver cette demande ? Le membre passera adhérent actif et recevra un email de confirmation.')) return
     }
 
     setLoading(true)
@@ -34,6 +36,13 @@ export function MembershipRequestActions({ requestId }: { requestId: string }) {
 
   return (
     <div className="flex gap-2 flex-shrink-0">
+      <button
+        onClick={() => action('remind')}
+        disabled={loading}
+        title="Renvoyer le mail demandant le règlement de la cotisation"
+        className="px-3 py-1.5 bg-amber-50 text-amber-700 text-xs font-medium rounded-lg hover:bg-amber-100 transition-colors">
+        Relancer paiement
+      </button>
       <button
         onClick={() => action('approve')}
         disabled={loading}

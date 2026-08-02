@@ -2,9 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import {
-  sendMembershipRequestReceivedEmail,
+  sendMembershipPaymentRequestEmail,
   notifyAdminMembershipRequest,
 } from '@/lib/email'
+import { getMembershipPaymentConfig } from '@/lib/membership'
 
 export async function GET() {
   const session = await auth()
@@ -49,7 +50,9 @@ export async function POST(req: NextRequest) {
   })
 
   // Notifications (fire-and-forget)
-  sendMembershipRequestReceivedEmail({ name: user.name, email: user.email }).catch(console.error)
+  getMembershipPaymentConfig()
+    .then((payment) => sendMembershipPaymentRequestEmail({ name: user.name, email: user.email }, payment))
+    .catch(console.error)
   notifyAdminMembershipRequest({ name: user.name, email: user.email }).catch(console.error)
 
   // In-app notification for admin
