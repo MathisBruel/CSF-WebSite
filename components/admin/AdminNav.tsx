@@ -8,6 +8,7 @@ import { signOut } from 'next-auth/react'
 const navItems = [
   { href: '/admin', label: 'Tableau de bord', exact: true },
   { href: '/admin/membres', label: 'Membres', badge: 'members' },
+  { href: '/admin/chats', label: 'Chats' },
   { href: '/admin/expositions', label: 'Expositions' },
   { href: '/admin/inscriptions', label: 'Inscriptions' },
   { href: '/admin/contenu', label: 'Contenu' },
