@@ -40,7 +40,7 @@ export default async function MemberDashboard() {
         },
       },
     }),
-    prisma.user.findUnique({ where: { id: userId }, select: { membershipExpiry: true } }),
+    prisma.user.findUnique({ where: { id: userId }, select: { role: true, membershipActive: true, membershipExpiry: true } }),
   ])
 
   const cfg = Object.fromEntries(paymentConfig.map((r) => [r.key, r.value]))
@@ -54,9 +54,10 @@ export default async function MemberDashboard() {
 
   const priceLabel = cfg['membership_price'] ? `${cfg['membership_price']} €` : null
 
+  // Use fresh DB values, not the JWT session (which only reflects membership status at last login).
   const memberStatus = deriveMemberStatus({
-    role: session.user.role,
-    membershipActive: session.user.membershipActive,
+    role: user?.role ?? session.user.role,
+    membershipActive: user?.membershipActive ?? session.user.membershipActive,
     hasPendingRequest: membershipRequest?.status === 'PENDING',
   })
 
