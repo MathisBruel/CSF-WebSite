@@ -20,6 +20,7 @@ WORKDIR /app
 # Accept build args for environment variables
 ARG NEXT_PUBLIC_TINYMCE_API_KEY
 ARG NEXT_PUBLIC_APP_URL
+ARG NEXT_PUBLIC_RECAPTCHA_SITE_KEY
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
@@ -36,6 +37,7 @@ ENV DATABASE_URL="postgresql://placeholder:placeholder@localhost:5432/placeholde
 # Set environment variables from build args
 ENV NEXT_PUBLIC_TINYMCE_API_KEY=${NEXT_PUBLIC_TINYMCE_API_KEY}
 ENV NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL}
+ENV NEXT_PUBLIC_RECAPTCHA_SITE_KEY=${NEXT_PUBLIC_RECAPTCHA_SITE_KEY}
 
 RUN npm run build
 

@@ -30,6 +30,7 @@ services:
       args:
         NEXT_PUBLIC_TINYMCE_API_KEY: "jqucktk668y6nwry9pbxt0g74jxal4iu4c27hf1t94hp5aif"
         NEXT_PUBLIC_APP_URL: "https://assocsf.fr"
+        NEXT_PUBLIC_RECAPTCHA_SITE_KEY: "${NEXT_PUBLIC_RECAPTCHA_SITE_KEY}"
     container_name: csf_app
     restart: unless-stopped
     ports:
@@ -42,6 +43,8 @@ services:
       NEXT_PUBLIC_UPLOAD_URL: "/uploads"
       NEXT_PUBLIC_APP_URL: "http://localhost:3000"
       NEXT_PUBLIC_TINYMCE_API_KEY: "jqucktk668y6nwry9pbxt0g74jxal4iu4c27hf1t94hp5aif"
+      NEXT_PUBLIC_RECAPTCHA_SITE_KEY: "${NEXT_PUBLIC_RECAPTCHA_SITE_KEY}"
+      RECAPTCHA_SECRET_KEY: "${RECAPTCHA_SECRET_KEY}"
     volumes:
       - uploads_data:/app/public/uploads
     depends_on:
