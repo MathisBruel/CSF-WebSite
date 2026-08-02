@@ -382,6 +382,18 @@ model EmailVerificationToken {
   @@map("email_verification_tokens")
 }
 
+// ─── Password Reset ───────────────────────────────────────────────────────────
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@map("password_reset_tokens")
+}
+
 // ─── Pricing ──────────────────────────────────────────────────────────────────
 
 model Pricing {

@@ -63,7 +63,12 @@ export function LoginForm() {
           {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email.message}</p>}
         </div>
         <div>
-          <label className="form-label">Mot de passe</label>
+          <div className="flex items-center justify-between">
+            <label className="form-label">Mot de passe</label>
+            <Link href="/forgot-password" className="text-xs text-csf-orange hover:text-csf-orange-dark font-medium">
+              Mot de passe oublié ?
+            </Link>
+          </div>
           <input {...register('password')} type="password" className="form-input" placeholder="••••••••" autoComplete="current-password" />
           {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password.message}</p>}
         </div>

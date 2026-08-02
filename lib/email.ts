@@ -105,6 +105,19 @@ export async function sendVerificationEmail(user: { name: string; email: string 
   await send(user.email, `Confirmez votre email — ${APP_NAME}`, html)
 }
 
+export async function sendPasswordResetEmail(user: { name: string; email: string }, token: string) {
+  const url = `${APP_URL}/reset-password?token=${token}`
+  const html = baseTemplate('Réinitialisation du mot de passe', `
+    <h2 style="color:#C44B0C;margin-top:0;">Réinitialisation du mot de passe</h2>
+    <p>Bonjour ${user.name},</p>
+    <p>Vous avez demandé la réinitialisation de votre mot de passe sur <strong>${APP_NAME}</strong>.</p>
+    <p>Cliquez sur le bouton ci-dessous pour choisir un nouveau mot de passe :</p>
+    ${btn(url, 'Réinitialiser mon mot de passe')}
+    <p style="margin-top:20px;font-size:13px;color:#666;">Ce lien expire dans 1 heure. Si vous n'êtes pas à l'origine de cette demande, ignorez cet email.</p>
+  `)
+  await send(user.email, `Réinitialisation du mot de passe — ${APP_NAME}`, html)
+}
+
 // ── Adhésion ─────────────────────────────────────────────────────────────────
 
 export async function sendMembershipRequestReceivedEmail(user: { name: string; email: string }) {
