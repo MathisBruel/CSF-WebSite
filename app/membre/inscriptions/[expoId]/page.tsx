@@ -12,7 +12,7 @@ export default async function InscriptionPage({ params }: Props) {
   const session = await auth()
   if (!session) redirect('/login')
 
-  const [expo, cats, userRecord, globalPricing] = await Promise.all([
+  const [expo, cats, userRecord, globalPricing, pendingMembershipRequest] = await Promise.all([
     prisma.exhibition.findUnique({
       where: { id: params.expoId },
       include: { specials: { orderBy: { createdAt: 'asc' } } },
@@ -23,6 +23,7 @@ export default async function InscriptionPage({ params }: Props) {
     }),
     prisma.user.findUnique({ where: { id: session.user.id }, select: { membershipActive: true } }),
     prisma.pricing.findFirst(),
+    prisma.membershipRequest.findFirst({ where: { userId: session.user.id, status: 'PENDING' } }),
   ])
 
   if (!expo || expo.status !== ExhibitionStatus.OPEN) notFound()
@@ -56,6 +57,7 @@ export default async function InscriptionPage({ params }: Props) {
         cats={JSON.parse(JSON.stringify(availableCats))}
         pricing={pricing}
         isMember={isMember}
+        hasPendingMembershipRequest={!!pendingMembershipRequest}
       />
     </div>
   )

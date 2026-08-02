@@ -35,11 +35,13 @@ export function RegistrationWizard({
   cats,
   pricing,
   isMember,
+  hasPendingMembershipRequest,
 }: {
   exhibition: Exhibition & { specials: ExhibitionSpecial[] }
   cats: (Cat & { isHouseCat: boolean })[]
   pricing: GlobalPricing
   isMember: boolean
+  hasPendingMembershipRequest: boolean
 }) {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -210,6 +212,38 @@ export function RegistrationWizard({
           </span>
         )}
       </div>
+
+      {!isMember && hasPendingMembershipRequest && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3">
+          <svg className="w-5 h-5 text-amber-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+          <div>
+            <p className="font-medium text-amber-800">Votre demande d&apos;adhésion est en attente de validation</p>
+            <p className="text-sm text-amber-700 mt-1">
+              Les tarifs appliqués à cette inscription sont donc les tarifs non-adhérent. Pour profiter des tarifs
+              réduits, attendez que le bureau valide votre adhésion avant de vous inscrire.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {!isMember && !hasPendingMembershipRequest && (
+        <div className="bg-orange-50 border border-orange-200 rounded-xl p-4 flex items-start gap-3">
+          <svg className="w-5 h-5 text-orange-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+          </svg>
+          <div>
+            <p className="font-medium text-orange-800">Vous n&apos;êtes pas adhérent</p>
+            <p className="text-sm text-orange-700 mt-1">
+              Adhérez pour bénéficier de tarifs réduits sur cette exposition.{' '}
+              <Link href="/membre/dashboard" className="underline font-medium hover:text-orange-800">
+                Faire une demande d&apos;adhésion
+              </Link>
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Progress */}
       <div className="flex items-center">
