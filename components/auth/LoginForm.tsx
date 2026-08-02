@@ -28,8 +28,7 @@ export function LoginForm() {
   const onSubmit = async (data: FormData) => {
     setError('')
 
-    const recaptchaToken = await recaptchaRef.current?.executeAsync()
-    recaptchaRef.current?.reset()
+    const recaptchaToken = recaptchaRef.current?.getValue()
     if (!recaptchaToken) {
       setError('Merci de valider le captcha.')
       return
@@ -41,6 +40,8 @@ export function LoginForm() {
       recaptchaToken,
       redirect: false,
     })
+
+    recaptchaRef.current?.reset()
 
     if (result?.error) {
       if (result.error === 'EMAIL_NOT_VERIFIED') {
@@ -85,11 +86,12 @@ export function LoginForm() {
           <input {...register('password')} type="password" className="form-input" placeholder="••••••••" autoComplete="current-password" />
           {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password.message}</p>}
         </div>
-        <ReCAPTCHA
-          ref={recaptchaRef}
-          size="invisible"
-          sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || ''}
-        />
+        <div className="flex justify-center">
+          <ReCAPTCHA
+            ref={recaptchaRef}
+            sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || ''}
+          />
+        </div>
 
         <button type="submit" disabled={isSubmitting} className="btn-primary w-full mt-2">
           {isSubmitting ? 'Connexion...' : 'Se connecter'}
