@@ -82,7 +82,7 @@ export default async function MemberDashboard() {
       )
     }
 
-    if (!membershipRequest || membershipRequest.status === 'REJECTED') {
+    if (memberStatus === 'none') {
       return (
         <div className="bg-orange-50 border border-orange-200 rounded-xl p-4 flex items-start gap-3">
           <svg className="w-5 h-5 text-orange-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -114,7 +114,7 @@ export default async function MemberDashboard() {
       )
     }
 
-    if (membershipRequest.status === 'PENDING') {
+    if (memberStatus === 'pending' && membershipRequest) {
       return (
         <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
           <div className="flex items-start gap-3">
