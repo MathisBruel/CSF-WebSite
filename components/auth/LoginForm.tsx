@@ -1,12 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { signIn } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
+import ReCAPTCHA from 'react-google-recaptcha'
 
 const schema = z.object({
   email: z.string().email('Email invalide'),
@@ -19,21 +20,33 @@ export function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [error, setError] = useState('')
+  const recaptchaRef = useRef<ReCAPTCHA>(null)
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
   })
 
   const onSubmit = async (data: FormData) => {
     setError('')
+
+    const recaptchaToken = await recaptchaRef.current?.executeAsync()
+    recaptchaRef.current?.reset()
+    if (!recaptchaToken) {
+      setError('Merci de valider le captcha.')
+      return
+    }
+
     const result = await signIn('credentials', {
       email: data.email,
       password: data.password,
+      recaptchaToken,
       redirect: false,
     })
 
     if (result?.error) {
       if (result.error === 'EMAIL_NOT_VERIFIED') {
         setError('Votre email n\'est pas encore confirmé. Vérifiez votre boîte mail.')
+      } else if (result.error === 'CAPTCHA_FAILED') {
+        setError('Vérification captcha échouée. Merci de réessayer.')
       } else {
         setError('Email ou mot de passe incorrect.')
       }
@@ -72,6 +85,12 @@ export function LoginForm() {
           <input {...register('password')} type="password" className="form-input" placeholder="••••••••" autoComplete="current-password" />
           {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password.message}</p>}
         </div>
+        <ReCAPTCHA
+          ref={recaptchaRef}
+          size="invisible"
+          sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || ''}
+        />
+
         <button type="submit" disabled={isSubmitting} className="btn-primary w-full mt-2">
           {isSubmitting ? 'Connexion...' : 'Se connecter'}
         </button>

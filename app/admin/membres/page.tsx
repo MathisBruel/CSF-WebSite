@@ -1,25 +1,17 @@
 import { prisma } from '@/lib/prisma'
 
 export const dynamic = 'force-dynamic'
-import { formatDate, ROLE_LABELS } from '@/lib/utils'
+import { formatDate } from '@/lib/utils'
 import { MemberActions } from '@/components/admin/MemberActions'
 import { MembershipRequestActions } from '@/components/admin/MembershipRequestActions'
+import { deriveMemberStatus, MEMBER_STATUS_LABELS, type MemberStatus } from '@/lib/membership'
 import type { Prisma } from '@prisma/client'
 
-type MemberStatus = 'admin' | 'active' | 'pending' | 'none'
-
-function memberStatus(member: { role: string; membershipActive: boolean; membershipRequests: { id: string }[] }): MemberStatus {
-  if (member.role === 'ADMIN') return 'admin'
-  if (member.membershipActive) return 'active'
-  if (member.membershipRequests.length > 0) return 'pending'
-  return 'none'
-}
-
-const STATUS_BADGES: Record<MemberStatus, { label: string; className: string }> = {
-  admin: { label: 'Administrateur', className: 'badge-purple' },
-  active: { label: 'Adhérent', className: 'badge-green' },
-  pending: { label: 'En attente de validation', className: 'badge-yellow' },
-  none: { label: 'Pas adhérent', className: 'badge-gray' },
+const STATUS_BADGE_CLASS: Record<MemberStatus, string> = {
+  admin: 'badge-purple',
+  active: 'badge-green',
+  pending: 'badge-yellow',
+  none: 'badge-gray',
 }
 
 function statusWhere(status: MemberStatus): Prisma.UserWhereInput {
@@ -73,10 +65,10 @@ export default async function AdminMembres({
 
   const filters: { label: string; value: MemberStatus | undefined; count: number }[] = [
     { label: 'Tous', value: undefined, count: total },
-    { label: 'Administrateurs', value: 'admin', count: admin },
-    { label: 'Adhérents', value: 'active', count: active },
-    { label: 'En attente de validation', value: 'pending', count: pending },
-    { label: 'Pas adhérents', value: 'none', count: none },
+    { label: MEMBER_STATUS_LABELS.admin, value: 'admin', count: admin },
+    { label: MEMBER_STATUS_LABELS.active, value: 'active', count: active },
+    { label: MEMBER_STATUS_LABELS.pending, value: 'pending', count: pending },
+    { label: MEMBER_STATUS_LABELS.none, value: 'none', count: none },
   ]
 
   return (
@@ -144,7 +136,6 @@ export default async function AdminMembres({
             <tr>
               <th className="text-left px-4 py-3 font-medium text-csf-muted">Membre</th>
               <th className="text-left px-4 py-3 font-medium text-csf-muted">Statut</th>
-              <th className="text-left px-4 py-3 font-medium text-csf-muted">Rôle</th>
               <th className="text-left px-4 py-3 font-medium text-csf-muted">Chats</th>
               <th className="text-left px-4 py-3 font-medium text-csf-muted">Inscrit le</th>
               <th className="text-left px-4 py-3 font-medium text-csf-muted">Actions</th>
@@ -152,9 +143,11 @@ export default async function AdminMembres({
           </thead>
           <tbody className="divide-y divide-gray-100">
             {members.map((member) => {
-              const status = memberStatus(member)
-              const badge = STATUS_BADGES[status]
-              const pendingRequestId = member.membershipRequests[0]?.id ?? null
+              const status = deriveMemberStatus({
+                role: member.role,
+                membershipActive: member.membershipActive,
+                hasPendingRequest: member.membershipRequests.length > 0,
+              })
               return (
                 <tr key={member.id} className="hover:bg-gray-50">
                   <td className="px-4 py-3">
@@ -162,10 +155,7 @@ export default async function AdminMembres({
                     <p className="text-xs text-csf-muted">{member.email}</p>
                   </td>
                   <td className="px-4 py-3">
-                    <span className={badge.className}>{badge.label}</span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className="badge badge-blue">{ROLE_LABELS[member.role]}</span>
+                    <span className={STATUS_BADGE_CLASS[status]}>{MEMBER_STATUS_LABELS[status]}</span>
                   </td>
                   <td className="px-4 py-3 text-center">
                     <span className="font-medium">{member._count.cats}</span>
@@ -173,7 +163,7 @@ export default async function AdminMembres({
                   </td>
                   <td className="px-4 py-3 text-csf-muted">{formatDate(member.createdAt)}</td>
                   <td className="px-4 py-3">
-                    <MemberActions memberId={member.id} active={member.membershipActive} role={member.role} pendingRequestId={pendingRequestId} />
+                    <MemberActions memberId={member.id} status={status} />
                   </td>
                 </tr>
               )

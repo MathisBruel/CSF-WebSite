@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { sendVerificationEmail } from '@/lib/email'
+import { verifyRecaptcha } from '@/lib/recaptcha'
 import bcrypt from 'bcryptjs'
 import crypto from 'crypto'
 import { z } from 'zod'
@@ -24,12 +25,18 @@ const registerSchema = z.object({
   phone: z.string().optional(),
   wantsAdhesion: z.boolean().default(false),
   newsletterSubscribed: z.boolean().default(true),
+  recaptchaToken: z.string().min(1, 'Captcha requis'),
 })
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
     const data = registerSchema.parse(body)
+
+    const captchaValid = await verifyRecaptcha(data.recaptchaToken)
+    if (!captchaValid) {
+      return NextResponse.json({ error: 'Vérification captcha échouée.' }, { status: 400 })
+    }
 
     const existing = await prisma.user.findUnique({ where: { email: data.email } })
     if (existing) {

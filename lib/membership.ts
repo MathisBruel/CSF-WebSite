@@ -1,5 +1,21 @@
 import { prisma } from './prisma'
 
+export type MemberStatus = 'none' | 'pending' | 'active' | 'admin'
+
+export const MEMBER_STATUS_LABELS: Record<MemberStatus, string> = {
+  none: 'Pas adhérent',
+  pending: 'En attente de validation',
+  active: 'Adhérent',
+  admin: 'Administrateur',
+}
+
+export function deriveMemberStatus(member: { role: string; membershipActive: boolean; hasPendingRequest: boolean }): MemberStatus {
+  if (member.role === 'ADMIN') return 'admin'
+  if (member.membershipActive) return 'active'
+  if (member.hasPendingRequest) return 'pending'
+  return 'none'
+}
+
 export async function getMembershipPaymentConfig() {
   const configs = await prisma.siteConfig.findMany({
     where: {

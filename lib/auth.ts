@@ -3,6 +3,7 @@ import CredentialsProvider from 'next-auth/providers/credentials'
 import { PrismaAdapter } from '@auth/prisma-adapter'
 import bcrypt from 'bcryptjs'
 import { prisma } from '@/lib/prisma'
+import { verifyRecaptcha } from '@/lib/recaptcha'
 import type { Role } from '@prisma/client'
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
@@ -21,9 +22,13 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       credentials: {
         email: { label: 'Email', type: 'email' },
         password: { label: 'Mot de passe', type: 'password' },
+        recaptchaToken: { label: 'Captcha', type: 'text' },
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null
+
+        const captchaValid = await verifyRecaptcha(credentials.recaptchaToken as string)
+        if (!captchaValid) throw new Error('CAPTCHA_FAILED')
 
         const user = await prisma.user.findUnique({
           where: { email: credentials.email as string },

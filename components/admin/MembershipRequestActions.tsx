@@ -15,7 +15,7 @@ export function MembershipRequestActions({ requestId }: { requestId: string }) {
     } else if (type === 'remind') {
       if (!window.confirm('Renvoyer le mail de relance pour le règlement de la cotisation ?')) return
     } else {
-      if (!window.confirm('Approuver cette demande ? Le membre passera adhérent actif et recevra un email de confirmation.')) return
+      if (!window.confirm('Valider cette demande ? Le membre passera Adhérent et recevra un email de confirmation.')) return
     }
 
     setLoading(true)
@@ -47,7 +47,7 @@ export function MembershipRequestActions({ requestId }: { requestId: string }) {
         onClick={() => action('approve')}
         disabled={loading}
         className="px-3 py-1.5 bg-green-50 text-green-700 text-xs font-medium rounded-lg hover:bg-green-100 transition-colors">
-        Approuver
+        Valider
       </button>
       <button
         onClick={() => action('reject')}

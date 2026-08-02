@@ -3,58 +3,42 @@
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { useSession } from 'next-auth/react'
-import type { Role } from '@prisma/client'
+import { MEMBER_STATUS_LABELS, type MemberStatus } from '@/lib/membership'
 
-export function MemberActions({ memberId, active, role, pendingRequestId }: { memberId: string; active: boolean; role: Role; pendingRequestId: string | null }) {
+const STATUS_OPTIONS: MemberStatus[] = ['none', 'pending', 'active', 'admin']
+
+export function MemberActions({ memberId, status }: { memberId: string; status: MemberStatus }) {
   const router = useRouter()
   const { data: session } = useSession()
   const [loading, setLoading] = useState(false)
   const [confirmAdmin, setConfirmAdmin] = useState(false)
 
   const isSelf = session?.user?.id === memberId
+  const isSelfAdmin = isSelf && status === 'admin'
 
-  const toggle = async () => {
-    setLoading(true)
-    if (!active && pendingRequestId) {
-      // Go through the membership-request flow so the request is resolved and the member is notified.
-      await fetch(`/api/admin/membership-requests/${pendingRequestId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'approve' }),
-      })
-    } else {
-      await fetch(`/api/admin/members/${memberId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ membershipActive: !active }),
-      })
-    }
-    setLoading(false)
-    router.refresh()
-  }
-
-  const changeRole = async (newRole: Role) => {
-    // Prevent self-demotion from admin
-    if (isSelf && role === 'ADMIN' && newRole !== 'ADMIN') {
-      alert('Vous ne pouvez pas retirer votre propre rôle administrateur.')
-      return
-    }
-
-    // Confirm before promoting to admin
-    if (newRole === 'ADMIN' && !confirmAdmin) {
-      setConfirmAdmin(true)
-      return
-    }
-
+  const applyStatus = async (newStatus: MemberStatus) => {
     setLoading(true)
     setConfirmAdmin(false)
     await fetch(`/api/admin/members/${memberId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ role: newRole }),
+      body: JSON.stringify({ status: newStatus }),
     })
     setLoading(false)
     router.refresh()
+  }
+
+  const requestStatusChange = (newStatus: MemberStatus) => {
+    if (newStatus === status) return
+    if (isSelfAdmin) {
+      alert('Vous ne pouvez pas retirer votre propre rôle administrateur.')
+      return
+    }
+    if (newStatus === 'admin') {
+      setConfirmAdmin(true)
+      return
+    }
+    applyStatus(newStatus)
   }
 
   const handleDelete = async () => {
@@ -70,14 +54,14 @@ export function MemberActions({ memberId, active, role, pendingRequestId }: { me
     const res = await fetch(`/api/admin/members/${memberId}`, {
       method: 'DELETE',
     })
-    
+
     if (!res.ok) {
       const data = await res.json()
       alert(data.error || 'Erreur lors de la suppression')
       setLoading(false)
       return
     }
-    
+
     setLoading(false)
     router.refresh()
   }
@@ -98,22 +82,11 @@ export function MemberActions({ memberId, active, role, pendingRequestId }: { me
         </svg>
       </button>
 
-      <button
-        onClick={toggle}
-        disabled={loading}
-        className={`px-2.5 py-1 text-xs font-medium rounded-lg transition-colors ${
-          active
-            ? 'bg-red-50 text-red-600 hover:bg-red-100'
-            : 'bg-green-50 text-green-700 hover:bg-green-100'
-        }`}>
-        {active ? 'Révoquer' : pendingRequestId ? 'Approuver' : 'Activer'}
-      </button>
-
       {confirmAdmin ? (
         <div className="flex items-center gap-1">
           <span className="text-xs text-amber-600 font-medium">Confirmer Admin ?</span>
           <button
-            onClick={() => changeRole('ADMIN' as Role)}
+            onClick={() => applyStatus('admin')}
             className="px-2 py-0.5 text-xs bg-amber-500 text-white rounded hover:bg-amber-600">
             Oui
           </button>
@@ -125,17 +98,17 @@ export function MemberActions({ memberId, active, role, pendingRequestId }: { me
         </div>
       ) : (
         <select
-          value={role}
-          onChange={(e) => changeRole(e.target.value as Role)}
-          disabled={loading || (isSelf && role === 'ADMIN')}
+          value={status}
+          onChange={(e) => requestStatusChange(e.target.value as MemberStatus)}
+          disabled={loading || isSelfAdmin}
           className={`text-xs border border-gray-300 rounded-lg px-2 py-1 focus:outline-none ${
-            role === 'ADMIN'
+            status === 'admin'
               ? 'bg-amber-50 text-amber-700 border-amber-300 font-medium'
               : 'text-csf-dark'
-          } ${isSelf && role === 'ADMIN' ? 'opacity-50 cursor-not-allowed' : ''}`}>
-          <option value="ADHERENT_CLUB">Adhérent</option>
-          <option value="MEMBRE_ACTIF">Membre Actif</option>
-          <option value="ADMIN">Admin</option>
+          } ${isSelfAdmin ? 'opacity-50 cursor-not-allowed' : ''}`}>
+          {STATUS_OPTIONS.map((s) => (
+            <option key={s} value={s}>{MEMBER_STATUS_LABELS[s]}</option>
+          ))}
         </select>
       )}
     </div>

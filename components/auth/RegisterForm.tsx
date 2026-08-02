@@ -1,11 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useForm, useWatch } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
+import ReCAPTCHA from 'react-google-recaptcha'
 import { AddressAutocomplete } from './AddressAutocomplete'
 
 const schema = z.object({
@@ -50,6 +51,7 @@ const Req = () => <span className="text-red-500 ml-0.5">*</span>
 export function RegisterForm({ membershipPrice }: { membershipPrice?: string }) {
   const router = useRouter()
   const [error, setError] = useState('')
+  const recaptchaRef = useRef<ReCAPTCHA>(null)
 
   const {
     register,
@@ -72,12 +74,21 @@ export function RegisterForm({ membershipPrice }: { membershipPrice?: string }) 
 
   const onSubmit = async (data: FormData) => {
     setError('')
+
+    const recaptchaToken = recaptchaRef.current?.getValue()
+    if (!recaptchaToken) {
+      setError('Merci de valider le captcha.')
+      return
+    }
+
     const { confirmPassword, ...payload } = data
     const res = await fetch('/api/auth/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
+      body: JSON.stringify({ ...payload, recaptchaToken }),
     })
+
+    recaptchaRef.current?.reset()
 
     if (!res.ok) {
       const body = await res.json()
@@ -287,6 +298,13 @@ export function RegisterForm({ membershipPrice }: { membershipPrice?: string }) 
               Je souhaite recevoir la newsletter du club
             </span>
           </label>
+        </div>
+
+        <div className="mt-4 flex justify-center">
+          <ReCAPTCHA
+            ref={recaptchaRef}
+            sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || ''}
+          />
         </div>
 
         <button type="submit" disabled={isSubmitting} className="btn-primary w-full mt-6">

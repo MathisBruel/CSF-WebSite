@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 export const dynamic = 'force-dynamic'
 import { formatDate } from '@/lib/utils'
 import { ExhibitionStatus } from '@prisma/client'
+import { auth } from '@/lib/auth'
 
 async function getData() {
   const [latestNews, upcomingExpos, membershipPriceConfig] = await Promise.all([
@@ -24,7 +25,8 @@ async function getData() {
 }
 
 export default async function HomePage() {
-  const { latestNews, upcomingExpos, membershipPrice } = await getData()
+  const [{ latestNews, upcomingExpos, membershipPrice }, session] = await Promise.all([getData(), auth()])
+  const membershipHref = session ? '/membre/dashboard' : '/register'
 
   return (
     <>
@@ -53,7 +55,7 @@ export default async function HomePage() {
               <Link href="/expositions" className="btn-primary">
                 Voir les expositions
               </Link>
-              <Link href="/register"
+              <Link href={membershipHref}
                 className="inline-flex items-center px-6 py-3 border-2 border-white/30 text-white font-semibold rounded-lg hover:bg-white/10 transition-colors">
                 Devenir membre
               </Link>
@@ -177,7 +179,7 @@ export default async function HomePage() {
             {membershipPrice && ` Cotisation annuelle : ${membershipPrice} €.`}
           </p>
           <div className="flex flex-wrap justify-center gap-4">
-            <Link href="/register"
+            <Link href={membershipHref}
               className="px-8 py-3 bg-white text-csf-orange font-bold rounded-lg hover:bg-csf-cream transition-colors">
               Adhérer maintenant
             </Link>

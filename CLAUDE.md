@@ -79,6 +79,6 @@ Core entities and their relationships:
 
 ### Environment variables
 
-Required: `DATABASE_URL`, `NEXTAUTH_SECRET`, `NEXTAUTH_URL`, `UPLOAD_DIR`, `NEXT_PUBLIC_UPLOAD_URL`, `NEXT_PUBLIC_APP_URL`, `NEXT_PUBLIC_TINYMCE_API_KEY`.
+Required: `DATABASE_URL`, `NEXTAUTH_SECRET`, `NEXTAUTH_URL`, `UPLOAD_DIR`, `NEXT_PUBLIC_UPLOAD_URL`, `NEXT_PUBLIC_APP_URL`, `NEXT_PUBLIC_TINYMCE_API_KEY`, `NEXT_PUBLIC_RECAPTCHA_SITE_KEY`, `RECAPTCHA_SECRET_KEY`.
 
 See `.env.example` for all values and their expected format.

@@ -54,7 +54,7 @@ export default async function MemberDashboard() {
 
   // Membership banner logic
   const renderMembershipBanner = () => {
-    if (session.user.membershipActive) return null
+    if (session.user.membershipActive || session.user.role === 'ADMIN') return null
 
     if (!membershipRequest || membershipRequest.status === 'REJECTED') {
       return (
@@ -73,9 +73,9 @@ export default async function MemberDashboard() {
               </>
             ) : (
               <>
-                <p className="font-medium text-orange-800">Vous n&apos;êtes pas encore adhérent</p>
+                <p className="font-medium text-orange-800">Vous n&apos;êtes pas adhérent</p>
                 <p className="text-sm text-orange-700">
-                  Demandez votre adhésion pour accéder à toutes les fonctionnalités du club et aux tarifs préférentiels.
+                  L&apos;adhésion n&apos;est pas obligatoire, mais elle donne accès aux tarifs préférentiels sur les expositions.
                   {priceLabel && ` Cotisation annuelle : ${priceLabel}.`}
                 </p>
               </>
