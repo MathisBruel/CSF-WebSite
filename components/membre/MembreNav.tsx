@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
@@ -14,8 +15,62 @@ const navItems = [
 
 export function MembreNav({ user }: { user: { name: string; role: string } }) {
   const pathname = usePathname()
+  const [menuOpen, setMenuOpen] = useState(false)
 
   return (
+    <>
+    {/* Mobile top bar */}
+    <div className="lg:hidden sticky top-0 z-50 bg-csf-dark text-white">
+      <div className="flex items-center justify-between px-4 h-14">
+        <Link href="/" className="flex items-center gap-2">
+          <div className="relative w-7 h-7 flex-shrink-0">
+            <Image src="/images/logo-circle.png" alt="CSF" fill className="object-contain" sizes="28px" />
+          </div>
+          <span className="text-sm font-medium text-csf-light">Espace membre</span>
+        </Link>
+        <button className="p-2 rounded-lg hover:bg-white/10 transition-colors" onClick={() => setMenuOpen(!menuOpen)}>
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            {menuOpen
+              ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              : <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />}
+          </svg>
+        </button>
+      </div>
+      {menuOpen && (
+        <div className="border-t border-white/10 px-4 pb-4 pt-2 space-y-1">
+          {navItems.map(({ href, icon: Icon, label }) => {
+            const active = pathname === href || pathname.startsWith(href + '/')
+            return (
+              <Link key={href} href={href} onClick={() => setMenuOpen(false)}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
+                  active ? 'bg-csf-orange text-white' : 'text-csf-light/80 hover:bg-white/10 hover:text-white'
+                }`}>
+                <Icon className="w-5 h-5 flex-shrink-0" />
+                {label}
+              </Link>
+            )
+          })}
+          {user.role === 'ADMIN' && (
+            <>
+              <div className="border-t border-white/10 my-2" />
+              <Link href="/admin" onClick={() => setMenuOpen(false)}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
+                  pathname.startsWith('/admin') ? 'bg-csf-orange text-white' : 'text-csf-orange/80 hover:bg-white/10 hover:text-csf-orange'
+                }`}>
+                <ShieldIcon className="w-5 h-5 flex-shrink-0" />
+                Administration
+              </Link>
+            </>
+          )}
+          <div className="border-t border-white/10 my-2" />
+          <button onClick={() => signOut({ callbackUrl: '/' })}
+            className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-red-400 hover:text-red-300 rounded-lg hover:bg-red-900/20 transition-colors">
+            Déconnexion
+          </button>
+        </div>
+      )}
+    </div>
+
     <aside className="w-64 bg-csf-dark text-white flex-shrink-0 hidden lg:flex flex-col">
       {/* Header */}
       <div className="p-6 border-b border-white/10">
@@ -85,6 +140,7 @@ export function MembreNav({ user }: { user: { name: string; role: string } }) {
         </button>
       </div>
     </aside>
+    </>
   )
 }
 
