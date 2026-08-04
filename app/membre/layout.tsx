@@ -1,14 +1,26 @@
 import { auth } from '@/lib/auth'
 import { redirect } from 'next/navigation'
+import { prisma } from '@/lib/prisma'
 import { MembreNav } from '@/components/membre/MembreNav'
 
 export default async function MembreLayout({ children }: { children: React.ReactNode }) {
   const session = await auth()
   if (!session) redirect('/login')
 
+  const dbUser = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { name: true, role: true, membershipActive: true },
+  })
+
+  const user = {
+    name: dbUser?.name ?? session.user.name ?? '',
+    role: dbUser?.role ?? session.user.role ?? 'ADHERENT_CLUB',
+    membershipActive: dbUser?.membershipActive ?? session.user.membershipActive ?? false,
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col lg:flex-row">
-      <MembreNav user={session.user} />
+      <MembreNav user={user} />
       <main className="flex-1 min-w-0 overflow-auto">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {children}

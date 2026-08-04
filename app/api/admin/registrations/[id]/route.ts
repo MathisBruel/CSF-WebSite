@@ -11,6 +11,30 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   }
 
   const data = await req.json()
+
+  // If rejecting, send refusal email and delete the registration so the member can re-register cleanly
+  if (data.status === 'REJECTED') {
+    const reg = await prisma.registration.findUnique({
+      where: { id: params.id },
+      include: {
+        user: { select: { name: true, email: true } },
+        exhibition: { select: { title: true } },
+      },
+    })
+    if (!reg) return NextResponse.json({ error: 'Inscription introuvable' }, { status: 404 })
+
+    if (data.rejectionReason && reg.user.email) {
+      sendRegistrationRejectedEmail(
+        { name: reg.user.name, email: reg.user.email },
+        { title: reg.exhibition.title },
+        data.rejectionReason
+      ).catch(console.error)
+    }
+
+    await prisma.registration.delete({ where: { id: params.id } })
+    return NextResponse.json({ message: 'Inscription refusée et supprimée' })
+  }
+
   const updateData: Record<string, unknown> = {}
 
   if (data.status) updateData.status = data.status as RegistrationStatus
@@ -46,12 +70,6 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       { name: reg.user.name, email: reg.user.email },
       { title: reg.exhibition.title, startDate: reg.exhibition.startDate, city: reg.exhibition.city }
     ).catch(console.error)
-  } else if (data.status === 'REJECTED' && data.rejectionReason) {
-    sendRegistrationRejectedEmail(
-      { name: reg.user.name, email: reg.user.email },
-      { title: reg.exhibition.title },
-      data.rejectionReason
-    ).catch(console.error)
   } else if (data.action === 'remind_payment') {
     prisma.siteConfig.findMany({
       where: { key: { in: ['membership_rib_iban', 'membership_rib_bic', 'membership_rib_holder', 'membership_paypal_link'] } },
@@ -72,4 +90,19 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   }
 
   return NextResponse.json(reg)
+}
+
+export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
+  const session = await auth()
+  if (!session || session.user.role !== 'ADMIN') {
+    return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
+  }
+
+  try {
+    await prisma.registration.delete({ where: { id: params.id } })
+    return NextResponse.json({ message: 'Inscription supprimée' })
+  } catch (err) {
+    console.error(err)
+    return NextResponse.json({ error: 'Erreur lors de la suppression' }, { status: 500 })
+  }
 }

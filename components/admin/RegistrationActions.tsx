@@ -41,6 +41,14 @@ export function RegistrationActions({
     setTimeout(() => setReminded(false), 3000)
   }
 
+  const deleteReg = async () => {
+    if (!window.confirm('Êtes-vous sûr de vouloir supprimer définitivement cette inscription ?')) return
+    setLoading(true)
+    await fetch(`/api/admin/registrations/${registrationId}`, { method: 'DELETE' })
+    setLoading(false)
+    router.refresh()
+  }
+
   return (
     <div className="flex flex-row flex-wrap gap-1.5 items-center justify-end">
       {currentStatus === 'PENDING' && (
@@ -82,11 +90,13 @@ export function RegistrationActions({
         </span>
       )}
 
-      {currentStatus === 'REJECTED' && (
-        <span className="px-3 py-1.5 bg-red-100 text-red-600 text-xs font-medium rounded-lg">
-          Refusée
-        </span>
-      )}
+      <button
+        onClick={deleteReg}
+        disabled={loading}
+        className="px-3 py-1.5 bg-gray-100 text-gray-600 text-xs font-medium rounded-lg hover:bg-red-50 hover:text-red-600 transition-colors"
+      >
+        Supprimer
+      </button>
     </div>
   )
 }

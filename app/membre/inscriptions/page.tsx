@@ -11,7 +11,7 @@ export default async function MesInscriptions() {
   if (!session) return null
 
   const registrations = await prisma.registration.findMany({
-    where: { userId: session.user.id },
+    where: { userId: session.user.id, status: { not: 'REJECTED' } },
     orderBy: { createdAt: 'desc' },
     include: {
       exhibition: { select: { title: true, startDate: true, endDate: true, city: true, slug: true } },

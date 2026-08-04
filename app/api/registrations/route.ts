@@ -73,8 +73,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Un ou plusieurs chats introuvables' }, { status: 404 })
     }
 
-    const existingReg = await prisma.registration.findUnique({
-      where: { exhibitionId_userId: { exhibitionId: data.exhibitionId, userId: session.user.id } },
+    const existingReg = await prisma.registration.findFirst({
+      where: { exhibitionId: data.exhibitionId, userId: session.user.id, status: { not: 'REJECTED' } },
       include: { cats: { select: { catId: true } } },
     })
 

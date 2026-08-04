@@ -28,8 +28,8 @@ export default async function InscriptionPage({ params }: Props) {
 
   if (!expo || expo.status !== ExhibitionStatus.OPEN) notFound()
 
-  const existingReg = await prisma.registration.findUnique({
-    where: { exhibitionId_userId: { exhibitionId: params.expoId, userId: session.user.id } },
+  const existingReg = await prisma.registration.findFirst({
+    where: { exhibitionId: params.expoId, userId: session.user.id, status: { not: 'REJECTED' } },
     select: { cats: { select: { catId: true } } },
   })
 

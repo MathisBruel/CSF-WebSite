@@ -13,7 +13,14 @@ const navItems = [
   { href: '/membre/profil', icon: UserIcon, label: 'Mon profil' },
 ]
 
-export function MembreNav({ user }: { user: { name: string; role: string } }) {
+function getUserStatusLabel(role: string, membershipActive?: boolean) {
+  if (role === 'ADMIN') return 'Administrateur'
+  if (role === 'MEMBRE_ACTIF') return 'Membre Actif'
+  if (membershipActive) return 'Adhérent Club'
+  return 'Non-adhérent'
+}
+
+export function MembreNav({ user }: { user: { name: string; role: string; membershipActive?: boolean } }) {
   const pathname = usePathname()
   const [menuOpen, setMenuOpen] = useState(false)
 
@@ -44,10 +51,7 @@ export function MembreNav({ user }: { user: { name: string; role: string } }) {
             </div>
             <div className="min-w-0">
               <p className="text-sm font-medium text-white truncate">{user.name}</p>
-              <p className="text-xs text-csf-light/60 truncate">{
-                user.role === 'ADMIN' ? 'Administrateur' :
-                user.role === 'MEMBRE_ACTIF' ? 'Membre Actif' : 'Adhérent Club'
-              }</p>
+              <p className="text-xs text-csf-light/60 truncate">{getUserStatusLabel(user.role, user.membershipActive)}</p>
             </div>
           </div>
           {navItems.map(({ href, icon: Icon, label }) => {
@@ -107,10 +111,7 @@ export function MembreNav({ user }: { user: { name: string; role: string } }) {
           </div>
           <div className="min-w-0">
             <p className="text-sm font-medium text-white truncate">{user.name}</p>
-            <p className="text-xs text-csf-light/60 truncate">{
-              user.role === 'ADMIN' ? 'Administrateur' :
-              user.role === 'MEMBRE_ACTIF' ? 'Membre Actif' : 'Adhérent Club'
-            }</p>
+            <p className="text-xs text-csf-light/60 truncate">{getUserStatusLabel(user.role, user.membershipActive)}</p>
           </div>
         </div>
       </div>

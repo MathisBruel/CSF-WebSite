@@ -16,7 +16,7 @@ export default async function MemberDashboard() {
   const [cats, registrations, openExpos, membershipRequest, paymentConfig, user] = await Promise.all([
     prisma.cat.count({ where: { ownerId: userId } }),
     prisma.registration.findMany({
-      where: { userId },
+      where: { userId, status: { not: 'REJECTED' } },
       take: 5,
       orderBy: { createdAt: 'desc' },
       include: {
