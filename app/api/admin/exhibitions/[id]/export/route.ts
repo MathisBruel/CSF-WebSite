@@ -150,7 +150,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
         class_sun: rc.traditionalClassSunday ?? '',
         hc: rc.isHorsConcours ? 'Oui' : '',
         house_cat: rc.isHouseCat ? 'Oui' : '',
-        conform: rc.wantsComplianceExam ? 'Oui' : '',
+        conform: rc.isConformityOnly ? 'Seule' : rc.wantsComplianceExam ? 'Oui' : '',
         diploma: rc.wantsDiploma ? 'Oui' : '',
         total: reg.totalAmount,
       })

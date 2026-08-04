@@ -14,6 +14,7 @@ type CatEntry = {
   traditionalClassSaturday: string
   traditionalClassSunday: string
   wantsComplianceExam: boolean
+  isConformityOnly: boolean
   specialParticipations: string[]
 }
 
@@ -22,6 +23,7 @@ const defaultCatEntry = (): CatEntry => ({
   traditionalClassSaturday: '',
   traditionalClassSunday: '',
   wantsComplianceExam: false,
+  isConformityOnly: false,
   specialParticipations: [],
 })
 
@@ -109,6 +111,8 @@ export function RegistrationWizard({
 
   const selectedCats = cats.filter((c) => selectedCatIds.includes(c.id))
 
+  const allConformityOnly = selectedCatIds.length > 0 && selectedCatIds.every((id) => (catOptions[id] ?? defaultCatEntry()).isConformityOnly)
+
   const catPrices = selectedCatIds.map((catId, idx) => {
     const cat = cats.find((c) => c.id === catId)
     if (!cat) return 0
@@ -117,10 +121,11 @@ export function RegistrationWizard({
       idx + 1,
       opts.participationDays,
       cat.isHouseCat,
-      opts.wantsComplianceExam,
+      opts.wantsComplianceExam || opts.isConformityOnly,
       false,
       isMember,
-      pricing
+      pricing,
+      opts.isConformityOnly
     )
   })
   const catsTotal = catPrices.reduce((s, p) => s + p, 0)
@@ -131,6 +136,7 @@ export function RegistrationWizard({
   const isCatOptionsValid = (catId: string) => {
     const opts = catOptions[catId] ?? defaultCatEntry()
     if (opts.participationDays.length === 0) return false
+    if (opts.isConformityOnly) return true
     if (opts.participationDays.includes('Samedi') && opts.traditionalClassSaturday === '') return false
     if (opts.participationDays.includes('Dimanche') && opts.traditionalClassSunday === '') return false
     return true
@@ -151,13 +157,17 @@ export function RegistrationWizard({
     setError('')
     const payload = {
       exhibitionId: exhibition.id,
-      cats: selectedCatIds.map((catId) => ({
-        catId,
-        ...(catOptions[catId] ?? defaultCatEntry()),
-      })),
-      borrowedCages: wantsBorrowedCages ? borrowedCages : 0,
-      cageSpecialLengthRequest: wantsSpecialCage ? cageSpecialRequest : undefined,
-      nextTo: nextTo || undefined,
+      cats: selectedCatIds.map((catId) => {
+        const opts = catOptions[catId] ?? defaultCatEntry()
+        return {
+          catId,
+          ...opts,
+          wantsComplianceExam: opts.wantsComplianceExam || opts.isConformityOnly,
+        }
+      }),
+      borrowedCages: allConformityOnly ? 0 : (wantsBorrowedCages ? borrowedCages : 0),
+      cageSpecialLengthRequest: allConformityOnly ? undefined : (wantsSpecialCage ? cageSpecialRequest : undefined),
+      nextTo: allConformityOnly ? undefined : (nextTo || undefined),
       comment: comment || undefined,
     }
     const res = await fetch('/api/registrations', {
@@ -175,8 +185,8 @@ export function RegistrationWizard({
     router.refresh()
   }
 
-  const steps: Step[] = ['cats', 'options', 'cage', 'summary']
-  const stepLabels = ['Chats', 'Options', 'Cage', 'Récapitulatif']
+  const steps: Step[] = allConformityOnly ? ['cats', 'options', 'summary'] : ['cats', 'options', 'cage', 'summary']
+  const stepLabels = allConformityOnly ? ['Chats', 'Options', 'Récapitulatif'] : ['Chats', 'Options', 'Cage', 'Récapitulatif']
   const currentStepIdx = steps.indexOf(step)
 
   if (step === 'done') {
@@ -329,10 +339,11 @@ export function RegistrationWizard({
                   idx + 1,
                   opts.participationDays,
                   cat.isHouseCat,
-                  opts.wantsComplianceExam,
+                  opts.wantsComplianceExam || opts.isConformityOnly,
                   false,
                   isMember,
-                  pricing
+                  pricing,
+                  opts.isConformityOnly
                 )
                 const availableClasses = computeAvailableClasses(
                   new Date(cat.birthDate),
@@ -350,11 +361,45 @@ export function RegistrationWizard({
                         {cat.isHouseCat && (
                           <span className="ml-2 text-xs px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded">Chat de maison</span>
                         )}
+                        {opts.isConformityOnly && (
+                          <span className="ml-2 text-xs px-1.5 py-0.5 bg-orange-100 text-orange-700 font-medium rounded">Conformité seule</span>
+                        )}
                       </h3>
                       <span className="text-sm font-semibold text-csf-orange">{formatPrice(catPrice)}</span>
                     </div>
 
                     <div className="space-y-4">
+                      {/* Checkbox "S'inscrire seulement pour une conformité" */}
+                      <div className="p-3 bg-orange-50/70 border border-orange-200 rounded-lg">
+                        <label className="flex items-start gap-2.5 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={opts.isConformityOnly}
+                            onChange={(e) => {
+                              const checked = e.target.checked
+                              update('isConformityOnly', checked)
+                              if (checked) {
+                                update('wantsComplianceExam', true)
+                              }
+                            }}
+                            className="mt-0.5 text-csf-orange rounded w-4 h-4"
+                          />
+                          <div>
+                            <span className="text-sm font-semibold text-csf-dark">
+                              S&apos;inscrire seulement pour une conformité
+                            </span>
+                            <span className="ml-2 text-xs text-csf-orange font-bold">
+                              ({formatPrice(isMember ? pricing.memberConformite : pricing.nonMemberConformite)})
+                            </span>
+                            {opts.isConformityOnly && (
+                              <p className="text-xs text-csf-muted mt-1">
+                                Seul l&apos;examen de conformité de race sera passé. Pas de concours ni d&apos;emplacement en cage.
+                              </p>
+                            )}
+                          </div>
+                        </label>
+                      </div>
+
                       <div>
                         <label className="form-label text-sm">
                           Jours de participation <span className="text-red-500">*</span>
@@ -380,86 +425,90 @@ export function RegistrationWizard({
                         )}
                       </div>
 
-                      <div>
-                        <label className="form-label text-sm">
-                          Classe de jugement <span className="text-red-500">*</span>
-                        </label>
-                        {availableClasses.length === 0 ? (
-                          <p className="text-sm text-red-500">Chat trop jeune pour cette exposition.</p>
-                        ) : opts.participationDays.length === 0 ? (
-                          <p className="text-sm text-csf-muted">Sélectionner d&apos;abord au moins un jour de participation.</p>
-                        ) : (
-                          <div className="space-y-3">
-                            {opts.participationDays.includes('Samedi') && (
-                              <div>
-                                <label className="text-xs text-csf-muted mb-1 block">Samedi</label>
-                                <select
-                                  className={`form-select ${triedOptionsNext && opts.traditionalClassSaturday === '' ? 'border-red-400' : ''}`}
-                                  value={opts.traditionalClassSaturday}
-                                  onChange={(e) => update('traditionalClassSaturday', e.target.value)}>
-                                  <option value="">Sélectionner une classe</option>
-                                  {availableClasses.map((c) => (
-                                    <option key={c.idClasses} value={c.nom}>{c.nom}</option>
-                                  ))}
-                                </select>
-                                {triedOptionsNext && opts.traditionalClassSaturday === '' && (
-                                  <p className="text-red-500 text-xs mt-1">Classe obligatoire</p>
+                      {!opts.isConformityOnly && (
+                        <>
+                          <div>
+                            <label className="form-label text-sm">
+                              Classe de jugement <span className="text-red-500">*</span>
+                            </label>
+                            {availableClasses.length === 0 ? (
+                              <p className="text-sm text-red-500">Chat trop jeune pour cette exposition.</p>
+                            ) : opts.participationDays.length === 0 ? (
+                              <p className="text-sm text-csf-muted">Sélectionner d&apos;abord au moins un jour de participation.</p>
+                            ) : (
+                              <div className="space-y-3">
+                                {opts.participationDays.includes('Samedi') && (
+                                  <div>
+                                    <label className="text-xs text-csf-muted mb-1 block">Samedi</label>
+                                    <select
+                                      className={`form-select ${triedOptionsNext && opts.traditionalClassSaturday === '' ? 'border-red-400' : ''}`}
+                                      value={opts.traditionalClassSaturday}
+                                      onChange={(e) => update('traditionalClassSaturday', e.target.value)}>
+                                      <option value="">Sélectionner une classe</option>
+                                      {availableClasses.map((c) => (
+                                        <option key={c.idClasses} value={c.nom}>{c.nom}</option>
+                                      ))}
+                                    </select>
+                                    {triedOptionsNext && opts.traditionalClassSaturday === '' && (
+                                      <p className="text-red-500 text-xs mt-1">Classe obligatoire</p>
+                                    )}
+                                  </div>
                                 )}
-                              </div>
-                            )}
-                            {opts.participationDays.includes('Dimanche') && (
-                              <div>
-                                <label className="text-xs text-csf-muted mb-1 block">Dimanche</label>
-                                <select
-                                  className={`form-select ${triedOptionsNext && opts.traditionalClassSunday === '' ? 'border-red-400' : ''}`}
-                                  value={opts.traditionalClassSunday}
-                                  onChange={(e) => update('traditionalClassSunday', e.target.value)}>
-                                  <option value="">Sélectionner une classe</option>
-                                  {availableClasses.map((c) => (
-                                    <option key={c.idClasses} value={c.nom}>{c.nom}</option>
-                                  ))}
-                                </select>
-                                {triedOptionsNext && opts.traditionalClassSunday === '' && (
-                                  <p className="text-red-500 text-xs mt-1">Classe obligatoire</p>
+                                {opts.participationDays.includes('Dimanche') && (
+                                  <div>
+                                    <label className="text-xs text-csf-muted mb-1 block">Dimanche</label>
+                                    <select
+                                      className={`form-select ${triedOptionsNext && opts.traditionalClassSunday === '' ? 'border-red-400' : ''}`}
+                                      value={opts.traditionalClassSunday}
+                                      onChange={(e) => update('traditionalClassSunday', e.target.value)}>
+                                      <option value="">Sélectionner une classe</option>
+                                      {availableClasses.map((c) => (
+                                        <option key={c.idClasses} value={c.nom}>{c.nom}</option>
+                                      ))}
+                                    </select>
+                                    {triedOptionsNext && opts.traditionalClassSunday === '' && (
+                                      <p className="text-red-500 text-xs mt-1">Classe obligatoire</p>
+                                    )}
+                                  </div>
                                 )}
                               </div>
                             )}
                           </div>
-                        )}
-                      </div>
 
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input type="checkbox" checked={opts.wantsComplianceExam}
-                          onChange={(e) => update('wantsComplianceExam', e.target.checked)}
-                          className="text-csf-orange rounded" />
-                        <span className="text-sm">
-                          Examen de conformité{' '}
-                          <span className="text-csf-muted">
-                            (+{formatPrice(isMember ? pricing.memberConformite : pricing.nonMemberConformite)})
-                          </span>
-                        </span>
-                      </label>
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" checked={opts.wantsComplianceExam}
+                              onChange={(e) => update('wantsComplianceExam', e.target.checked)}
+                              className="text-csf-orange rounded" />
+                            <span className="text-sm">
+                              Examen de conformité{' '}
+                              <span className="text-csf-muted">
+                                (+{formatPrice(isMember ? pricing.memberConformite : pricing.nonMemberConformite)})
+                              </span>
+                            </span>
+                          </label>
 
-                      {exhibition.specials.length > 0 && (
-                        <div>
-                          <label className="form-label text-sm">Spéciaux de race</label>
-                          <div className="flex flex-col gap-2">
-                            {exhibition.specials.map((sp) => (
-                              <label key={sp.id} className="flex items-center gap-2 cursor-pointer">
-                                <input type="checkbox"
-                                  checked={opts.specialParticipations.includes(sp.name)}
-                                  onChange={(e) => {
-                                    const newSp = e.target.checked
-                                      ? [...opts.specialParticipations, sp.name]
-                                      : opts.specialParticipations.filter((s) => s !== sp.name)
-                                    update('specialParticipations', newSp)
-                                  }}
-                                  className="text-csf-orange rounded" />
-                                <span className="text-sm">{sp.name}</span>
-                              </label>
-                            ))}
-                          </div>
-                        </div>
+                          {exhibition.specials.length > 0 && (
+                            <div>
+                              <label className="form-label text-sm">Spéciaux de race</label>
+                              <div className="flex flex-col gap-2">
+                                {exhibition.specials.map((sp) => (
+                                  <label key={sp.id} className="flex items-center gap-2 cursor-pointer">
+                                    <input type="checkbox"
+                                      checked={opts.specialParticipations.includes(sp.name)}
+                                      onChange={(e) => {
+                                        const newSp = e.target.checked
+                                          ? [...opts.specialParticipations, sp.name]
+                                          : opts.specialParticipations.filter((s) => s !== sp.name)
+                                        update('specialParticipations', newSp)
+                                      }}
+                                      className="text-csf-orange rounded" />
+                                    <span className="text-sm">{sp.name}</span>
+                                  </label>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </>
                       )}
                     </div>
                   </div>
@@ -468,7 +517,7 @@ export function RegistrationWizard({
             </div>
             {triedOptionsNext && !allCatsOptionsValid && (
               <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-                Chaque chat doit avoir au moins un jour de participation et une classe de jugement.
+                Chaque chat doit avoir au moins un jour de participation et les options requises renseignées.
               </div>
             )}
             <div className="flex justify-between mt-4">
@@ -476,7 +525,7 @@ export function RegistrationWizard({
               <button
                 onClick={() => {
                   setTriedOptionsNext(true)
-                  if (allCatsOptionsValid) setStep('cage')
+                  if (allCatsOptionsValid) setStep(allConformityOnly ? 'summary' : 'cage')
                 }}
                 className="btn-primary">
                 Suivant →
@@ -615,33 +664,41 @@ export function RegistrationWizard({
                     </div>
                     <div className="space-y-0.5 mt-1 text-xs text-csf-muted">
                       {opts.participationDays.length > 0 && <p>{opts.participationDays.join(' + ')}</p>}
-                      {cat.isHouseCat && <p>Chat de maison</p>}
-                      {opts.traditionalClassSaturday && <p>Classe Samedi : {opts.traditionalClassSaturday}</p>}
-                      {opts.traditionalClassSunday && <p>Classe Dimanche : {opts.traditionalClassSunday}</p>}
-                      {opts.wantsComplianceExam && <p>Conformité</p>}
-                      {opts.specialParticipations.length > 0 && <p>Spéciaux : {opts.specialParticipations.join(', ')}</p>}
+                      {opts.isConformityOnly ? (
+                        <p className="font-medium text-csf-orange">Conformité uniquement (sans emplacement)</p>
+                      ) : (
+                        <>
+                          {cat.isHouseCat && <p>Chat de maison</p>}
+                          {opts.traditionalClassSaturday && <p>Classe Samedi : {opts.traditionalClassSaturday}</p>}
+                          {opts.traditionalClassSunday && <p>Classe Dimanche : {opts.traditionalClassSunday}</p>}
+                          {opts.wantsComplianceExam && <p>Conformité</p>}
+                          {opts.specialParticipations.length > 0 && <p>Spéciaux : {opts.specialParticipations.join(', ')}</p>}
+                        </>
+                      )}
                     </div>
                   </div>
                 )
               })}
 
-              <div className="text-csf-muted space-y-0.5">
-                <div className="flex justify-between">
-                  <span>Longueur cage standard</span>
-                  <span className="font-medium text-csf-dark">{standardCageLength} cm</span>
-                </div>
-                {wantsBorrowedCages && (
+              {!allConformityOnly && (
+                <div className="text-csf-muted space-y-0.5">
                   <div className="flex justify-between">
-                    <span>Cage{borrowedCages > 1 ? 's' : ''} empruntée{borrowedCages > 1 ? 's' : ''} au club</span>
-                    <span>{borrowedCages} — caution {formatPrice(pricing.cageDeposit * borrowedCages)} sur place</span>
+                    <span>Longueur cage standard</span>
+                    <span className="font-medium text-csf-dark">{standardCageLength} cm</span>
                   </div>
-                )}
-                {wantsSpecialCage && cageSpecialRequest && (
-                  <p className="text-xs italic">Longueur spéciale : {cageSpecialRequest}</p>
-                )}
-              </div>
+                  {wantsBorrowedCages && (
+                    <div className="flex justify-between">
+                      <span>Cage{borrowedCages > 1 ? 's' : ''} empruntée{borrowedCages > 1 ? 's' : ''} au club</span>
+                      <span>{borrowedCages} — caution {formatPrice(pricing.cageDeposit * borrowedCages)} sur place</span>
+                    </div>
+                  )}
+                  {wantsSpecialCage && cageSpecialRequest && (
+                    <p className="text-xs italic">Longueur spéciale : {cageSpecialRequest}</p>
+                  )}
+                </div>
+              )}
 
-              {nextTo && (
+              {!allConformityOnly && nextTo && (
                 <div className="flex justify-between text-csf-muted">
                   <span>À côté de</span>
                   <span className="text-right max-w-48">{nextTo}</span>
@@ -689,7 +746,7 @@ export function RegistrationWizard({
             </label>
 
             <div className="flex justify-between mt-6">
-              <button onClick={() => setStep('cage')} className="btn-secondary">← Retour</button>
+              <button onClick={() => setStep(allConformityOnly ? 'options' : 'cage')} className="btn-secondary">← Retour</button>
               <button onClick={submit} disabled={submitting || !hasReadRules} className="btn-primary">
                 {submitting ? 'Envoi...' : "Confirmer l'inscription"}
               </button>

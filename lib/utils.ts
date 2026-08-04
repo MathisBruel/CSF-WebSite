@@ -115,8 +115,15 @@ export function computeCatPrice(
   wantsComplianceExam: boolean,
   wantsDiploma: boolean,
   isMember: boolean,
-  pricing: GlobalPricing
+  pricing: GlobalPricing,
+  isConformityOnly: boolean = false
 ): number {
+  if (isConformityOnly) {
+    const conformite = isMember ? pricing.memberConformite : pricing.nonMemberConformite
+    const diploma = wantsDiploma ? (isMember ? pricing.memberDiploma : pricing.nonMemberDiploma) : 0
+    return conformite + diploma
+  }
+
   const twoDay = participationDays.length >= 2
   let base: number
   if (isHouseCat) {

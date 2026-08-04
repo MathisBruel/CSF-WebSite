@@ -110,11 +110,17 @@ export default async function AdminInscriptions({
                         {rc.vetValidated && <span className="badge badge-green text-xs">Vét. ✓</span>}
                         {rc.catalogNumber && <span className="text-xs text-csf-muted">#{rc.catalogNumber}</span>}
                         {rc.participationDays.length > 0 && <span className="text-xs text-csf-muted">{rc.participationDays.join(', ')}</span>}
-                        {rc.traditionalClassSaturday && <span className="text-xs text-csf-muted">Cl. Sam. {rc.traditionalClassSaturday}</span>}
-                        {rc.traditionalClassSunday && <span className="text-xs text-csf-muted">Cl. Dim. {rc.traditionalClassSunday}</span>}
-                        {rc.isHorsConcours && <span className="text-xs text-csf-muted">H.C.</span>}
-                        {rc.wantsComplianceExam && <span className="text-xs text-csf-muted">Conformité</span>}
-                        {rc.specialParticipations.length > 0 && <span className="text-xs text-csf-muted">{rc.specialParticipations.join(', ')}</span>}
+                        {rc.isConformityOnly ? (
+                          <span className="badge badge-yellow text-xs font-semibold">Conformité seule</span>
+                        ) : (
+                          <>
+                            {rc.traditionalClassSaturday && <span className="text-xs text-csf-muted">Cl. Sam. {rc.traditionalClassSaturday}</span>}
+                            {rc.traditionalClassSunday && <span className="text-xs text-csf-muted">Cl. Dim. {rc.traditionalClassSunday}</span>}
+                            {rc.isHorsConcours && <span className="text-xs text-csf-muted">H.C.</span>}
+                            {rc.wantsComplianceExam && <span className="text-xs text-csf-muted">Conformité</span>}
+                            {rc.specialParticipations.length > 0 && <span className="text-xs text-csf-muted">{rc.specialParticipations.join(', ')}</span>}
+                          </>
+                        )}
                         <span className="text-xs font-medium text-csf-dark">{formatPrice(rc.amount)}</span>
                       </div>
                     </div>

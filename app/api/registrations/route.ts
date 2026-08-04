@@ -16,6 +16,7 @@ const catEntrySchema = z.object({
   traditionalClassOther: z.string().optional(),
   isHouseCat: z.boolean().default(false),
   wantsComplianceExam: z.boolean().default(false),
+  isConformityOnly: z.boolean().default(false),
   specialParticipations: z.array(z.string()).default([]),
 })
 
@@ -87,14 +88,17 @@ export async function POST(req: NextRequest) {
 
     const newCatData = data.cats.map((entry, idx) => {
       const position = existingCount + idx + 1
+      const isConformityOnly = entry.isConformityOnly
+      const wantsComplianceExam = entry.wantsComplianceExam || isConformityOnly
       const amount = computeCatPrice(
         position,
         entry.participationDays,
         entry.isHouseCat,
-        entry.wantsComplianceExam,
+        wantsComplianceExam,
         false,
         isMember,
-        pricing
+        pricing,
+        isConformityOnly
       )
       return {
         catId: entry.catId,
@@ -103,7 +107,8 @@ export async function POST(req: NextRequest) {
         traditionalClassSunday: entry.traditionalClassSunday,
         traditionalClassOther: entry.traditionalClassOther,
         isHouseCat: entry.isHouseCat,
-        wantsComplianceExam: entry.wantsComplianceExam,
+        wantsComplianceExam,
+        isConformityOnly,
         specialParticipations: entry.specialParticipations,
         amount,
       }

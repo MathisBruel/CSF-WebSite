@@ -26,7 +26,7 @@ export function AdminNav({ pendingMembershipRequests = 0 }: { pendingMembershipR
   return (
     <>
     {/* Mobile top bar */}
-    <div className="lg:hidden sticky top-0 z-50 bg-csf-darker text-white">
+    <div className="lg:hidden sticky top-0 z-50 bg-csf-darker text-white w-full border-b border-white/10 shadow-md">
       <div className="flex items-center justify-between px-4 h-14">
         <Link href="/" className="flex items-center gap-2">
           <div className="relative w-7 h-7 flex-shrink-0">
@@ -34,7 +34,7 @@ export function AdminNav({ pendingMembershipRequests = 0 }: { pendingMembershipR
           </div>
           <span className="text-sm font-semibold text-white">Administration</span>
         </Link>
-        <button className="p-2 rounded-lg hover:bg-white/10 transition-colors" onClick={() => setMenuOpen(!menuOpen)}>
+        <button className="p-2 rounded-lg hover:bg-white/10 transition-colors" onClick={() => setMenuOpen(!menuOpen)} aria-label="Toggle navigation menu">
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             {menuOpen
               ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -43,13 +43,13 @@ export function AdminNav({ pendingMembershipRequests = 0 }: { pendingMembershipR
         </button>
       </div>
       {menuOpen && (
-        <div className="border-t border-white/10 px-3 pb-3 pt-2 space-y-0.5 max-h-[calc(100vh-3.5rem)] overflow-y-auto">
+        <div className="bg-csf-darker border-t border-white/10 px-4 pb-4 pt-3 space-y-1 shadow-xl max-h-[calc(100vh-3.5rem)] overflow-y-auto">
           {navItems.map(({ href, label, exact, badge }) => {
             const active = exact ? pathname === href : pathname.startsWith(href)
             const count = badge === 'members' ? pendingMembershipRequests : 0
             return (
               <Link key={href} href={href} onClick={() => setMenuOpen(false)}
-                className={`flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-colors ${
+                className={`flex items-center justify-between px-3 py-2.5 rounded-lg text-sm transition-colors ${
                   active ? 'bg-csf-orange text-white' : 'text-csf-light/70 hover:bg-white/10 hover:text-white'
                 }`}>
                 <span>{label}</span>
@@ -65,15 +65,15 @@ export function AdminNav({ pendingMembershipRequests = 0 }: { pendingMembershipR
           })}
           <div className="border-t border-white/10 my-2" />
           <Link href="/membre/dashboard" onClick={() => setMenuOpen(false)}
-            className="flex items-center px-3 py-2 text-sm text-csf-light/60 hover:text-white rounded-lg hover:bg-white/10 transition-colors">
+            className="flex items-center px-3 py-2.5 text-sm text-csf-light/60 hover:text-white rounded-lg hover:bg-white/10 transition-colors">
             Espace membre
           </Link>
           <Link href="/" onClick={() => setMenuOpen(false)}
-            className="flex items-center px-3 py-2 text-sm text-csf-light/60 hover:text-white rounded-lg hover:bg-white/10 transition-colors">
+            className="flex items-center px-3 py-2.5 text-sm text-csf-light/60 hover:text-white rounded-lg hover:bg-white/10 transition-colors">
             Site public
           </Link>
           <button onClick={() => signOut({ callbackUrl: '/' })}
-            className="w-full flex items-center px-3 py-2 text-sm text-red-400 hover:text-red-300 rounded-lg hover:bg-red-900/20 transition-colors">
+            className="w-full flex items-center px-3 py-2.5 text-sm text-red-400 hover:text-red-300 rounded-lg hover:bg-red-900/20 transition-colors">
             Déconnexion
           </button>
         </div>

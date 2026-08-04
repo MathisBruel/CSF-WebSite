@@ -248,6 +248,7 @@ model RegistrationCat {
   isHorsConcours       Boolean  @default(false)
   isHouseCat           Boolean  @default(false)
   wantsComplianceExam  Boolean  @default(false)
+  isConformityOnly     Boolean  @default(false)
   wantsDiploma         Boolean  @default(false)
   specialParticipations String[]
 

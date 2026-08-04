@@ -20,7 +20,7 @@ export function MembreNav({ user }: { user: { name: string; role: string } }) {
   return (
     <>
     {/* Mobile top bar */}
-    <div className="lg:hidden sticky top-0 z-50 bg-csf-dark text-white">
+    <div className="lg:hidden sticky top-0 z-50 bg-csf-dark text-white w-full border-b border-white/10 shadow-md">
       <div className="flex items-center justify-between px-4 h-14">
         <Link href="/" className="flex items-center gap-2">
           <div className="relative w-7 h-7 flex-shrink-0">
@@ -28,7 +28,7 @@ export function MembreNav({ user }: { user: { name: string; role: string } }) {
           </div>
           <span className="text-sm font-medium text-csf-light">Espace membre</span>
         </Link>
-        <button className="p-2 rounded-lg hover:bg-white/10 transition-colors" onClick={() => setMenuOpen(!menuOpen)}>
+        <button className="p-2 rounded-lg hover:bg-white/10 transition-colors" onClick={() => setMenuOpen(!menuOpen)} aria-label="Toggle navigation menu">
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             {menuOpen
               ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -37,7 +37,19 @@ export function MembreNav({ user }: { user: { name: string; role: string } }) {
         </button>
       </div>
       {menuOpen && (
-        <div className="border-t border-white/10 px-4 pb-4 pt-2 space-y-1">
+        <div className="bg-csf-darker border-t border-white/10 px-4 pb-4 pt-3 space-y-1 shadow-xl">
+          <div className="flex items-center gap-3 p-3 mb-2 bg-white/5 rounded-lg border border-white/10">
+            <div className="w-8 h-8 rounded-full bg-csf-orange flex items-center justify-center text-sm font-bold flex-shrink-0">
+              {user.name.charAt(0)}
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-white truncate">{user.name}</p>
+              <p className="text-xs text-csf-light/60 truncate">{
+                user.role === 'ADMIN' ? 'Administrateur' :
+                user.role === 'MEMBRE_ACTIF' ? 'Membre Actif' : 'Adhérent Club'
+              }</p>
+            </div>
+          </div>
           {navItems.map(({ href, icon: Icon, label }) => {
             const active = pathname === href || pathname.startsWith(href + '/')
             return (
@@ -63,8 +75,17 @@ export function MembreNav({ user }: { user: { name: string; role: string } }) {
             </>
           )}
           <div className="border-t border-white/10 my-2" />
+          <Link href="/" onClick={() => setMenuOpen(false)} className="flex items-center gap-3 px-3 py-2.5 text-sm text-csf-light/60 hover:text-white rounded-lg hover:bg-white/10 transition-colors">
+            <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+            </svg>
+            Retour au site
+          </Link>
           <button onClick={() => signOut({ callbackUrl: '/' })}
-            className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-red-400 hover:text-red-300 rounded-lg hover:bg-red-900/20 transition-colors">
+            className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-red-400 hover:text-red-300 rounded-lg hover:bg-red-900/20 transition-colors">
+            <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
             Déconnexion
           </button>
         </div>

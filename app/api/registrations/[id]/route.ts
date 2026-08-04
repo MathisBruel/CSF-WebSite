@@ -27,8 +27,8 @@ export async function DELETE(
       return NextResponse.json({ error: 'Registration not found' }, { status: 404 })
     }
 
-    if (registration.userId !== session.user.id && session.user.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    if (session.user.role !== 'ADMIN') {
+      return NextResponse.json({ error: 'Les annulations doivent être demandées à contact@assocsf.fr' }, { status: 403 })
     }
 
     await prisma.registration.delete({ where: { id } })
