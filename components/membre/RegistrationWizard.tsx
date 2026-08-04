@@ -380,6 +380,9 @@ export function RegistrationWizard({
                               update('isConformityOnly', checked)
                               if (checked) {
                                 update('wantsComplianceExam', true)
+                                if (opts.participationDays.length > 1) {
+                                  update('participationDays', [opts.participationDays[0]])
+                                }
                               }
                             }}
                             className="mt-0.5 text-csf-orange rounded w-4 h-4"
@@ -393,37 +396,62 @@ export function RegistrationWizard({
                             </span>
                             {opts.isConformityOnly && (
                               <p className="text-xs text-csf-muted mt-1">
-                                Seul l&apos;examen de conformité de race sera passé. Pas de concours ni d&apos;emplacement en cage.
+                                Seul l&apos;examen de conformité de race sera passé (un seul jour). Pas de concours ni d&apos;emplacement en cage.
                               </p>
                             )}
                           </div>
                         </label>
                       </div>
 
-                      <div>
-                        <label className="form-label text-sm">
-                          Jours de participation <span className="text-red-500">*</span>
-                        </label>
-                        <div className="flex gap-4">
-                          {['Samedi', 'Dimanche'].map((day) => (
-                            <label key={day} className="flex items-center gap-2 cursor-pointer">
-                              <input type="checkbox"
-                                checked={opts.participationDays.includes(day)}
-                                onChange={(e) => {
-                                  const days = e.target.checked
-                                    ? [...opts.participationDays, day]
-                                    : opts.participationDays.filter((d) => d !== day)
-                                  update('participationDays', days)
-                                }}
-                                className="text-csf-orange rounded" />
-                              <span className="text-sm">{day}</span>
-                            </label>
-                          ))}
+                      {opts.isConformityOnly ? (
+                        <div>
+                          <label className="form-label text-sm">
+                            Jour d&apos;examen de conformité <span className="text-red-500">*</span>
+                          </label>
+                          <div className="flex gap-4">
+                            {['Samedi', 'Dimanche'].map((day) => (
+                              <label key={day} className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                  type="radio"
+                                  name={`conformity-day-${cat.id}`}
+                                  checked={opts.participationDays.includes(day)}
+                                  onChange={() => update('participationDays', [day])}
+                                  className="text-csf-orange focus:ring-csf-orange"
+                                />
+                                <span className="text-sm">{day}</span>
+                              </label>
+                            ))}
+                          </div>
+                          {triedOptionsNext && opts.participationDays.length === 0 && (
+                            <p className="text-red-500 text-xs mt-1">Sélectionner un jour</p>
+                          )}
                         </div>
-                        {triedOptionsNext && opts.participationDays.length === 0 && (
-                          <p className="text-red-500 text-xs mt-1">Sélectionner au moins un jour</p>
-                        )}
-                      </div>
+                      ) : (
+                        <div>
+                          <label className="form-label text-sm">
+                            Jours de participation <span className="text-red-500">*</span>
+                          </label>
+                          <div className="flex gap-4">
+                            {['Samedi', 'Dimanche'].map((day) => (
+                              <label key={day} className="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox"
+                                  checked={opts.participationDays.includes(day)}
+                                  onChange={(e) => {
+                                    const days = e.target.checked
+                                      ? [...opts.participationDays, day]
+                                      : opts.participationDays.filter((d) => d !== day)
+                                    update('participationDays', days)
+                                  }}
+                                  className="text-csf-orange rounded" />
+                                <span className="text-sm">{day}</span>
+                              </label>
+                            ))}
+                          </div>
+                          {triedOptionsNext && opts.participationDays.length === 0 && (
+                            <p className="text-red-500 text-xs mt-1">Sélectionner au moins un jour</p>
+                          )}
+                        </div>
+                      )}
 
                       {!opts.isConformityOnly && (
                         <>
