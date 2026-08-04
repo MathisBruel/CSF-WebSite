@@ -41,14 +41,14 @@ export default async function HomePage() {
           <div className="max-w-2xl">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-csf-orange/20 text-csf-orange text-sm font-medium mb-6">
               <span className="w-2 h-2 rounded-full bg-csf-orange animate-pulse" />
-              Association féline depuis 2005
+              Club félin du Nord-Ouest de la France depuis 2005
             </div>
             <h1 className="text-5xl sm:text-6xl font-bold font-serif leading-tight mb-6">
               Chats Sans<br />
               <span className="text-csf-orange">Frontières</span>
             </h1>
             <p className="text-xl text-csf-light/80 mb-8 leading-relaxed">
-              Organisation d&apos;expositions félines, promotion de l&apos;élevage éthique
+              Organisation d&apos;expositions félines dans le <strong>Nord-Ouest de la France</strong>, promotion de l&apos;élevage éthique
               et regroupement de passionnés du chat de race et de maison.
             </p>
             <div className="flex flex-wrap gap-4">
@@ -66,8 +66,9 @@ export default async function HomePage() {
         {/* Stats bar */}
         <div className="border-t border-white/10 bg-csf-darker/50">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-6 text-center">
               {[
+                { value: 'Nord-Ouest', label: 'Secteur d\'activité (France)' },
                 { value: '20+', label: 'Années d\'existence' },
                 { value: '20+', label: 'Membres bénévoles' },
               ].map((s) => (
