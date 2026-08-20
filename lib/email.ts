@@ -286,6 +286,18 @@ export async function notifyAdminNewRegistration(params: {
   cats: {
     name: string
     breed: string
+    color?: string | null
+    gender?: string | null
+    birthDate?: Date | null
+    icadNumber?: string | null
+    pedigreeNumber?: string | null
+    pedigreeInProgress?: boolean
+    foreignCatCertificate?: string | null
+    eyeColor?: string | null
+    breeder?: string | null
+    father?: string | null
+    mother?: string | null
+    countryOfOrigin?: string | null
     participationDays: string[]
     traditionalClassSaturday?: string | null
     traditionalClassSunday?: string | null
@@ -408,6 +420,18 @@ export async function notifyAdminNewRegistration(params: {
       position: idx + 1,
       nom: cat.name,
       race: cat.breed,
+      couleur: cat.color || null,
+      robe_yeux: cat.eyeColor || null,
+      sexe: cat.gender || null,
+      date_naissance: cat.birthDate || null,
+      numero_icad: cat.icadNumber || null,
+      numero_pedigree: cat.pedigreeNumber || null,
+      pedigree_en_cours: cat.pedigreeInProgress ?? false,
+      certificat_chat_etranger: cat.foreignCatCertificate || null,
+      eleveur: cat.breeder || null,
+      pere: cat.father || null,
+      mere: cat.mother || null,
+      pays_origine: cat.countryOfOrigin || null,
       chat_de_maison: cat.isHouseCat ?? false,
       jours_participation: cat.participationDays,
       classe_samedi: cat.traditionalClassSaturday || null,

@@ -67,7 +67,11 @@ export async function POST(req: NextRequest) {
     const catIds = data.cats.map((c) => c.catId)
     const userCats = await prisma.cat.findMany({
       where: { id: { in: catIds }, ownerId: session.user.id },
-      select: { id: true, name: true, breed: true },
+      select: {
+        id: true, name: true, breed: true, color: true, gender: true, birthDate: true,
+        icadNumber: true, pedigreeNumber: true, pedigreeInProgress: true, foreignCatCertificate: true,
+        eyeColor: true, breeder: true, father: true, mother: true, countryOfOrigin: true,
+      },
     })
     if (userCats.length !== catIds.length) {
       return NextResponse.json({ error: 'Un ou plusieurs chats introuvables' }, { status: 404 })
@@ -199,18 +203,33 @@ export async function POST(req: NextRequest) {
         otherClubs: userRecord?.otherClubs ?? null,
       },
       exhibition: { title: exhibition.title, startDate: exhibition.startDate, city: exhibition.city },
-      cats: newCatData.map((d) => ({
-        name: userCats.find((c) => c.id === d.catId)?.name ?? d.catId,
-        breed: userCats.find((c) => c.id === d.catId)?.breed ?? '',
-        participationDays: d.participationDays,
-        traditionalClassSaturday: d.traditionalClassSaturday,
-        traditionalClassSunday: d.traditionalClassSunday,
-        traditionalClassOther: d.traditionalClassOther,
-        isHouseCat: d.isHouseCat,
-        wantsComplianceExam: d.wantsComplianceExam,
-        specialParticipations: d.specialParticipations,
-        amount: d.amount,
-      })),
+      cats: newCatData.map((d) => {
+        const cat = userCats.find((c) => c.id === d.catId)
+        return {
+          name: cat?.name ?? d.catId,
+          breed: cat?.breed ?? '',
+          color: cat?.color ?? null,
+          gender: cat?.gender ?? null,
+          birthDate: cat?.birthDate ?? null,
+          icadNumber: cat?.icadNumber ?? null,
+          pedigreeNumber: cat?.pedigreeNumber ?? null,
+          pedigreeInProgress: cat?.pedigreeInProgress ?? false,
+          foreignCatCertificate: cat?.foreignCatCertificate ?? null,
+          eyeColor: cat?.eyeColor ?? null,
+          breeder: cat?.breeder ?? null,
+          father: cat?.father ?? null,
+          mother: cat?.mother ?? null,
+          countryOfOrigin: cat?.countryOfOrigin ?? null,
+          participationDays: d.participationDays,
+          traditionalClassSaturday: d.traditionalClassSaturday,
+          traditionalClassSunday: d.traditionalClassSunday,
+          traditionalClassOther: d.traditionalClassOther,
+          isHouseCat: d.isHouseCat,
+          wantsComplianceExam: d.wantsComplianceExam,
+          specialParticipations: d.specialParticipations,
+          amount: d.amount,
+        }
+      }),
       registrationFee,
       totalAmount,
       personalCages: data.personalCages,
