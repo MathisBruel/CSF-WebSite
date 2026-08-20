@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { sendRegistrationValidatedEmail, sendRegistrationRejectedEmail, sendPaymentReminderEmail } from '@/lib/email'
+import { sendRegistrationRejectedEmail, sendPaymentReminderEmail } from '@/lib/email'
 import type { RegistrationStatus, PaymentStatus } from '@prisma/client'
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
@@ -65,12 +65,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     },
   })
 
-  if (data.action === 'payment_received' || data.status === 'VALIDATED') {
-    sendRegistrationValidatedEmail(
-      { name: reg.user.name, email: reg.user.email },
-      { title: reg.exhibition.title, startDate: reg.exhibition.startDate, city: reg.exhibition.city }
-    ).catch(console.error)
-  } else if (data.action === 'remind_payment') {
+  if (data.action === 'remind_payment') {
     prisma.siteConfig.findMany({
       where: { key: { in: ['membership_rib_iban', 'membership_rib_bic', 'membership_rib_holder', 'membership_paypal_link'] } },
     }).then((configs) => {

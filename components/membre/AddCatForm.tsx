@@ -398,7 +398,7 @@ export function AddCatForm({ catId, initialData, returnTo, editRedirectTo }: { c
       </div>
 
       <div className="flex gap-3 pt-2">
-        <Link href={safeReturnTo || (catId ? `/membre/chats/${catId}` : '/membre/chats')} className="btn-secondary flex-1 text-center">
+        <Link href={safeReturnTo || (catId ? (editRedirectTo ?? `/membre/chats/${catId}`) : '/membre/chats')} className="btn-secondary flex-1 text-center">
           Annuler
         </Link>
         <button type="submit" disabled={isSubmitting} className="btn-primary flex-1">
