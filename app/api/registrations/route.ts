@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { ExhibitionStatus } from '@prisma/client'
 import { computeCatPrice, DEFAULT_PRICING } from '@/lib/utils'
+import { isHouseCatBreed } from '@/lib/cat-data'
 import { sendRegistrationConfirmationEmail, notifyAdminNewRegistration } from '@/lib/email'
 
 export const dynamic = 'force-dynamic'
@@ -14,7 +15,6 @@ const catEntrySchema = z.object({
   traditionalClassSaturday: z.string().optional(),
   traditionalClassSunday: z.string().optional(),
   traditionalClassOther: z.string().optional(),
-  isHouseCat: z.boolean().default(false),
   wantsComplianceExam: z.boolean().default(false),
   isConformityOnly: z.boolean().default(false),
   specialParticipations: z.array(z.string()).default([]),
@@ -94,15 +94,17 @@ export async function POST(req: NextRequest) {
     }
 
     const existingCount = alreadyRegisteredCatIds.length
+    const catBreedMap = new Map(userCats.map((c) => [c.id, c.breed]))
 
     const newCatData = data.cats.map((entry, idx) => {
       const position = existingCount + idx + 1
       const isConformityOnly = entry.isConformityOnly
       const wantsComplianceExam = entry.wantsComplianceExam || isConformityOnly
+      const isHouseCat = isHouseCatBreed(catBreedMap.get(entry.catId) ?? '')
       const amount = computeCatPrice(
         position,
         entry.participationDays,
-        entry.isHouseCat,
+        isHouseCat,
         wantsComplianceExam,
         false,
         isMember,
@@ -115,7 +117,7 @@ export async function POST(req: NextRequest) {
         traditionalClassSaturday: entry.traditionalClassSaturday,
         traditionalClassSunday: entry.traditionalClassSunday,
         traditionalClassOther: entry.traditionalClassOther,
-        isHouseCat: entry.isHouseCat,
+        isHouseCat,
         wantsComplianceExam,
         isConformityOnly,
         specialParticipations: entry.specialParticipations,

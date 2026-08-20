@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import type { Exhibition, Cat, ExhibitionSpecial } from '@prisma/client'
 import { computeCatPrice, formatPrice, type GlobalPricing } from '@/lib/utils'
-import { computeAvailableClasses } from '@/lib/cat-data'
+import { computeAvailableClasses, isHouseCatBreed } from '@/lib/cat-data'
 
 type Step = 'cats' | 'options' | 'cage' | 'summary' | 'done'
 
@@ -120,7 +120,7 @@ export function RegistrationWizard({
     return computeCatPrice(
       idx + 1,
       opts.participationDays,
-      cat.isHouseCat,
+      isHouseCatBreed(cat.breed),
       opts.wantsComplianceExam || opts.isConformityOnly,
       false,
       isMember,
@@ -338,7 +338,7 @@ export function RegistrationWizard({
                 const catPrice = computeCatPrice(
                   idx + 1,
                   opts.participationDays,
-                  cat.isHouseCat,
+                  isHouseCatBreed(cat.breed),
                   opts.wantsComplianceExam || opts.isConformityOnly,
                   false,
                   isMember,
