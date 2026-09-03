@@ -4,7 +4,6 @@ import Link from 'next/link'
 import { prisma } from '@/lib/prisma'
 import { formatDate, formatDateShort, formatPrice, DEFAULT_PRICING } from '@/lib/utils'
 import { ExhibitionStatus } from '@prisma/client'
-import RegistrationsList from '@/components/exhibitions/RegistrationsList'
 
 type Props = { params: { slug: string } }
 
@@ -247,12 +246,6 @@ export default async function ExpoDetailPage({ params }: Props) {
             </div>
           </div>
         </div>
-      </div>
-
-      {/* Registrations Section */}
-      <div className="mt-16 pt-8 border-t border-csf-light">
-        <h2 className="text-2xl font-bold font-serif text-csf-dark mb-6">Suivi des inscrits</h2>
-        <RegistrationsList exhibitionId={expo.id} />
       </div>
     </div>
   )

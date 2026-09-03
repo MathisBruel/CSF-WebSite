@@ -21,16 +21,6 @@ export function formatPrice(amount: number): string {
   return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(amount)
 }
 
-export function calculateAge(birthDate: Date): string {
-  const today = new Date()
-  let age = today.getFullYear() - birthDate.getFullYear()
-  const monthDiff = today.getMonth() - birthDate.getMonth()
-  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-    age--
-  }
-  return `${age} an${age !== 1 ? 's' : ''}`
-}
-
 export function slugify(text: string): string {
   return text
     .toString()
