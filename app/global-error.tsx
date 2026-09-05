@@ -16,12 +16,11 @@ export default function GlobalError({ reset }: { error: Error & { digest?: strin
           a { color: #e67e22; text-decoration: underline; }
           .btn { display: inline-block; margin-top: 1.5rem; padding: 0.625rem 1.25rem; background: #e67e22; color: #fff; border: none; border-radius: 0.5rem; font-size: 0.875rem; font-weight: 600; cursor: pointer; text-decoration: none; }
           .badge { display: inline-block; margin-top: 1rem; font-size: 0.75rem; color: #9ca3af; background: #f3f4f6; border-radius: 0.375rem; padding: 0.25rem 0.625rem; }
-          .logo { font-size: 0.875rem; font-weight: 700; letter-spacing: 0.05em; color: #e67e22; margin-bottom: 2rem; text-transform: uppercase; }
         `}</style>
       </head>
       <body>
         <div className="container">
-          <div className="logo">Chats Sans Frontières</div>
+          <img src="/images/logo-full.png" alt="Chats Sans Frontières" style={{height:'64px',objectFit:'contain',marginBottom:'1.5rem'}} />
           <div className="icon">🐾</div>
           <h1>Le site rencontre une erreur</h1>
           <p>

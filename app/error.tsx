@@ -3,6 +3,8 @@
 export default function Error({ reset }: { error: Error & { digest?: string }; reset: () => void }) {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-4 text-center bg-csf-bg">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/images/logo-full.png" alt="Chats Sans Frontières" className="h-14 object-contain mb-6" />
       <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center text-2xl mb-6">
         🐾
       </div>
