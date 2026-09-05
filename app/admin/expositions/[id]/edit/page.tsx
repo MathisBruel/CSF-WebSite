@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import { ExhibitionForm } from '@/components/admin/ExhibitionForm'
 import { ExhibitionSpecials } from '@/components/admin/ExhibitionSpecials'
+import { ExhibitionJudges } from '@/components/admin/ExhibitionJudges'
 import { notFound } from 'next/navigation'
 
 export const dynamic = 'force-dynamic'
@@ -10,6 +11,7 @@ export default async function AdminExpoEdit({ params }: { params: { id: string }
     where: { id: params.id },
     include: {
       specials: { orderBy: { createdAt: 'asc' } },
+      judges: { orderBy: { order: 'asc' } },
       registrations: {
         select: {
           status: true,
@@ -73,6 +75,12 @@ export default async function AdminExpoEdit({ params }: { params: { id: string }
       <ExhibitionSpecials
         exhibitionId={exhibition.id}
         initialSpecials={exhibition.specials}
+      />
+
+      <ExhibitionJudges
+        exhibitionId={exhibition.id}
+        initialJudges={exhibition.judges}
+        initialComplete={exhibition.judgeListComplete}
       />
     </div>
   )

@@ -17,7 +17,10 @@ export default async function ExpoDetailPage({ params }: Props) {
   const [expo, globalPricing] = await Promise.all([
     prisma.exhibition.findUnique({
       where: { slug: params.slug },
-      include: { _count: { select: { registrations: true } } },
+      include: {
+        _count: { select: { registrations: true } },
+        judges: { orderBy: { order: 'asc' } },
+      },
     }),
     prisma.pricing.findFirst(),
   ])
@@ -45,6 +48,63 @@ export default async function ExpoDetailPage({ params }: Props) {
           <h1 className="text-3xl font-bold font-serif text-csf-dark mb-4">{expo.title}</h1>
           {expo.description && (
             <p className="text-csf-muted text-lg leading-relaxed mb-6">{expo.description}</p>
+          )}
+
+          {expo.judges.length > 0 && (
+            <div className="card mb-6">
+              <h2 className="font-bold text-csf-dark mb-1 flex items-center gap-2">
+                <svg className="w-5 h-5 text-csf-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                Juges
+                {expo.judgeListComplete ? (
+                  <span className="text-xs font-normal text-green-700 bg-green-50 border border-green-200 px-2 py-0.5 rounded-full">
+                    Liste complète
+                  </span>
+                ) : (
+                  <span className="text-xs font-normal text-yellow-700 bg-yellow-50 border border-yellow-200 px-2 py-0.5 rounded-full">
+                    Liste provisoire
+                  </span>
+                )}
+              </h2>
+              <div className="overflow-x-auto mt-4">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-gray-200">
+                      <th className="pb-2 text-left text-xs font-medium text-csf-muted uppercase tracking-wide">Juge</th>
+                      <th className="pb-2 text-left text-xs font-medium text-csf-muted uppercase tracking-wide">Région</th>
+                      <th className="pb-2 text-left text-xs font-medium text-csf-muted uppercase tracking-wide hidden sm:table-cell">Races</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {expo.judges.map((j) => (
+                      <tr key={j.id}>
+                        <td className="py-3 pr-4">
+                          <div className="flex items-center gap-2.5">
+                            {j.photoUrl ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img
+                                src={j.photoUrl}
+                                alt={`${j.firstName} ${j.lastName}`}
+                                className="w-9 h-9 rounded-full object-cover flex-shrink-0"
+                              />
+                            ) : (
+                              <div className="w-9 h-9 rounded-full bg-gray-200 flex-shrink-0" />
+                            )}
+                            <div>
+                              <p className="font-medium text-csf-dark">{j.firstName} {j.lastName}</p>
+                              {j.role && <p className="text-xs text-csf-muted">{j.role}</p>}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="py-3 pr-4 text-csf-muted text-sm">{j.region ?? '—'}</td>
+                        <td className="py-3 text-csf-muted text-xs hidden sm:table-cell">{j.breeds ?? '—'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           )}
 
           {expo.rules && (
