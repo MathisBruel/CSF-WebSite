@@ -48,12 +48,37 @@ export default async function AdminInscriptions({
     PENDING: 'badge-yellow', PAID: 'badge-green', REFUNDED: 'badge-blue',
   }
 
+  const totalCats = registrations.reduce((sum, r) => sum + r.cats.length, 0)
+  const pendingRegs = registrations.filter((r) => r.status === 'PENDING').length
+  const pendingCats = registrations
+    .filter((r) => r.status === 'PENDING')
+    .reduce((sum, r) => sum + r.cats.length, 0)
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold font-serif text-csf-dark">Inscriptions</h1>
           <p className="text-csf-muted">{registrations.length} inscription{registrations.length !== 1 ? 's' : ''}</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
+          <p className="text-2xl font-bold text-csf-dark">{registrations.length}</p>
+          <p className="text-xs text-csf-muted mt-0.5">Inscrits</p>
+        </div>
+        <div className="bg-white rounded-xl border border-yellow-200 p-4 text-center">
+          <p className="text-2xl font-bold text-yellow-600">{pendingRegs}</p>
+          <p className="text-xs text-csf-muted mt-0.5">En attente</p>
+        </div>
+        <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
+          <p className="text-2xl font-bold text-csf-dark">{totalCats}</p>
+          <p className="text-xs text-csf-muted mt-0.5">Chats inscrits</p>
+        </div>
+        <div className="bg-white rounded-xl border border-yellow-200 p-4 text-center">
+          <p className="text-2xl font-bold text-yellow-600">{pendingCats}</p>
+          <p className="text-xs text-csf-muted mt-0.5">Chats en attente</p>
         </div>
       </div>
 

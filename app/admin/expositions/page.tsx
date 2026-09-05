@@ -9,7 +9,14 @@ import { DeleteExhibitionButton } from '@/components/admin/DeleteExhibitionButto
 export default async function AdminExpositions() {
   const exhibitions = await prisma.exhibition.findMany({
     orderBy: { startDate: 'desc' },
-    include: { _count: { select: { registrations: true } } },
+    include: {
+      registrations: {
+        select: {
+          status: true,
+          _count: { select: { cats: true } },
+        },
+      },
+    },
   })
 
   const statusColors: Record<string, string> = {
@@ -43,7 +50,33 @@ export default async function AdminExpositions() {
                 <div className="flex flex-wrap gap-4 mt-2 text-sm text-csf-muted">
                   <span>{formatDate(expo.startDate)} – {formatDate(expo.endDate)}</span>
                   <span>{expo.location}</span>
-                  <span>{expo._count.registrations} inscrits{expo.maxRegistrations ? ` / ${expo.maxRegistrations}` : ''}</span>
+                </div>
+                <div className="flex flex-wrap gap-3 mt-3">
+                  {(() => {
+                    const total = expo.registrations.length
+                    const pending = expo.registrations.filter((r) => r.status === 'PENDING').length
+                    const totalCats = expo.registrations.reduce((s, r) => s + r._count.cats, 0)
+                    const pendingCats = expo.registrations
+                      .filter((r) => r.status === 'PENDING')
+                      .reduce((s, r) => s + r._count.cats, 0)
+                    return (
+                      <>
+                        <span className="text-xs bg-gray-100 rounded-lg px-2.5 py-1">
+                          <span className="font-semibold text-csf-dark">{total}</span>
+                          {expo.maxRegistrations ? `/${expo.maxRegistrations}` : ''} inscrits
+                        </span>
+                        <span className="text-xs bg-yellow-50 border border-yellow-200 rounded-lg px-2.5 py-1">
+                          <span className="font-semibold text-yellow-700">{pending}</span> en attente
+                        </span>
+                        <span className="text-xs bg-gray-100 rounded-lg px-2.5 py-1">
+                          <span className="font-semibold text-csf-dark">{totalCats}</span> chats inscrits
+                        </span>
+                        <span className="text-xs bg-yellow-50 border border-yellow-200 rounded-lg px-2.5 py-1">
+                          <span className="font-semibold text-yellow-700">{pendingCats}</span> chats en attente
+                        </span>
+                      </>
+                    )
+                  })()}
                 </div>
               </div>
               <div className="flex flex-col gap-2 items-end">

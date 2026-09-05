@@ -8,15 +8,49 @@ export const dynamic = 'force-dynamic'
 export default async function AdminExpoEdit({ params }: { params: { id: string } }) {
   const exhibition = await prisma.exhibition.findUnique({
     where: { id: params.id },
-    include: { specials: { orderBy: { createdAt: 'asc' } } },
+    include: {
+      specials: { orderBy: { createdAt: 'asc' } },
+      registrations: {
+        select: {
+          status: true,
+          _count: { select: { cats: true } },
+        },
+      },
+    },
   })
   if (!exhibition) notFound()
+
+  const totalRegs = exhibition.registrations.length
+  const pendingRegs = exhibition.registrations.filter((r) => r.status === 'PENDING').length
+  const totalCats = exhibition.registrations.reduce((s, r) => s + r._count.cats, 0)
+  const pendingCats = exhibition.registrations
+    .filter((r) => r.status === 'PENDING')
+    .reduce((s, r) => s + r._count.cats, 0)
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold font-serif text-csf-dark">Modifier l&apos;exposition</h1>
         <p className="text-csf-muted">{exhibition.title}</p>
+      </div>
+
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
+          <p className="text-2xl font-bold text-csf-dark">{totalRegs}</p>
+          <p className="text-xs text-csf-muted mt-0.5">Inscrits</p>
+        </div>
+        <div className="bg-white rounded-xl border border-yellow-200 p-4 text-center">
+          <p className="text-2xl font-bold text-yellow-600">{pendingRegs}</p>
+          <p className="text-xs text-csf-muted mt-0.5">En attente</p>
+        </div>
+        <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
+          <p className="text-2xl font-bold text-csf-dark">{totalCats}</p>
+          <p className="text-xs text-csf-muted mt-0.5">Chats inscrits</p>
+        </div>
+        <div className="bg-white rounded-xl border border-yellow-200 p-4 text-center">
+          <p className="text-2xl font-bold text-yellow-600">{pendingCats}</p>
+          <p className="text-xs text-csf-muted mt-0.5">Chats en attente</p>
+        </div>
       </div>
 
       <ExhibitionForm
