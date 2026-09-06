@@ -19,6 +19,7 @@ export const RACES: Race[] = racesData.Race
     bNouvelleRace: r.bNouvelleRace,
     ordrePassage: r.OrdrePassage,
   }))
+  .filter((r) => !r.nom.includes('(TICA)'))
   .sort((a, b) => a.nom.localeCompare(b.nom, 'fr'))
 
 export const EYE_COLORS: { id: number; nom: string }[] = eyeColorsData.CouleurYeux.map((e) => ({
