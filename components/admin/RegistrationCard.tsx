@@ -6,34 +6,7 @@ import { RegistrationActions } from '@/components/admin/RegistrationActions'
 import { DocumentValidation } from '@/components/admin/DocumentValidation'
 
 interface RegistrationCardProps {
-  reg: {
-    id: string
-    status: string
-    paymentStatus: string
-    createdAt: Date
-    totalAmount: number
-    personalCages: number
-    borrowedCages: number
-    user: { name: string; email: string; city: string | null; breedingName: string | null }
-    exhibition: { title: string; startDate: Date }
-    cats: Array<{
-      id: string
-      catId: string
-      amount: number
-      participationDays: string[]
-      isConformityOnly: boolean
-      traditionalClassSaturday?: string
-      traditionalClassSunday?: string
-      isHorsConcours: boolean
-      wantsComplianceExam: boolean
-      specialParticipations: string[]
-      cat: {
-        name: string
-        breed: string
-        catDocuments: Array<{ id: string; validated: boolean; type: string; filename: string; documentUrl: string }>
-      }
-    }>
-  }
+  reg: any
 }
 
 export function RegistrationCard({ reg }: RegistrationCardProps) {
@@ -131,7 +104,7 @@ export function RegistrationCard({ reg }: RegistrationCardProps) {
                 </div>
               )}
               <div>
-                <p className="text-csf-muted">Date d'inscription:</p>
+                <p className="text-csf-muted">Date d&apos;inscription:</p>
                 <p className="font-medium text-csf-dark">{formatDate(reg.createdAt)}</p>
               </div>
               <div>
@@ -144,7 +117,7 @@ export function RegistrationCard({ reg }: RegistrationCardProps) {
           {/* Per-cat details */}
           <div className="space-y-2">
             <h4 className="font-semibold text-csf-dark text-sm">Détails des chats ({reg.cats.length})</h4>
-            {reg.cats.map((rc) => (
+            {reg.cats.map((rc: any) => (
               <div key={rc.id} className="border border-gray-100 rounded-lg p-2 bg-white">
                 <div className="mb-2">
                   <div className="flex items-center justify-between gap-2 mb-1">
@@ -205,7 +178,7 @@ export function RegistrationCard({ reg }: RegistrationCardProps) {
                   <div className="border-t border-gray-100 pt-2">
                     <p className="text-xs text-csf-muted mb-1.5 font-medium">Documents:</p>
                     <div className="flex flex-wrap gap-2">
-                      {rc.cat.catDocuments.map((doc) => (
+                      {rc.cat.catDocuments.map((doc: any) => (
                         <DocumentValidation key={doc.id} doc={doc} />
                       ))}
                     </div>
