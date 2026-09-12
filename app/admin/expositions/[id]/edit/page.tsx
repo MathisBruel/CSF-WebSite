@@ -87,7 +87,6 @@ export default async function AdminExpoEdit({ params }: { params: { id: string }
       <ExhibitionStands
         exhibitionId={exhibition.id}
         initialPlanUrl={exhibition.standPlanUrl || undefined}
-        initialContractUrl={exhibition.standContractUrl || undefined}
         initialPrice={exhibition.standBasePricePerModule}
       />
     </div>

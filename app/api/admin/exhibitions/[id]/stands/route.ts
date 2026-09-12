@@ -15,9 +15,9 @@ export async function POST(
   try {
     const formData = await req.formData()
     const file = formData.get('file') as File | null
-    const type = formData.get('type') as 'plan' | 'contract' | null
+    const type = formData.get('type') as string
 
-    if (!file || !type) {
+    if (!file || type !== 'plan') {
       return NextResponse.json({ error: 'Fichier ou type manquant' }, { status: 400 })
     }
 
@@ -27,23 +27,16 @@ export async function POST(
     }
 
     // Delete old file if exists
-    if (type === 'plan' && exhibition.standPlanUrl) {
+    if (exhibition.standPlanUrl) {
       await deleteUploadedFile(exhibition.standPlanUrl)
-    }
-    if (type === 'contract' && exhibition.standContractUrl) {
-      await deleteUploadedFile(exhibition.standContractUrl)
     }
 
     const buffer = Buffer.from(await file.arrayBuffer())
     const { url } = await saveUploadedFile(buffer, file.name, file.type, `exhibitions/${params.id}/stands`)
 
-    const updateData = type === 'plan'
-      ? { standPlanUrl: url }
-      : { standContractUrl: url }
-
     const updated = await prisma.exhibition.update({
       where: { id: params.id },
-      data: updateData,
+      data: { standPlanUrl: url },
     })
 
     return NextResponse.json({

@@ -14,6 +14,7 @@ const navItems = [
   { href: '/admin/inscriptions', label: 'Inscriptions' },
   { href: '/admin/contenu', label: 'Contenu' },
   { href: '/admin/documents', label: 'Documents' },
+  { href: '/admin/stands', label: 'Location de stands' },
   { href: '/admin/newsletter', label: 'Newsletter' },
   { href: '/admin/configuration', label: 'Configuration' },
   { href: '/admin/tarifs', label: 'Tarifs' },

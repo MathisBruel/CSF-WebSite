@@ -6,37 +6,34 @@ import { useRouter } from 'next/navigation'
 interface ExhibitionStandsProps {
   exhibitionId: string
   initialPlanUrl?: string
-  initialContractUrl?: string
   initialPrice?: number
 }
 
 export function ExhibitionStands({
   exhibitionId,
   initialPlanUrl,
-  initialContractUrl,
   initialPrice = 50,
 }: ExhibitionStandsProps) {
   const router = useRouter()
   const [price, setPrice] = useState(initialPrice)
   const [planUrl, setPlanUrl] = useState(initialPlanUrl)
-  const [contractUrl, setContractUrl] = useState(initialContractUrl)
-  const [uploading, setUploading] = useState<'plan' | 'contract' | null>(null)
+  const [uploading, setUploading] = useState<'plan' | null>(null)
   const [savingPrice, setSavingPrice] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'plan' | 'contract') => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
 
-    setUploading(type)
+    setUploading('plan')
     setError('')
     setSuccess('')
 
     try {
       const formData = new FormData()
       formData.append('file', file)
-      formData.append('type', type)
+      formData.append('type', 'plan')
 
       const res = await fetch(`/api/admin/exhibitions/${exhibitionId}/stands`, {
         method: 'POST',
@@ -49,13 +46,8 @@ export function ExhibitionStands({
       }
 
       const data = await res.json()
-      if (type === 'plan') {
-        setPlanUrl(data.url)
-      } else {
-        setContractUrl(data.url)
-      }
-
-      setSuccess(`${type === 'plan' ? 'Plan' : 'Contrat'} uploadé avec succès`)
+      setPlanUrl(data.url)
+      setSuccess('Plan uploadé avec succès')
       router.refresh()
     } catch (err) {
       setError((err as Error).message)
@@ -142,7 +134,7 @@ export function ExhibitionStands({
           <input
             type="file"
             accept=".pdf,.png,.jpg,.jpeg,.webp"
-            onChange={(e) => handleFileUpload(e, 'plan')}
+            onChange={handleFileUpload}
             disabled={uploading === 'plan'}
             className="form-input"
           />
@@ -154,37 +146,6 @@ export function ExhibitionStands({
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
             </svg>
             Voir le plan
-          </a>
-        )}
-      </div>
-
-      {/* Contrat */}
-      <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
-        <div>
-          <h3 className="font-bold text-csf-dark mb-2">Contrat de location (PDF)</h3>
-          <p className="text-xs text-csf-muted mb-3">
-            Ce fichier sera proposé au téléchargement sur la page publique de location de stands
-          </p>
-          {contractUrl && (
-            <div className="mb-3 p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm">
-              ✓ Contrat présent
-            </div>
-          )}
-          <input
-            type="file"
-            accept=".pdf"
-            onChange={(e) => handleFileUpload(e, 'contract')}
-            disabled={uploading === 'contract'}
-            className="form-input"
-          />
-        </div>
-        {contractUrl && (
-          <a href={contractUrl} target="_blank" rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 text-sm text-csf-orange hover:underline">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-            </svg>
-            Voir le contrat
           </a>
         )}
       </div>
