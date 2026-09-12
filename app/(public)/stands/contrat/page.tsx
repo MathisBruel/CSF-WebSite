@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 
+export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Contrat de location de stand' }
 
 export default function ContratPage() {
