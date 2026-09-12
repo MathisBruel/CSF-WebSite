@@ -99,7 +99,12 @@ export function ExhibitionStands({
 
       {/* Tarif */}
       <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
-        <h3 className="font-bold text-csf-dark">Tarif par module (2m × 3m)</h3>
+        <div>
+          <h3 className="font-bold text-csf-dark">Tarif de base par module (2m × 3m)</h3>
+          <p className="text-xs text-csf-muted mt-1">
+            Tarif de base pour les expositions. Les tarifs réels peuvent être négociés au cas par cas avec les exposants, particulièrement pour les réguliers.
+          </p>
+        </div>
         <form onSubmit={handlePriceChange} className="space-y-3">
           <div>
             <label className="form-label">Prix (€)</label>

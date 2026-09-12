@@ -99,6 +99,10 @@ export default async function StandsPage() {
                       <p className="text-xs text-csf-muted pt-2 border-t border-gray-200">
                         Branchement électrique facturé à part selon besoin
                       </p>
+                      <div className="text-xs text-csf-muted pt-2 border-t border-gray-200 italic">
+                        <p className="mb-1"><strong>Tarifs négociables :</strong> Les tarifs peuvent être discutés et adaptés au cas par cas.</p>
+                        <p><strong>Exposants réguliers :</strong> Des tarifs préférentiels sont proposés aux exposants fidèles de nos manifestations.</p>
+                      </div>
                     </div>
                   </div>
 
@@ -167,10 +171,17 @@ export default async function StandsPage() {
           </li>
         </ol>
 
-        <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-          <p className="text-sm text-blue-900">
-            <strong>Contact :</strong> <a href={`mailto:${contactEmail}`} className="hover:underline">{contactEmail}</a> • <a href={`tel:${contactPhone}`} className="hover:underline">{contactPhone}</a>
-          </p>
+        <div className="mt-6 space-y-3">
+          <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <p className="text-sm text-blue-900">
+              <strong>Contact :</strong> <a href={`mailto:${contactEmail}`} className="hover:underline">{contactEmail}</a> • <a href={`tel:${contactPhone}`} className="hover:underline">{contactPhone}</a>
+            </p>
+          </div>
+          <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
+            <p className="text-sm text-amber-900">
+              <strong>📌 Tarification flexible :</strong> Les tarifs affichés sont nos tarifs de base. Nous sommes ouverts à la négociation selon votre profil et votre fidélité. Contactez-nous pour discuter d&apos;une offre adaptée à votre situation.
+            </p>
+          </div>
         </div>
       </section>
     </div>
