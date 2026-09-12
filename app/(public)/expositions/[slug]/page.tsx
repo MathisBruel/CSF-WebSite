@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { prisma } from '@/lib/prisma'
 import { formatDate, formatDateShort, formatPrice, DEFAULT_PRICING } from '@/lib/utils'
 import { ExhibitionStatus } from '@prisma/client'
+import { JudgesTable } from '@/components/public/JudgesTable'
 
 type Props = { params: { slug: string } }
 
@@ -34,7 +35,7 @@ export default async function ExpoDetailPage({ params }: Props) {
     : false
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       <Link href="/expositions" className="inline-flex items-center gap-1 text-csf-muted hover:text-csf-orange text-sm mb-8 transition-colors">
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -67,43 +68,7 @@ export default async function ExpoDetailPage({ params }: Props) {
                   </span>
                 )}
               </h2>
-              <div className="overflow-x-auto mt-4">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-gray-200">
-                      <th className="pb-2 text-left text-xs font-medium text-csf-muted uppercase tracking-wide">Juge</th>
-                      <th className="pb-2 text-left text-xs font-medium text-csf-muted uppercase tracking-wide">Région</th>
-                      <th className="pb-2 text-left text-xs font-medium text-csf-muted uppercase tracking-wide hidden sm:table-cell">Races</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    {expo.judges.map((j) => (
-                      <tr key={j.id}>
-                        <td className="py-3 pr-4">
-                          <div className="flex items-center gap-2.5">
-                            {j.photoUrl ? (
-                              // eslint-disable-next-line @next/next/no-img-element
-                              <img
-                                src={j.photoUrl}
-                                alt={`${j.firstName} ${j.lastName}`}
-                                className="w-9 h-9 rounded-full object-cover flex-shrink-0"
-                              />
-                            ) : (
-                              <div className="w-9 h-9 rounded-full bg-gray-200 flex-shrink-0" />
-                            )}
-                            <div>
-                              <p className="font-medium text-csf-dark">{j.firstName} {j.lastName}</p>
-                              {j.role && <p className="text-xs text-csf-muted">{j.role}</p>}
-                            </div>
-                          </div>
-                        </td>
-                        <td className="py-3 pr-4 text-csf-muted text-sm">{j.region ?? '—'}</td>
-                        <td className="py-3 text-csf-muted text-xs hidden sm:table-cell">{j.breeds ?? '—'}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <JudgesTable judges={expo.judges} />
             </div>
           )}
 
