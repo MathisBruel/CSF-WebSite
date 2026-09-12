@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { formatDate, formatDateShort, formatPrice, DEFAULT_PRICING } from '@/lib/utils'
 import { ExhibitionStatus } from '@prisma/client'
 import { JudgesTable } from '@/components/public/JudgesTable'
+import { PageViewTracker } from '@/components/PageViewTracker'
 
 type Props = { params: { slug: string } }
 
@@ -35,8 +36,10 @@ export default async function ExpoDetailPage({ params }: Props) {
     : false
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      <Link href="/expositions" className="inline-flex items-center gap-1 text-csf-muted hover:text-csf-orange text-sm mb-8 transition-colors">
+    <>
+      <PageViewTracker type="exhibition" id={expo.id} title={expo.title} />
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <Link href="/expositions" className="inline-flex items-center gap-1 text-csf-muted hover:text-csf-orange text-sm mb-8 transition-colors">
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
         </svg>
@@ -272,6 +275,7 @@ export default async function ExpoDetailPage({ params }: Props) {
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </>
   )
 }

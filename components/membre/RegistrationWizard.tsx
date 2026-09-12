@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import type { Exhibition, Cat, ExhibitionSpecial } from '@prisma/client'
 import { computeCatPrice, formatPrice, type GlobalPricing } from '@/lib/utils'
 import { computeAvailableClasses, isHouseCatBreed } from '@/lib/cat-data'
+import { GAEvents } from '@/lib/ga-events'
 
 type Step = 'cats' | 'options' | 'cage' | 'summary' | 'done'
 
@@ -181,6 +182,7 @@ export function RegistrationWizard({
       setError(body.error || "Erreur lors de l'inscription")
       return
     }
+    GAEvents.registration(exhibition.id)
     setStep('done')
     router.refresh()
   }

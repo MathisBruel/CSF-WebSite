@@ -393,6 +393,22 @@ model SiteConfig {
   @@map("site_config")
 }
 
+// ─── Google Analytics ─────────────────────────────────────────────────────────
+
+model GAConfig {
+  id                String   @id @default(cuid())
+  propertyId        String?  // GA4 Property ID
+  measurementId     String?  // GA4 Measurement ID (for gtag)
+  apiSecret         String?  // GA4 API Secret for server-side events
+  googleAccessToken String?  // OAuth access token (encrypted)
+  googleRefreshToken String? // OAuth refresh token (encrypted)
+  tokenExpiry       DateTime?
+  enabled           Boolean  @default(true)
+  updatedAt         DateTime @updatedAt
+
+  @@map("ga_config")
+}
+
 // ─── Email Verification ───────────────────────────────────────────────────────
 
 model EmailVerificationToken {

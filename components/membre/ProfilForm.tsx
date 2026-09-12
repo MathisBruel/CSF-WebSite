@@ -6,6 +6,7 @@ import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { AddressAutocomplete } from '@/components/auth/AddressAutocomplete'
+import { GAEvents } from '@/lib/ga-events'
 
 const schema = z.object({
   civilite: z.enum(['M.', 'Mme'], { errorMap: () => ({ message: 'Civilité requise' }) }),
@@ -100,6 +101,7 @@ export function ProfilForm({ user }: { user: ProfileUser }) {
       setError('Erreur lors de la sauvegarde')
       return
     }
+    GAEvents.profileUpdate()
     setSuccess(true)
     router.refresh()
   }
