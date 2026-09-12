@@ -1,5 +1,6 @@
 import NextAuth from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
+import GoogleProvider from 'next-auth/providers/google'
 import { PrismaAdapter } from '@auth/prisma-adapter'
 import bcrypt from 'bcryptjs'
 import { prisma } from '@/lib/prisma'
@@ -50,13 +51,34 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         }
       },
     }),
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      allowDangerousEmailAccountLinking: true,
+    }),
   ],
   callbacks: {
-    async jwt({ token, user }) {
+    async signIn({ user, account }) {
+      if (account?.provider === 'google') {
+        const dbUser = await prisma.user.findUnique({
+          where: { email: user.email! },
+        })
+        if (!dbUser || dbUser.role !== 'ADMIN') {
+          return false
+        }
+      }
+      return true
+    },
+    async jwt({ token, user, account }) {
       if (user) {
         token.id = user.id
         token.role = (user as { role: Role }).role
         token.membershipActive = (user as { membershipActive: boolean }).membershipActive
+      }
+      if (account?.provider === 'google' && account?.access_token) {
+        token.googleAccessToken = account.access_token
+        token.googleRefreshToken = account.refresh_token
+        token.googleTokenExpiry = account.expires_at
       }
       return token
     },
@@ -65,6 +87,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         session.user.id = token.id as string
         session.user.role = token.role as Role
         session.user.membershipActive = token.membershipActive as boolean
+        ;(session.user as any).googleAccessToken = token.googleAccessToken
       }
       return session
     },

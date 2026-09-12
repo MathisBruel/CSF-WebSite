@@ -16,6 +16,7 @@ const navItems = [
   { href: '/admin/documents', label: 'Documents' },
   { href: '/admin/stands', label: 'Location de stands' },
   { href: '/admin/newsletter', label: 'Newsletter' },
+  { href: '/admin/analytics', label: 'Google Analytics' },
   { href: '/admin/configuration', label: 'Configuration' },
   { href: '/admin/tarifs', label: 'Tarifs' },
 ]

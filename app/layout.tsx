@@ -2,6 +2,8 @@ import type { Metadata } from 'next'
 import { Lora, Lato } from 'next/font/google'
 import './globals.css'
 import { SessionProvider } from '@/components/ui/SessionProvider'
+import { GoogleAnalyticsScript } from '@/components/GoogleAnalyticsScript'
+import { CookieConsent } from '@/components/CookieConsent'
 import { auth } from '@/lib/auth'
 
 const lora = Lora({
@@ -39,9 +41,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const session = await auth()
   return (
     <html lang="fr" className={`${lora.variable} ${lato.variable}`}>
+      <head>
+        <GoogleAnalyticsScript />
+      </head>
       <body>
         <SessionProvider session={session}>
           {children}
+          <CookieConsent />
         </SessionProvider>
       </body>
     </html>
