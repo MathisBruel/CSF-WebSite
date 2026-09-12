@@ -148,6 +148,21 @@ export function GoogleAnalyticsConfig() {
         </ul>
       </div>
 
+      <div className="bg-purple-50 rounded-xl border border-purple-200 p-4 space-y-3">
+        <h3 className="font-semibold text-purple-900">Consultation des rapports</h3>
+        <p className="text-sm text-purple-800">
+          Une fois GA4 configuré avec une Property ID valide, accédez aux rapports détaillés :
+        </p>
+        <a
+          href="https://analytics.google.com/analytics/web/provision/#/provision"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center px-4 py-2 border border-purple-300 rounded-lg bg-white text-sm font-medium text-purple-700 hover:bg-purple-50"
+        >
+          Google Analytics Dashboard →
+        </a>
+      </div>
+
       <button type="submit" disabled={saving} className="btn-primary">
         {saving ? 'Enregistrement...' : 'Enregistrer la configuration'}
       </button>
