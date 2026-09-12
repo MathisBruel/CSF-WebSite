@@ -184,6 +184,10 @@ model Exhibition {
 
   judgeListComplete Boolean          @default(false)
 
+  standPlanUrl    String?
+  standContractUrl String?
+  standBasePricePerModule Int @default(50)
+
   registrations   Registration[]
   specials        ExhibitionSpecial[]
   judges          ExhibitionJudge[]

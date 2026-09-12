@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma'
 import { ExhibitionForm } from '@/components/admin/ExhibitionForm'
 import { ExhibitionSpecials } from '@/components/admin/ExhibitionSpecials'
 import { ExhibitionJudges } from '@/components/admin/ExhibitionJudges'
+import { ExhibitionStands } from '@/components/admin/ExhibitionStands'
 import { notFound } from 'next/navigation'
 
 export const dynamic = 'force-dynamic'
@@ -81,6 +82,13 @@ export default async function AdminExpoEdit({ params }: { params: { id: string }
         exhibitionId={exhibition.id}
         initialJudges={exhibition.judges}
         initialComplete={exhibition.judgeListComplete}
+      />
+
+      <ExhibitionStands
+        exhibitionId={exhibition.id}
+        initialPlanUrl={exhibition.standPlanUrl || undefined}
+        initialContractUrl={exhibition.standContractUrl || undefined}
+        initialPrice={exhibition.standBasePricePerModule}
       />
     </div>
   )

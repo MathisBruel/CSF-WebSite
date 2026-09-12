@@ -56,7 +56,7 @@ export function JudgesTable({ judges }: JudgesTableProps) {
                 </div>
               </td>
               <td className="py-3 pr-4 text-csf-muted text-sm">{j.region ?? '—'}</td>
-              <td className="py-3 text-csf-muted text-xs">
+              <td className="py-3 text-csf-muted text-xs relative">
                 <div className="flex items-center gap-2">
                   {j.breeds ? (
                     <>
@@ -69,10 +69,10 @@ export function JudgesTable({ judges }: JudgesTableProps) {
                         Voir races
                       </span>
                       {hoveredJudgeId === j.id && (
-                        <div className="absolute z-50 left-0 right-0 bottom-full mb-2 p-3 bg-white border border-gray-300 rounded-lg shadow-lg text-csf-muted text-xs max-w-sm pointer-events-none">
+                        <div className="fixed z-[9999] p-3 bg-white border border-gray-300 rounded-lg shadow-2xl text-csf-muted text-xs max-w-sm pointer-events-none" style={{ bottom: 'auto', top: '50%', left: '50%', transform: 'translate(-50%, -110%)' }}>
                           <p className="font-medium text-csf-dark mb-1">Races jugées :</p>
                           <p className="leading-relaxed whitespace-normal">{j.breeds}</p>
-                          <div className="absolute bottom-0 left-8 w-2 h-2 bg-white border-r border-b border-gray-300 transform rotate-45 translate-y-1"></div>
+                          <div className="absolute top-full left-1/2 w-2 h-2 bg-white border-l border-t border-gray-300 transform -translate-x-1/2 -translate-y-1"></div>
                         </div>
                       )}
                     </>
