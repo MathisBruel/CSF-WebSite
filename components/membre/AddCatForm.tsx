@@ -8,6 +8,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import Link from 'next/link'
 import { RACES, EYE_COLORS, isHouseCatBreed } from '@/lib/cat-data'
 import { COAT_COLORS } from '@/lib/coat-colors'
+import { GAEvents } from '@/lib/ga-events'
 
 const RACE_NAMES = RACES.map((r) => r.nom)
 
@@ -231,12 +232,15 @@ export function AddCatForm({ catId, initialData, returnTo, editRedirectTo }: { c
       setError(body.error || 'Erreur lors de la sauvegarde')
       return
     }
-    if (!catId && safeReturnTo) {
-      const created = await res.json()
-      const separator = safeReturnTo.includes('?') ? '&' : '?'
-      router.push(`${safeReturnTo}${separator}newCat=${created.id}`)
-      router.refresh()
-      return
+    if (!catId) {
+      GAEvents.catAdd()
+      if (safeReturnTo) {
+        const created = await res.json()
+        const separator = safeReturnTo.includes('?') ? '&' : '?'
+        router.push(`${safeReturnTo}${separator}newCat=${created.id}`)
+        router.refresh()
+        return
+      }
     }
     router.push(catId ? (editRedirectTo ?? `/membre/chats/${catId}`) : '/membre/chats')
     router.refresh()
