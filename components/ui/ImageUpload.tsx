@@ -65,10 +65,11 @@ export function ImageUpload({
             isPoster ? 'w-full max-w-[220px] aspect-[210/297] mx-auto' : 'w-full aspect-video'
           }`}
         >
-          <img
+          <Image
             src={preview}
             alt="Preview"
-            className={`w-full h-full ${isPoster ? 'object-contain' : 'object-cover'}`}
+            fill
+            className={`${isPoster ? 'object-contain' : 'object-cover'}`}
           />
           <button
             type="button"
