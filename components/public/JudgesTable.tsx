@@ -17,7 +17,7 @@ interface JudgesTableProps {
 }
 
 export function JudgesTable({ judges }: JudgesTableProps) {
-  const [hoveredJudgeId, setHoveredJudgeId] = useState<string | null>(null)
+  const [hoveredBreedId, setHoveredBreedId] = useState<string | null>(null)
 
   return (
     <div className="overflow-x-auto mt-4">
@@ -31,12 +31,7 @@ export function JudgesTable({ judges }: JudgesTableProps) {
         </thead>
         <tbody className="divide-y divide-gray-100">
           {judges.map((j) => (
-            <tr
-              key={j.id}
-              className="relative hover:bg-gray-50 transition-colors"
-              onMouseEnter={() => setHoveredJudgeId(j.id)}
-              onMouseLeave={() => setHoveredJudgeId(null)}
-            >
+            <tr key={j.id} className="relative">
               <td className="py-3 pr-4">
                 <div className="flex items-center gap-2.5">
                   {j.photoUrl ? (
@@ -56,30 +51,30 @@ export function JudgesTable({ judges }: JudgesTableProps) {
                 </div>
               </td>
               <td className="py-3 pr-4 text-csf-muted text-sm">{j.region ?? '—'}</td>
-              <td className="py-3 text-csf-muted text-xs relative">
-                <div className="flex items-center gap-2">
-                  {j.breeds ? (
-                    <>
-                      <span className="cursor-help inline-flex items-center gap-1 text-xs text-csf-orange font-medium">
-                        <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 16 16">
-                          <circle cx="8" cy="3" r="1.5" />
-                          <circle cx="8" cy="8" r="1.5" />
-                          <circle cx="8" cy="13" r="1.5" />
-                        </svg>
-                        Voir races
-                      </span>
-                      {hoveredJudgeId === j.id && (
-                        <div className="fixed z-[9999] p-3 bg-white border border-gray-300 rounded-lg shadow-2xl text-csf-muted text-xs max-w-sm pointer-events-none" style={{ bottom: 'auto', top: '50%', left: '50%', transform: 'translate(-50%, -110%)' }}>
-                          <p className="font-medium text-csf-dark mb-1">Races jugées :</p>
-                          <p className="leading-relaxed whitespace-normal">{j.breeds}</p>
-                          <div className="absolute top-full left-1/2 w-2 h-2 bg-white border-l border-t border-gray-300 transform -translate-x-1/2 -translate-y-1"></div>
-                        </div>
-                      )}
-                    </>
-                  ) : (
-                    <span>—</span>
-                  )}
-                </div>
+              <td className="py-3 text-csf-muted text-xs">
+                {j.breeds ? (
+                  <span
+                    className="cursor-help inline-flex items-center gap-1 text-xs text-csf-orange font-medium relative"
+                    onMouseEnter={() => setHoveredBreedId(j.id)}
+                    onMouseLeave={() => setHoveredBreedId(null)}
+                  >
+                    <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 16 16">
+                      <circle cx="8" cy="3" r="1.5" />
+                      <circle cx="8" cy="8" r="1.5" />
+                      <circle cx="8" cy="13" r="1.5" />
+                    </svg>
+                    Voir races
+                    {hoveredBreedId === j.id && (
+                      <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 z-[9999] p-3 bg-white border border-gray-300 rounded-lg shadow-2xl text-csf-muted text-xs whitespace-nowrap">
+                        <p className="font-medium text-csf-dark mb-1">Races jugées :</p>
+                        <p className="text-left max-w-xs">{j.breeds}</p>
+                        <div className="absolute top-full left-1/2 w-2 h-2 bg-white border-r border-b border-gray-300 transform -translate-x-1/2 rotate-45"></div>
+                      </div>
+                    )}
+                  </span>
+                ) : (
+                  <span>—</span>
+                )}
               </td>
             </tr>
           ))}
