@@ -27,6 +27,7 @@ export function RichTextEditor({
     },
   })
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (editor && value !== editor.getHTML()) {
       editor.commands.setContent(value)
