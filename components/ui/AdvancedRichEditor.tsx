@@ -63,6 +63,7 @@ export function AdvancedRichEditor({
     if (editor && value !== editor.getHTML()) {
       editor.commands.setContent(value)
     }
+    // intentional: run only once on editor init
   }, [])
 
   if (!editor) return null

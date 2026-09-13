@@ -32,6 +32,7 @@ export function RichTextEditor({
     if (editor && value !== editor.getHTML()) {
       editor.commands.setContent(value)
     }
+    // intentional: run only once on editor init
   }, [])
 
   return (

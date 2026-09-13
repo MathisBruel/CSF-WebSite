@@ -81,7 +81,7 @@ export function GoogleAnalyticsConfig() {
 
       <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-4">
         <h2 className="font-semibold text-csf-dark">Connexion Google</h2>
-        <p className="text-sm text-csf-muted">Connectez votre compte Google pour autoriser l'accès à Google Analytics.</p>
+        <p className="text-sm text-csf-muted">Connectez votre compte Google pour autoriser l&apos;accès à Google Analytics.</p>
         <button
           type="button"
           onClick={handleConnectGoogle}
