@@ -208,6 +208,7 @@ export async function POST(req: NextRequest) {
       cats: newCatData.map((d) => {
         const cat = userCats.find((c) => c.id === d.catId)
         return {
+          catId: d.catId,
           name: cat?.name ?? d.catId,
           breed: cat?.breed ?? '',
           color: cat?.color ?? null,

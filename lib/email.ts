@@ -284,6 +284,7 @@ export async function notifyAdminNewRegistration(params: {
   }
   exhibition: { title: string; startDate: Date; city: string }
   cats: {
+    catId: string
     name: string
     breed: string
     color?: string | null
@@ -388,11 +389,18 @@ export async function notifyAdminNewRegistration(params: {
     ${btn(`${APP_URL}/admin/inscriptions`, 'Voir dans l\'admin')}
   `)
 
+  const trimValue = (val: any): any => {
+    if (typeof val === 'string') return val.trim()
+    if (Array.isArray(val)) return val.map(v => typeof v === 'string' ? v.trim() : v)
+    if (val && typeof val === 'object') return Object.fromEntries(Object.entries(val).map(([k, v]) => [k, trimValue(v)]))
+    return val
+  }
+
   const json = JSON.stringify({
     id: registrationId,
     createdAt: new Date().toISOString(),
-    exhibition: { title: exhibition.title, startDate: exhibition.startDate, city: exhibition.city },
-    exposant: {
+    exhibition: trimValue({ title: exhibition.title, startDate: exhibition.startDate, city: exhibition.city }),
+    exposant: trimValue({
       nom: user.name,
       prenom: user.firstName || null,
       nom_de_famille: user.lastName || null,
@@ -415,9 +423,11 @@ export async function notifyAdminNewRegistration(params: {
       adherent_actif: user.membershipActive,
       expiration_adhesion: user.membershipExpiry || null,
       role: user.role || null,
-    },
-    chats: cats.map((cat, idx) => ({
+    }),
+    commentaire: trimValue(comment || null),
+    chats: cats.map((cat, idx) => trimValue({
       position: idx + 1,
+      id_chat: cat.catId,
       nom: cat.name,
       race: cat.breed,
       couleur: cat.color || null,
@@ -444,8 +454,7 @@ export async function notifyAdminNewRegistration(params: {
     frais_inscription: registrationFee,
     total: totalAmount,
     cages: { personnelles: personalCages, empruntees: borrowedCages, demande_speciale: cageSpecialLengthRequest || null },
-    a_cote_de: nextTo || null,
-    commentaire: comment || null,
+    a_cote_de: trimValue(nextTo || null),
   }, null, 2)
 
   const safeTitle = exhibition.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()
